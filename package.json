@@ -8,7 +8,7 @@
     "build": "vite build && npx esbuild api/boot.ts --platform=node --bundle --format=esm --outdir=dist --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "tsx api/boot.ts",
+    "start": "npx tsx api/boot.ts",
     "check": "tsc -b && tsc -b tsconfig.server.json",
     "format": "prettier --write .",
     "test": "vitest run",

@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Environment (DO NOT COMMIT .env to git — set these in Render dashboard instead)
+.env
+.env.local
+.env.production
+
+# OS / Editor
+.DS_Store
+*.swp
+*.swo
+.idea
+.vscode
+
+# Logs
+*.log
+npm-debug.log*

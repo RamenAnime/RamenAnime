@@ -1,10 +1,12 @@
 services:
   - type: web
     name: ramen-anime
-    runtime: docker
+    runtime: node
     plan: starter
     region: oregon
     branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     healthCheckPath: /api/ping
     envVars:
       - key: NODE_ENV

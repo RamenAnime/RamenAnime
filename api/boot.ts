@@ -246,7 +246,7 @@ app.get(Paths.oauthCallback, createOAuthCallbackHandler());
 app.get("/api/ping", (c) => c.json({ ok: true, ts: Date.now() }));
 
 app.use("/api/trpc/*", async (c) => {
-  return fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext: {} });
+  return fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext });
 });
 
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));

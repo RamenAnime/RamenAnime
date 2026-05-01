@@ -9,6 +9,10 @@ import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
 
 const ALLOWED_COUNTRIES = ["US", "CA", "JP", "KR", "CN", "FR"];
+const BLOCKED_MESSAGE = JSON.stringify({
+  error: "This service is only available in the United States, Canada, Japan, South Korea, China, and France.",
+  code: "GEO_BLOCKED",
+});
 
 // ─── Auto database migration (runs in background) ───
 async function runMigrations() {
@@ -17,7 +21,6 @@ async function runMigrations() {
     const db = getDb();
     console.log("[migrate] Database connected");
 
-    // Try to add columns — if they already exist, TiDB will error and we catch it
     try {
       await db.execute("ALTER TABLE users ADD COLUMN username VARCHAR(50) UNIQUE AFTER unionId");
       console.log("[migrate] Added username column");
@@ -45,7 +48,6 @@ async function runMigrations() {
       } else { console.error("[migrate] auth_type error:", e.message); }
     }
 
-    // Create password_reset_tokens table
     try {
       await db.execute(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -69,6 +71,7 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 
+// ─── Geoblocking Middleware ───
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
   if (path === "/api/ping" || path === Paths.oauthCallback || path.includes("geo.checkAccess")) {
@@ -100,6 +103,19 @@ app.use("/api/trpc/*", async (c) => {
 
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
-setTimeout(runMigrations, 1000);
+// Start migrations in background after server starts
+setTimeout(runMigrations, 2000);
+
+// ─── Production Server Startup ───
+if (env.isProduction) {
+  const { serve } = await import("@hono/node-server");
+  const { serveStaticFiles } = await import("./lib/vite");
+  serveStaticFiles(app);
+
+  const port = parseInt(process.env.PORT || "3000");
+  serve({ fetch: app.fetch, port }, () => {
+    console.log(`Server running on http://localhost:${port}/`);
+  });
+}
 
 export default app;

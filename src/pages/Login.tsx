@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,19 +7,6 @@ import { MessageCircle, Shield, ArrowLeft, UserPlus, LogIn, Eye, EyeOff, AlertCi
 import { Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { toast } from "sonner";
-
-declare global {
-  interface Window {
-    grecaptcha?: {
-      ready: (cb: () => void) => void;
-      execute: (siteKey: string, options: { action: string }) => Promise<string>;
-      render: (container: string | HTMLElement, options: { sitekey: string; callback: (token: string) => void }) => number;
-      reset: (widgetId?: number) => void;
-    };
-  }
-}
-
-const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY;
 
 function PasswordRequirements({ password }: { password: string }) {
   const reqs = [
@@ -49,27 +36,6 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [recaptchaToken, setRecaptchaToken] = useState<string | undefined>();
-  const [recaptchaWidgetId, setRecaptchaWidgetId] = useState<number | undefined>();
-
-  useEffect(() => {
-    const handler = (e: Event) => setRecaptchaToken((e as CustomEvent).detail);
-    window.addEventListener("recaptcha-verify", handler);
-    return () => window.removeEventListener("recaptcha-verify", handler);
-  }, []);
-
-  useEffect(() => {
-    if (mode === "register" && window.grecaptcha && !recaptchaWidgetId && RECAPTCHA_SITE_KEY) {
-      const container = document.getElementById("recaptcha-container");
-      if (container) {
-        const id = window.grecaptcha.render(container, {
-          sitekey: RECAPTCHA_SITE_KEY,
-          callback: (token: string) => setRecaptchaToken(token),
-        });
-        setRecaptchaWidgetId(id);
-      }
-    }
-  }, [mode, recaptchaWidgetId]);
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => { toast.success("Welcome back!"); navigate("/"); },
@@ -85,10 +51,9 @@ export default function Login() {
     e.preventDefault();
     setError("");
     if (mode === "login") {
-      loginMutation.mutate({ username, password, recaptchaToken });
+      loginMutation.mutate({ username, password });
     } else {
-      if (!recaptchaToken) { setError("Please complete the CAPTCHA."); return; }
-      registerMutation.mutate({ username, password, email: email || undefined, recaptchaToken });
+      registerMutation.mutate({ username, password, email: email || undefined });
     }
   };
 
@@ -140,12 +105,6 @@ export default function Login() {
                 </div>
                 {mode === "register" && password && <PasswordRequirements password={password} />}
               </div>
-              {mode === "register" && (
-                <div className="space-y-2">
-                  <div id="recaptcha-container" />
-                  {!recaptchaToken && <p className="text-xs text-muted-foreground">Complete the CAPTCHA above to register.</p>}
-                </div>
-              )}
               <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
                 {isLoading ? (mode === "login" ? "Signing in..." : "Creating account...") : (
                   <>{mode === "login" ? <LogIn className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}{mode === "login" ? "Sign In" : "Create Account"}</>

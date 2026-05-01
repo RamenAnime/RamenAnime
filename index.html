@@ -22,11 +22,5 @@
         });
       }
     </script>
-    <script>
-      window.onRecaptchaVerify = function(token) {
-        window.dispatchEvent(new CustomEvent('recaptcha-verify', { detail: token }));
-      };
-    </script>
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   </body>
 </html>

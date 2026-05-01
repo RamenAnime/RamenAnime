@@ -5,7 +5,6 @@ import { userProfiles, forumPosts, forumComments, friends } from "@db/schema";
 import { eq, desc, asc } from "drizzle-orm";
 
 export const socialRouter = createRouter({
-  // ─── Profiles ───
   getProfile: publicQuery
     .input(z.object({ userId: z.number() }))
     .query(async ({ input }) => {
@@ -29,37 +28,45 @@ export const socialRouter = createRouter({
   createOrUpdateProfile: authedQuery
     .input(
       z.object({
-        displayName: z.string().max(100).optional(),
-        headline: z.string().max(255).optional(),
-        aboutMe: z.string().optional(),
-        interests: z.string().optional(),
-        favoriteAnime: z.string().optional(),
-        favoriteGames: z.string().optional(),
-        profileSong: z.string().max(500).optional(),
-        profileSongUrl: z.string().max(500).optional(),
-        backgroundColor: z.string().max(20).optional(),
-        backgroundImage: z.string().optional(),
-        textColor: z.string().max(20).optional(),
-        accentColor: z.string().max(20).optional(),
-        mood: z.string().max(100).optional(),
-        location: z.string().max(100).optional(),
-        website: z.string().max(255).optional(),
+        displayName: z.string().max(100).optional().or(z.literal("")),
+        headline: z.string().max(255).optional().or(z.literal("")),
+        aboutMe: z.string().optional().or(z.literal("")),
+        interests: z.string().optional().or(z.literal("")),
+        favoriteAnime: z.string().optional().or(z.literal("")),
+        favoriteGames: z.string().optional().or(z.literal("")),
+        profileSong: z.string().max(500).optional().or(z.literal("")),
+        profileSongUrl: z.string().max(500).optional().or(z.literal("")),
+        backgroundColor: z.string().max(20).optional().or(z.literal("")),
+        backgroundImage: z.string().optional().or(z.literal("")),
+        textColor: z.string().max(20).optional().or(z.literal("")),
+        accentColor: z.string().max(20).optional().or(z.literal("")),
+        mood: z.string().max(100).optional().or(z.literal("")),
+        location: z.string().max(100).optional().or(z.literal("")),
+        website: z.string().max(255).optional().or(z.literal("")),
         isPublic: z.boolean().optional(),
       })
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
+      // Remove empty strings
+      const data: any = {};
+      for (const [key, value] of Object.entries(input)) {
+        if (value !== "" && value !== undefined) {
+          data[key] = value;
+        }
+      }
+
       const existing = await db.query.userProfiles.findFirst({
         where: eq(userProfiles.userId, ctx.user.id),
       });
       if (existing) {
-        await db.update(userProfiles).set(input).where(eq(userProfiles.id, existing.id));
+        await db.update(userProfiles).set(data).where(eq(userProfiles.id, existing.id));
         return db.query.userProfiles.findFirst({
           where: eq(userProfiles.id, existing.id),
           with: { user: true },
         });
       } else {
-        await db.insert(userProfiles).values({ userId: ctx.user.id, ...input });
+        await db.insert(userProfiles).values({ userId: ctx.user.id, ...data });
         return db.query.userProfiles.findFirst({
           where: eq(userProfiles.userId, ctx.user.id),
           with: { user: true },
@@ -76,37 +83,28 @@ export const socialRouter = createRouter({
     });
   }),
 
-  // ─── Forum Posts ───
   listPosts: publicQuery
-    .input(
-      z.object({
-        category: z.string().optional(),
-        limit: z.number().min(1).max(50).default(20),
-        offset: z.number().min(0).default(0),
-      })
-    )
+    .input(z.object({ category: z.string().optional(), limit: z.number().min(1).max(50).default(20), offset: z.number().min(0).default(0) }))
     .query(async ({ input }) => {
       const db = getDb();
       const whereClause = input.category ? eq(forumPosts.category, input.category) : undefined;
-      const posts = await db.query.forumPosts.findMany({
+      return db.query.forumPosts.findMany({
         where: whereClause,
         with: { author: true },
         orderBy: [desc(forumPosts.isPinned), desc(forumPosts.createdAt)],
         limit: input.limit,
         offset: input.offset,
       });
-      return posts;
     }),
 
   getPost: publicQuery
     .input(z.object({ postId: z.number() }))
     .query(async ({ input }) => {
       const db = getDb();
-      const post = await db.query.forumPosts.findFirst({
+      return db.query.forumPosts.findFirst({
         where: eq(forumPosts.id, input.postId),
         with: { author: true, comments: { with: { author: true } } },
-      });
-      return post ?? null;
+      }) ?? null;
     }),
 
   createPost: authedQuery
@@ -125,7 +123,6 @@ export const socialRouter = createRouter({
       return { success: true };
     }),
 
-  // ─── Comments ───
   listComments: publicQuery
     .input(z.object({ postId: z.number() }))
     .query(async ({ input }) => {
@@ -145,14 +142,12 @@ export const socialRouter = createRouter({
       return { success: true };
     }),
 
-  // ─── Friends ───
   listFriends: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    const rows = await db.query.friends.findMany({
+    return db.query.friends.findMany({
       where: eq(friends.addresseeId, ctx.user.id),
       with: { requester: true },
     });
-    return rows;
   }),
 
   sendFriendRequest: authedQuery

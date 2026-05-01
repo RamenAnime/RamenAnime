@@ -20,7 +20,6 @@ import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
 import NotFound from './pages/NotFound'
-import TosReacceptanceModal from './components/TosReacceptanceModal'
 
 export default function App() {
   return (
@@ -49,7 +48,6 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
-          <TosReacceptanceModal />
           <Footer />
         </div>
       </EnhancedAgeGate>

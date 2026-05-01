@@ -71,8 +71,35 @@ function ProfileContent() {
     return (
       <div className="min-h-screen py-12">
         <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Profile not found</h1>
-          <p className="text-muted-foreground">This user hasn't set up their profile yet.</p>
+          <h1 className="text-2xl font-bold text-foreground mb-4">
+            {isMyProfile ? "Welcome! Set up your profile" : "Profile not found"}
+          </h1>
+          <p className="text-muted-foreground mb-6">
+            {isMyProfile
+              ? "Create your MySpace-style profile to share with the community."
+              : "This user hasn't set up their profile yet."}
+          </p>
+          {isMyProfile && (
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Edit3 className="mr-2 h-5 w-5" />
+                  Set Up Profile
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Create Your Profile</DialogTitle>
+                </DialogHeader>
+                <ProfileEditForm
+                  profile={{}}
+                  onSave={(data) => updateProfile.mutate(data)}
+                  isPending={updateProfile.isPending}
+                  accentColor="#d4a853"
+                />
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
       </div>
     );
@@ -267,7 +294,7 @@ function ProfileContent() {
                     Favorite Anime
                   </h3>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>
-                    {profile.favoriteAnime ?? "Not specified"}
+                    {profile.favoriteAnime ?? "No favorites yet."}
                   </p>
                 </CardContent>
               </Card>
@@ -278,13 +305,13 @@ function ProfileContent() {
                     Favorite Games
                   </h3>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>
-                    {profile.favoriteGames ?? "Not specified"}
+                    {profile.favoriteGames ?? "No favorites yet."}
                   </p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Recent Posts */}
+            {/* Recent Forum Posts */}
             <Card className="border-0 shadow-lg" style={{ backgroundColor: "#111", borderColor: accentColor + "30" }}>
               <CardContent className="p-5">
                 <h3 className="font-bold text-lg mb-4 flex items-center gap-2" style={{ color: accentColor }}>
@@ -321,21 +348,21 @@ function ProfileEditForm({
   accentColor: string;
 }) {
   const [form, setForm] = useState({
-    displayName: profile.displayName ?? "",
-    headline: profile.headline ?? "",
-    aboutMe: profile.aboutMe ?? "",
-    interests: profile.interests ?? "",
-    favoriteAnime: profile.favoriteAnime ?? "",
-    favoriteGames: profile.favoriteGames ?? "",
-    profileSong: profile.profileSong ?? "",
-    profileSongUrl: profile.profileSongUrl ?? "",
-    backgroundColor: profile.backgroundColor ?? "#0a0a0a",
-    backgroundImage: profile.backgroundImage ?? "",
-    textColor: profile.textColor ?? "#e5e5e5",
-    accentColor: profile.accentColor ?? "#d4a853",
-    mood: profile.mood ?? "",
-    location: profile.location ?? "",
-    website: profile.website ?? "",
+    displayName: profile?.displayName ?? "",
+    headline: profile?.headline ?? "",
+    aboutMe: profile?.aboutMe ?? "",
+    interests: profile?.interests ?? "",
+    favoriteAnime: profile?.favoriteAnime ?? "",
+    favoriteGames: profile?.favoriteGames ?? "",
+    profileSong: profile?.profileSong ?? "",
+    profileSongUrl: profile?.profileSongUrl ?? "",
+    backgroundColor: profile?.backgroundColor ?? "#0a0a0a",
+    backgroundImage: profile?.backgroundImage ?? "",
+    textColor: profile?.textColor ?? "#e5e5e5",
+    accentColor: profile?.accentColor ?? "#d4a853",
+    mood: profile?.mood ?? "",
+    location: profile?.location ?? "",
+    website: profile?.website ?? "",
   });
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));

@@ -32,7 +32,7 @@ export default function Privacy() {
                 <h2 className="text-xl font-semibold text-foreground">1. Introduction</h2>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                Ramen Anime ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal data when you visit our website, use our social forum, marketplace, or any related services (collectively, the "Services").
+                ラーメンアニメ ("we," "us," or "our") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal data when you visit our website, use our social forum, marketplace, or any related services (collectively, the "Services").
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 This policy complies with applicable privacy laws across all jurisdictions where we operate, including the California Consumer Privacy Act (CCPA) and California Privacy Rights Act (CPRA) in the United States, the Act on the Protection of Personal Information (APPI) in Japan, the Personal Information Protection and Electronic Documents Act (PIPEDA) in Canada, the Personal Information Protection Act (PIPA) in South Korea, and the General Data Protection Regulation (GDPR) in the European Union and France.

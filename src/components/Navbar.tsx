@@ -41,7 +41,7 @@ export default function Navbar() {
             ラ
           </div>
           <span className="hidden sm:inline font-semibold text-foreground tracking-tight">
-            Ramen Anime
+            ラーメンアニメ
           </span>
         </Link>
 
@@ -126,7 +126,7 @@ export default function Navbar() {
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-[10px]">
                     ラ
                   </div>
-                  Ramen Anime
+                  ラーメンアニメ
                 </SheetTitle>
               </SheetHeader>
               <div className="mt-6 flex flex-col gap-2">

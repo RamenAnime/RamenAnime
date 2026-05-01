@@ -32,7 +32,7 @@ export default function Terms() {
                 <h2 className="text-xl font-semibold text-foreground">1. Acceptance of Terms</h2>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                By accessing or using the Ramen Anime website, social forum, marketplace, and any related services (collectively, the "Services"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not use the Services. These Terms apply to all visitors, users, and others who access or use the Services, regardless of their jurisdiction.
+                By accessing or using the ラーメンアニメ website, social forum, marketplace, and any related services (collectively, the "Services"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not use the Services. These Terms apply to all visitors, users, and others who access or use the Services, regardless of their jurisdiction.
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 You must be at least 18 years of age to use the Services, or at least 13 years of age with verifiable parental or guardian consent. By using the Services, you represent and warrant that you meet these age requirements and that you have the legal capacity to enter into a binding contract in your jurisdiction.
@@ -87,10 +87,10 @@ export default function Terms() {
                 <h2 className="text-xl font-semibold text-foreground">4. Content & Intellectual Property</h2>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                You retain ownership of any content you post to the Services ("User Content"). By posting User Content, you grant Ramen Anime a non-exclusive, royalty-free, worldwide, sublicensable license to use, display, reproduce, modify, adapt, publish, and distribute your content solely for the purpose of operating, promoting, and improving the Services. This license survives termination of your account solely for the purpose of preserving community discussions.
+                You retain ownership of any content you post to the Services ("User Content"). By posting User Content, you grant ラーメンアニメ a non-exclusive, royalty-free, worldwide, sublicensable license to use, display, reproduce, modify, adapt, publish, and distribute your content solely for the purpose of operating, promoting, and improving the Services. This license survives termination of your account solely for the purpose of preserving community discussions.
               </p>
               <p className="text-muted-foreground leading-relaxed">
-                All anime character designs, trading card artwork, and related intellectual property displayed on the Services belong to their respective copyright holders. Ramen Anime does not claim ownership of third-party intellectual property. Our 3D printed designs and fan-made creations are intended for personal, non-commercial use and fall under applicable fair use, fair dealing, or quotation provisions in the relevant jurisdictions (e.g., 17 U.S.C. § 107 in the United States; Article 32 of the Japanese Copyright Act; Article L.122-5 of the French Intellectual Property Code).
+                All anime character designs, trading card artwork, and related intellectual property displayed on the Services belong to their respective copyright holders. ラーメンアニメ does not claim ownership of third-party intellectual property. Our 3D printed designs and fan-made creations are intended for personal, non-commercial use and fall under applicable fair use, fair dealing, or quotation provisions in the relevant jurisdictions (e.g., 17 U.S.C. § 107 in the United States; Article 32 of the Japanese Copyright Act; Article L.122-5 of the French Intellectual Property Code).
               </p>
               <p className="text-muted-foreground leading-relaxed">
                 If you believe any content on the Services infringes your copyright or other intellectual property rights, please contact us at ramenanime@protonmail.com with a detailed notice including: (a) identification of the copyrighted work claimed to be infringed, (b) identification of the allegedly infringing material, (c) your contact information, (d) a statement of good faith belief, (e) a statement of accuracy under penalty of perjury, and (f) your electronic or physical signature.
@@ -105,14 +105,14 @@ export default function Terms() {
                 <h2 className="text-xl font-semibold text-foreground">5. Marketplace Terms</h2>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                The Ramen Anime User Marketplace is a platform where registered users may list new or used anime goods, trading cards, 3D printed items, and related merchandise for sale or trade. By using the marketplace, you agree to the following:
+                The ラーメンアニメ User Marketplace is a platform where registered users may list new or used anime goods, trading cards, 3D printed items, and related merchandise for sale or trade. By using the marketplace, you agree to the following:
               </p>
               <ul className="list-disc list-inside space-y-2 text-muted-foreground text-sm">
-                <li><strong>No Direct Payment Processing:</strong> Ramen Anime does not process payments between buyers and sellers. All transactions must be arranged independently between the parties (e.g., through eBay, PayPal, bank transfer, or other mutually agreed methods).</li>
+                <li><strong>No Direct Payment Processing:</strong> ラーメンアニメ does not process payments between buyers and sellers. All transactions must be arranged independently between the parties (e.g., through eBay, PayPal, bank transfer, or other mutually agreed methods).</li>
                 <li><strong>Accurate Listings:</strong> You must provide accurate descriptions, prices, conditions, and images for all listings. Misrepresentation of items is strictly prohibited.</li>
                 <li><strong>Prohibited Items:</strong> You may not list: (a) counterfeit or pirated goods, (b) items that violate intellectual property rights, (c) illegal items under any applicable law, (d) weapons, drugs, or hazardous materials, (e) items that promote hate speech or discrimination.</li>
-                <li><strong>Buyer/Seller Responsibility:</strong> Ramen Anime is not a party to any transaction between marketplace users. We do not guarantee the quality, safety, or legality of items listed, nor the accuracy of listings. Buyers and sellers assume all risks associated with marketplace transactions.</li>
-                <li><strong>Dispute Resolution:</strong> Any disputes between marketplace users must be resolved directly between the parties. Ramen Anime may, at its sole discretion, assist in dispute resolution but is under no obligation to do so.</li>
+                <li><strong>Buyer/Seller Responsibility:</strong> ラーメンアニメ is not a party to any transaction between marketplace users. We do not guarantee the quality, safety, or legality of items listed, nor the accuracy of listings. Buyers and sellers assume all risks associated with marketplace transactions.</li>
+                <li><strong>Dispute Resolution:</strong> Any disputes between marketplace users must be resolved directly between the parties. ラーメンアニメ may, at its sole discretion, assist in dispute resolution but is under no obligation to do so.</li>
                 <li><strong>Tax Compliance:</strong> Sellers are solely responsible for complying with all applicable tax laws, including sales tax, VAT, GST, and income tax reporting requirements in their jurisdiction.</li>
               </ul>
             </CardContent>
@@ -186,7 +186,7 @@ export default function Terms() {
                 <h2 className="text-xl font-semibold text-foreground">9. Indemnification</h2>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                You agree to defend, indemnify, and hold harmless Ramen Anime, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses (including reasonable legal fees) arising out of or in any way connected with: (a) your access to or use of the Services; (b) your User Content; (c) your violation of these Terms; (d) your violation of any third-party right, including intellectual property, privacy, or publicity rights; (e) your marketplace transactions with other users.
+                You agree to defend, indemnify, and hold harmless ラーメンアニメ, its officers, directors, employees, and agents from and against any claims, liabilities, damages, losses, and expenses (including reasonable legal fees) arising out of or in any way connected with: (a) your access to or use of the Services; (b) your User Content; (c) your violation of these Terms; (d) your violation of any third-party right, including intellectual property, privacy, or publicity rights; (e) your marketplace transactions with other users.
               </p>
             </CardContent>
           </Card>

@@ -15,7 +15,7 @@ export default function Footer() {
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-xs">
                 ラ
               </div>
-              <span className="font-semibold text-foreground">Ramen Anime</span>
+              <span className="font-semibold text-foreground">ラーメンアニメ</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">
               {t("hero.subtitle")}

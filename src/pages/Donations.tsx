@@ -154,7 +154,7 @@ export default function Donations() {
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
             <Heart className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground">Support Ramen Anime</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground">Support ラーメンアニメ</h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
             Your donations help us grow the community, improve the marketplace, and create more custom anime merchandise. Every contribution matters!
           </p>

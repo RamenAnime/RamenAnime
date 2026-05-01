@@ -92,6 +92,13 @@ export default function Navbar() {
                   </AvatarFallback>
                 </Avatar>
               </Link>
+              {user?.role === "admin" && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="icon" className="text-primary">
+                    <Shield className="h-5 w-5" />
+                  </Button>
+                </Link>
+              )}
               <Button variant="ghost" size="icon" onClick={logout}>
                 <LogOut className="h-4 w-4 text-muted-foreground" />
               </Button>
@@ -170,11 +177,9 @@ export default function Navbar() {
                     </Link>
                     <Link
                       to="/friends"
-                    {user?.role === "admin" && (<Link to="/admin" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1"><Shield className="h-4 w-4" />Admin</Link>)}
                       onClick={() => setOpen(false)}
                       className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                         isActive("/friends")
-                    {user?.role === "admin" && (<Link to="/admin" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1"><Shield className="h-4 w-4" />Admin</Link>)}
                           ? "text-primary bg-primary/10"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       }`}
@@ -182,6 +187,20 @@ export default function Navbar() {
                       <Package className="h-4 w-4" />
                       {t("nav.friends")}
                     </Link>
+                    {user?.role === "admin" && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setOpen(false)}
+                        className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
+                          isActive("/admin")
+                            ? "text-primary bg-primary/10"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        <Shield className="h-4 w-4" />
+                        Admin
+                      </Link>
+                    )}
                     <button
                       onClick={() => { logout(); setOpen(false); }}
                       className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full text-left"

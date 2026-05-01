@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="ラーメンアニメ" />
-    <meta name="description" content="ラーメンアニメ - Your one-stop shop for custom 3D printed anime goods and trading cards. Connect with fellow anime fans on our social forum." />
+    <meta name="description" content="ラーメンアニメ - Your one-stop shop for custom 3D printed anime goods and trading cards." />
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>ラーメンアニメ</title>
@@ -22,5 +22,11 @@
         });
       }
     </script>
+    <script>
+      window.onRecaptchaVerify = function(token) {
+        window.dispatchEvent(new CustomEvent('recaptcha-verify', { detail: token }));
+      };
+    </script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   </body>
 </html>

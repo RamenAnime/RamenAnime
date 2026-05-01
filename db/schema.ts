@@ -181,6 +181,17 @@ export const donations = mysqlTable("donations", {
 export type Donation = typeof donations.$inferSelect;
 export type InsertDonation = typeof donations.$inferInsert;
 
+export const passwordResetTokens = mysqlTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull().unique(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, { fields: [users.id], references: [userProfiles.userId] }),
   posts: many(forumPosts),
@@ -222,5 +233,4 @@ export const geoVerificationsRelations = relations(geoVerifications, ({ one }) =
 
 export const idVerificationsRelations = relations(idVerifications, ({ one }) => ({
   user: one(users, { fields: [idVerifications.userId], references: [users.id] }),
-  reviewer: one(users, { fields: [idVerifications.reviewedBy], references: [users.id] }),
 }));

@@ -1,25 +1,25 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Shield, AlertTriangle, Loader2, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, Shield } from "lucide-react";
 
 const AGE_KEY = "ramen_anime_age_verified_v2";
 
 export default function EnhancedAgeGate({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [age, setAge] = useState("");
   const [error, setError] = useState("");
-  const [done, setDone] = useState(false);
+  const [verified, setVerified] = useState(() => {
+    try { return localStorage.getItem(AGE_KEY) === "true"; } catch { return false; }
+  });
 
   const submitAge = trpc.geo.submitAgeVerification.useMutation({
     onSuccess: () => {
       localStorage.setItem(AGE_KEY, "true");
-      setDone(true);
+      setVerified(true);
       setError("");
     },
     onError: (err) => setError(err.message),
@@ -34,31 +34,19 @@ export default function EnhancedAgeGate({ children }: { children: React.ReactNod
     submitAge.mutate({ age: ageNum });
   };
 
-  const isVerified = localStorage.getItem(AGE_KEY) === "true";
-
-  if (isVerified || done) return <>{children}</>;
+  if (verified) return <>{children}</>;
 
   return (
     <div className="fixed inset-0 z-[150] bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card className="bg-card/90 border-border/50 backdrop-blur-sm shadow-2xl">
-          <CardContent className="p-6 md:p-8 space-y-6 text-center">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-xl mx-auto">
-              ラ
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">{t("ageGate.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("ageGate.subtitle")}</p>
-
-            <div className="bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground space-y-2 text-left">
-              <p className="font-medium text-foreground">Legal compliance:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>USA: COPPA & CCPA</li>
-                <li>Canada: PIPEDA</li>
-                <li>Japan: APPI</li>
-                <li>South Korea: Youth Protection Act</li>
-                <li>China: PIPL real-name rules</li>
-                <li>France/EU: GDPR</li>
-              </ul>
+          <CardContent className="p-6 space-y-6">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-xl mx-auto">
+                ラ
+              </div>
+              <h1 className="text-2xl font-bold text-foreground">{t("ageGate.title")}</h1>
+              <p className="text-sm text-muted-foreground">You must be 18 years or older to access this website.</p>
             </div>
 
             {error && (
@@ -82,21 +70,15 @@ export default function EnhancedAgeGate({ children }: { children: React.ReactNod
             </div>
 
             <div className="flex flex-col gap-3">
-              <Button
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={verifyAge}
-                disabled={submitAge.isPending}
-              >
-                {submitAge.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={verifyAge} disabled={submitAge.isPending}>
+                <Shield className="mr-2 h-4 w-4" />
                 {submitAge.isPending ? "Verifying..." : "Confirm Age & Continue"}
               </Button>
-              <Button variant="outline" onClick={() => window.location.href = "https://google.com"}>
-                Exit
-              </Button>
+              <Button variant="outline" onClick={() => window.location.href = "https://google.com"}>Exit</Button>
             </div>
 
-            <p className="text-xs text-muted-foreground">
-              By proceeding, you agree that false age declarations may result in account termination.
+            <p className="text-xs text-muted-foreground text-center">
+              By continuing, you confirm you are of legal age in your jurisdiction.
             </p>
           </CardContent>
         </Card>

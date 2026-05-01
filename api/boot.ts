@@ -21,33 +21,37 @@ async function runMigrations() {
     const db = getDb();
     console.log("[migrate] Database connected");
 
+    // Add username column (nullable so existing rows aren't affected)
     try {
-      await db.execute("ALTER TABLE users ADD COLUMN username VARCHAR(50) UNIQUE AFTER unionId");
+      await db.execute("ALTER TABLE users ADD COLUMN username VARCHAR(50) NULL UNIQUE AFTER unionId");
       console.log("[migrate] Added username column");
     } catch (e: any) {
-      if (e.message?.includes("Duplicate") || e.message?.includes("already exists")) {
+      if (e.message?.includes("Duplicate") || e.message?.includes("already exists") || e.message?.includes("Exists")) {
         console.log("[migrate] username column already exists");
       } else { console.error("[migrate] username error:", e.message); }
     }
 
+    // Add password_hash column (nullable so existing rows aren't affected)
     try {
-      await db.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) AFTER username");
+      await db.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER username");
       console.log("[migrate] Added password_hash column");
     } catch (e: any) {
-      if (e.message?.includes("Duplicate") || e.message?.includes("already exists")) {
+      if (e.message?.includes("Duplicate") || e.message?.includes("already exists") || e.message?.includes("Exists")) {
         console.log("[migrate] password_hash column already exists");
       } else { console.error("[migrate] password_hash error:", e.message); }
     }
 
+    // Add auth_type column (has default value, so existing rows get 'oauth')
     try {
       await db.execute("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL AFTER password_hash");
       console.log("[migrate] Added auth_type column");
     } catch (e: any) {
-      if (e.message?.includes("Duplicate") || e.message?.includes("already exists")) {
+      if (e.message?.includes("Duplicate") || e.message?.includes("already exists") || e.message?.includes("Exists")) {
         console.log("[migrate] auth_type column already exists");
       } else { console.error("[migrate] auth_type error:", e.message); }
     }
 
+    // Create password_reset_tokens table
     try {
       await db.execute(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

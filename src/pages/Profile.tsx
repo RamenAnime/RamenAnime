@@ -76,7 +76,7 @@ function ProfileContent() {
           </h1>
           <p className="text-muted-foreground mb-6">
             {isMyProfile
-              ? "Create your MySpace-style profile to share with the community."
+              ? "Set up your profile to connect with the community."
               : "This user hasn't set up their profile yet."}
           </p>
           {isMyProfile && (

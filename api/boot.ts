@@ -42,11 +42,22 @@ app.get("/api/run-migration", async (c) => {
 
   try {
     const mysql = await import("mysql2/promise");
+
+    // Parse database name from URL
+    const urlObj = new URL(dbUrl);
+    const database = urlObj.pathname.replace("/", "") || "test";
+
     conn = await mysql.createConnection({
-      uri: dbUrl,
+      host: urlObj.hostname,
+      port: parseInt(urlObj.port || "4000"),
+      user: decodeURIComponent(urlObj.username),
+      password: decodeURIComponent(urlObj.password),
+      database,
       connectTimeout: 60000,
       ssl: { rejectUnauthorized: false }
     });
+
+    results.push(`Connected to database: ${database}`);
 
     // Step 1: add username
     try {

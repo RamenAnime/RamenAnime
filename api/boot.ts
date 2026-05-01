@@ -7,12 +7,54 @@ import { createContext } from "./context";
 import { env } from "./lib/env";
 import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
+import mysql from "mysql2/promise";
 
 const ALLOWED_COUNTRIES = ["US", "CA", "JP", "KR", "CN", "FR"];
-const BLOCKED_MESSAGE = JSON.stringify({
-  error: "This service is only available in the United States, Canada, Japan, South Korea, China, and France.",
-  code: "GEO_BLOCKED",
-});
+
+// ─── Auto database migration on startup ───
+async function runMigrations() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) { console.log("[migrate] No DATABASE_URL, skipping migrations"); return; }
+  try {
+    const conn = await mysql.createConnection(dbUrl);
+    console.log("[migrate] Connected to database");
+
+    // Add missing columns to users table
+    const [cols] = await conn.execute("SHOW COLUMNS FROM users") as any;
+    const names = cols.map((c: any) => c.Field);
+
+    if (!names.includes("username")) {
+      await conn.execute("ALTER TABLE users ADD COLUMN username VARCHAR(50) UNIQUE AFTER unionId");
+      console.log("[migrate] Added username column");
+    }
+    if (!names.includes("password_hash")) {
+      await conn.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) AFTER username");
+      console.log("[migrate] Added password_hash column");
+    }
+    if (!names.includes("auth_type")) {
+      await conn.execute("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL AFTER password_hash");
+      console.log("[migrate] Added auth_type column");
+    }
+
+    // Create password_reset_tokens table
+    await conn.execute(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      userId BIGINT UNSIGNED NOT NULL UNIQUE,
+      token VARCHAR(255) NOT NULL UNIQUE,
+      expiresAt TIMESTAMP NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    )`);
+    console.log("[migrate] password_reset_tokens table ready");
+
+    await conn.end();
+    console.log("[migrate] All migrations complete");
+  } catch (err: any) {
+    console.error("[migrate] Error:", err.message);
+  }
+}
+
+// Run migrations immediately on module load (before server starts)
+runMigrations();
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
@@ -20,13 +62,11 @@ app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 
 // ─── Geoblocking Middleware ───
 app.use("/api/*", async (c, next) => {
-  // Skip geoblock for health checks, OAuth callback, and public country-check endpoint
   const path = c.req.path;
   if (path === "/api/ping" || path === Paths.oauthCallback || path.includes("geo.checkAccess")) {
     return next();
   }
 
-  // Get country from header (set by frontend) or IP
   const countryHeader = c.req.header("X-Country-Code");
   if (countryHeader) {
     const country = countryHeader.toUpperCase();
@@ -35,11 +75,6 @@ app.use("/api/*", async (c, next) => {
     }
   }
 
-  // Also check IP if no header
-  const clientIP = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") ||
-    (c.env ? (c.env as any).incoming?.socket?.remoteAddress : null) || "unknown";
-
-  // Allow unknown IPs through (will be checked client-side)
   return next();
 });
 
@@ -58,14 +93,3 @@ app.use("/api/trpc/*", async (c) => {
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;
-
-if (env.isProduction) {
-  const { serve } = await import("@hono/node-server");
-  const { serveStaticFiles } = await import("./lib/vite");
-  serveStaticFiles(app);
-
-  const port = parseInt(process.env.PORT || "3000");
-  serve({ fetch: app.fetch, port }, () => {
-    console.log(`Server running on http://localhost:${port}/`);
-  });
-}

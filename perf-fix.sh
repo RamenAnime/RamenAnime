@@ -1,3 +1,184 @@
+#!/bin/bash
+set -e
+
+echo "========================================"
+echo "  Fixing Profile Save + Performance"
+echo "========================================"
+echo ""
+
+# 1. Fix the backend profile insert (TiDB doesn't support $returningId well)
+cat << 'SOCIALEOF' > api/social-router.ts
+import { z } from "zod";
+import { createRouter, publicQuery, authedQuery } from "./middleware";
+import { getDb } from "./queries/connection";
+import { userProfiles, forumPosts, forumComments, friends } from "@db/schema";
+import { eq, desc, asc } from "drizzle-orm";
+
+export const socialRouter = createRouter({
+  // ─── Profiles ───
+  getProfile: publicQuery
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const profile = await db.query.userProfiles.findFirst({
+        where: eq(userProfiles.userId, input.userId),
+        with: { user: true },
+      });
+      return profile ?? null;
+    }),
+
+  getMyProfile: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const profile = await db.query.userProfiles.findFirst({
+      where: eq(userProfiles.userId, ctx.user.id),
+      with: { user: true },
+    });
+    return profile ?? null;
+  }),
+
+  createOrUpdateProfile: authedQuery
+    .input(
+      z.object({
+        displayName: z.string().max(100).optional(),
+        headline: z.string().max(255).optional(),
+        aboutMe: z.string().optional(),
+        interests: z.string().optional(),
+        favoriteAnime: z.string().optional(),
+        favoriteGames: z.string().optional(),
+        profileSong: z.string().max(500).optional(),
+        profileSongUrl: z.string().max(500).optional(),
+        backgroundColor: z.string().max(20).optional(),
+        backgroundImage: z.string().optional(),
+        textColor: z.string().max(20).optional(),
+        accentColor: z.string().max(20).optional(),
+        mood: z.string().max(100).optional(),
+        location: z.string().max(100).optional(),
+        website: z.string().max(255).optional(),
+        isPublic: z.boolean().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const existing = await db.query.userProfiles.findFirst({
+        where: eq(userProfiles.userId, ctx.user.id),
+      });
+      if (existing) {
+        await db.update(userProfiles).set(input).where(eq(userProfiles.id, existing.id));
+        return db.query.userProfiles.findFirst({
+          where: eq(userProfiles.id, existing.id),
+          with: { user: true },
+        });
+      } else {
+        await db.insert(userProfiles).values({ userId: ctx.user.id, ...input });
+        return db.query.userProfiles.findFirst({
+          where: eq(userProfiles.userId, ctx.user.id),
+          with: { user: true },
+        });
+      }
+    }),
+
+  listProfiles: publicQuery.query(async () => {
+    const db = getDb();
+    return db.query.userProfiles.findMany({
+      where: eq(userProfiles.isPublic, true),
+      with: { user: true },
+      orderBy: desc(userProfiles.updatedAt),
+    });
+  }),
+
+  // ─── Forum Posts ───
+  listPosts: publicQuery
+    .input(
+      z.object({
+        category: z.string().optional(),
+        limit: z.number().min(1).max(50).default(20),
+        offset: z.number().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = getDb();
+      const whereClause = input.category ? eq(forumPosts.category, input.category) : undefined;
+      const posts = await db.query.forumPosts.findMany({
+        where: whereClause,
+        with: { author: true },
+        orderBy: [desc(forumPosts.isPinned), desc(forumPosts.createdAt)],
+        limit: input.limit,
+        offset: input.offset,
+      });
+      return posts;
+    }),
+
+  getPost: publicQuery
+    .input(z.object({ postId: z.number() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const post = await db.query.forumPosts.findFirst({
+        where: eq(forumPosts.id, input.postId),
+        with: { author: true, comments: { with: { author: true } } },
+      });
+      return post ?? null;
+    }),
+
+  createPost: authedQuery
+    .input(z.object({ title: z.string().min(1).max(255), content: z.string().min(1), category: z.string().default("general") }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      await db.insert(forumPosts).values({ authorId: ctx.user.id, title: input.title, content: input.content, category: input.category });
+      return { success: true };
+    }),
+
+  likePost: authedQuery
+    .input(z.object({ postId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db.update(forumPosts).set({ likes: 1 }).where(eq(forumPosts.id, input.postId));
+      return { success: true };
+    }),
+
+  // ─── Comments ───
+  listComments: publicQuery
+    .input(z.object({ postId: z.number() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      return db.query.forumComments.findMany({
+        where: eq(forumComments.postId, input.postId),
+        with: { author: true },
+        orderBy: asc(forumComments.createdAt),
+      });
+    }),
+
+  createComment: authedQuery
+    .input(z.object({ postId: z.number(), content: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      await db.insert(forumComments).values({ postId: input.postId, authorId: ctx.user.id, content: input.content });
+      return { success: true };
+    }),
+
+  // ─── Friends ───
+  listFriends: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const rows = await db.query.friends.findMany({
+      where: eq(friends.addresseeId, ctx.user.id),
+      with: { requester: true },
+    });
+    return rows;
+  }),
+
+  sendFriendRequest: authedQuery
+    .input(z.object({ addresseeId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      await db.insert(friends).values({ requesterId: ctx.user.id, addresseeId: input.addresseeId });
+      return { success: true };
+    }),
+});
+SOCIALEOF
+
+echo "[1/4] Fixed api/social-router.ts (removed $returningId)"
+
+# 2. Fix frontend Profile page with error handling + loading state
+cat << 'PROFILEEOF' > src/pages/Profile.tsx
 import { useParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -283,3 +464,105 @@ export default function Profile() {
     </TosGate>
   );
 }
+PROFILEEOF
+
+echo "[2/4] Fixed src/pages/Profile.tsx (added error handling, loading spinner, page refresh)"
+
+# 3. Add code splitting to App.tsx for performance
+cat << 'APPEOF' > src/App.tsx
+import { Suspense, lazy } from 'react'
+import { Routes, Route } from 'react-router'
+import GeoBlock from '@/components/GeoBlock'
+import EnhancedAgeGate from '@/components/EnhancedAgeGate'
+import Navbar from './components/Navbar'
+import Footer from './components/Footer'
+import Home from './pages/Home'
+import NotFound from './pages/NotFound'
+
+const Shop = lazy(() => import('./pages/Shop'))
+const Prints3D = lazy(() => import('./pages/Prints3D'))
+const TradingCards = lazy(() => import('./pages/TradingCards'))
+const Contact = lazy(() => import('./pages/Contact'))
+const Terms = lazy(() => import('./pages/Terms'))
+const Privacy = lazy(() => import('./pages/Privacy'))
+const Social = lazy(() => import('./pages/Social'))
+const ForumPost = lazy(() => import('./pages/ForumPost'))
+const Profile = lazy(() => import('./pages/Profile'))
+const Friends = lazy(() => import('./pages/Friends'))
+const Marketplace = lazy(() => import('./pages/Marketplace'))
+const Donations = lazy(() => import('./pages/Donations'))
+const Login = lazy(() => import('./pages/Login'))
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const Admin = lazy(() => import('./pages/Admin'))
+
+function PageLoader() {
+  return (
+    <div className="min-h-[50vh] flex items-center justify-center">
+      <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+    </div>
+  )
+}
+
+export default function App() {
+  return (
+    <GeoBlock>
+      <EnhancedAgeGate>
+        <div className="min-h-screen flex flex-col bg-background">
+          <Navbar />
+          <main className="flex-1">
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/3d-prints" element={<Prints3D />} />
+                <Route path="/trading-cards" element={<TradingCards />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/donate" element={<Donations />} />
+                <Route path="/social" element={<Social />} />
+                <Route path="/post/:id" element={<ForumPost />} />
+                <Route path="/profile/:id" element={<Profile />} />
+                <Route path="/friends" element={<Friends />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </main>
+          <Footer />
+        </div>
+      </EnhancedAgeGate>
+    </GeoBlock>
+  )
+}
+APPEOF
+
+echo "[3/4] Added code splitting to src/App.tsx (faster initial load)"
+
+# 4. Commit and push
+git add -A
+git commit -m "fix: profile save with error handling + code splitting for perf" && git push origin main || echo "Commit/push issue"
+
+echo ""
+echo "========================================"
+echo "  CHANGES SUMMARY"
+echo "========================================"
+echo "Profile Save Fix:"
+echo "  - Removed TiDB-incompatible \$returningId"
+echo "  - Added error handling (toast on failure)"
+echo "  - Added loading spinner during save"
+echo "  - Auto-refreshes page after successful save"
+echo ""
+echo "Performance Fix:"
+echo "  - Added React.lazy code splitting"
+echo "  - Only Home/NotFound load immediately"
+echo "  - Other pages load on-demand"
+echo "  - Should cut initial bundle significantly"
+echo ""
+echo "Deploy: Manual Deploy > Clear Build Cache & Deploy"
+echo "========================================"

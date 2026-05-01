@@ -14,7 +14,6 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 
 app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 
-// ─── Geoblocking Middleware ───
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
   if (path === "/api/ping" || path === Paths.oauthCallback || path.includes("geo.checkAccess") || path === "/api/run-migration") {
@@ -32,7 +31,6 @@ app.use("/api/*", async (c, next) => {
   return next();
 });
 
-// ─── One-click database migration ───
 app.get("/api/run-migration", async (c) => {
   const dbUrl = process.env.DATABASE_URL;
   if (!dbUrl) return c.json({ error: "No DATABASE_URL" }, 500);
@@ -49,23 +47,40 @@ app.get("/api/run-migration", async (c) => {
     });
     results.push("Connected");
 
-    // Add username column (no AFTER, no UNIQUE — TiDB compatible)
+    // Create users table if it doesn't exist (with all columns)
     try {
-      await conn.query("ALTER TABLE users ADD COLUMN username VARCHAR(50)");
+      await conn.query(`CREATE TABLE IF NOT EXISTS users (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        unionId VARCHAR(255) NULL UNIQUE,
+        username VARCHAR(50) NULL UNIQUE,
+        password_hash VARCHAR(255) NULL,
+        auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL,
+        name VARCHAR(255) NULL,
+        email VARCHAR(320) NULL,
+        avatar TEXT NULL,
+        role ENUM('user','admin') DEFAULT 'user' NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+        lastSignInAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`);
+      results.push("users table ready");
+    } catch (e: any) {
+      results.push("users table: " + e.message);
+    }
+
+    // If users table already exists, try adding columns individually
+    try {
+      await conn.query("ALTER TABLE users ADD COLUMN username VARCHAR(50) NULL UNIQUE");
       results.push("Added username");
     } catch (e: any) {
       results.push("username: " + (e.message || "exists"));
     }
-
-    // Add password_hash column (no AFTER)
     try {
-      await conn.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)");
+      await conn.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL");
       results.push("Added password_hash");
     } catch (e: any) {
       results.push("password_hash: " + (e.message || "exists"));
     }
-
-    // Add auth_type column (no AFTER)
     try {
       await conn.query("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL");
       results.push("Added auth_type");
@@ -82,7 +97,7 @@ app.get("/api/run-migration", async (c) => {
         expiresAt TIMESTAMP NOT NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
       )`);
-      results.push("Created password_reset_tokens");
+      results.push("password_reset_tokens ready");
     } catch (e: any) {
       results.push("password_reset_tokens: " + e.message);
     }
@@ -111,7 +126,6 @@ app.use("/api/trpc/*", async (c) => {
 
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
-// ─── Production Server Startup ───
 if (env.isProduction) {
   const { serve } = await import("@hono/node-server");
   const { serveStaticFiles } = await import("./lib/vite");

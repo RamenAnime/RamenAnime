@@ -1,5 +1,6 @@
 import * as cookie from "cookie";
-import * as bcrypt from "bcryptjs";
+import { randomBytes, scrypt } from "crypto";
+import { promisify } from "util";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { Session } from "@contracts/constants";
@@ -8,6 +9,20 @@ import { createRouter, publicQuery, authedQuery } from "./middleware";
 import { findUserByUsername, findUserById, createLocalUser, updateLastSignIn, countAdmins } from "./queries/users";
 import { signSessionToken } from "./kimi/session";
 import { env } from "./lib/env";
+
+const scryptAsync = promisify(scrypt);
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+async function verifyPassword(stored: string, supplied: string): Promise<boolean> {
+  const [hashed, salt] = stored.split(".");
+  const buf = (await scryptAsync(supplied, salt, 64)) as Buffer;
+  return buf.toString("hex") === hashed;
+}
 
 export const authRouter = createRouter({
   me: authedQuery.query((opts) => {
@@ -32,7 +47,7 @@ export const authRouter = createRouter({
     .mutation(async ({ input, ctx }) => {
       const existing = await findUserByUsername(input.username);
       if (existing) throw new TRPCError({ code: "CONFLICT", message: "Username already taken." });
-      const passwordHash = await bcrypt.hash(input.password, 12);
+      const passwordHash = await hashPassword(input.password);
       const adminCount = await countAdmins();
       const role = adminCount === 0 ? "admin" : "user";
       const insertResult = await createLocalUser({ username: input.username, passwordHash, name: input.username, email: input.email, role });
@@ -52,7 +67,7 @@ export const authRouter = createRouter({
     .mutation(async ({ input, ctx }) => {
       const user = await findUserByUsername(input.username);
       if (!user || !user.passwordHash) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid username or password." });
-      const valid = await bcrypt.compare(input.password, user.passwordHash);
+      const valid = await verifyPassword(user.passwordHash, input.password);
       if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid username or password." });
       await updateLastSignIn(user.id);
       const token = await signSessionToken({ userId: user.id, clientId: env.appId });

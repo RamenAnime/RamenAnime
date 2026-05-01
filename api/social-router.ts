@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, publicQuery, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { userProfiles, forumPosts, forumComments, friends } from "@db/schema";
+import { userProfiles, forumPosts, forumComments, friends, users } from "@db/schema";
 import { eq, desc, asc } from "drizzle-orm";
 
 export const socialRouter = createRouter({
@@ -9,20 +9,20 @@ export const socialRouter = createRouter({
     .input(z.object({ userId: z.number() }))
     .query(async ({ input }) => {
       const db = getDb();
-      const profile = await db.query.userProfiles.findFirst({
-        where: eq(userProfiles.userId, input.userId),
-        with: { user: true },
-      });
-      return profile ?? null;
+      const profiles = await db.select().from(userProfiles).where(eq(userProfiles.userId, input.userId)).limit(1);
+      const p = profiles[0];
+      if (!p) return null;
+      const userRows = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      return { ...p, user: userRows[0] ?? null };
     }),
 
   getMyProfile: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    const profile = await db.query.userProfiles.findFirst({
-      where: eq(userProfiles.userId, ctx.user.id),
-      with: { user: true },
-    });
-    return profile ?? null;
+    const profiles = await db.select().from(userProfiles).where(eq(userProfiles.userId, ctx.user.id)).limit(1);
+    const p = profiles[0];
+    if (!p) return null;
+    const userRows = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+    return { ...p, user: userRows[0] ?? null };
   }),
 
   createOrUpdateProfile: authedQuery
@@ -48,63 +48,50 @@ export const socialRouter = createRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-      // Remove empty strings
       const data: any = {};
       for (const [key, value] of Object.entries(input)) {
-        if (value !== "" && value !== undefined) {
-          data[key] = value;
-        }
+        if (value !== "" && value !== undefined) data[key] = value;
       }
 
-      const existing = await db.query.userProfiles.findFirst({
-        where: eq(userProfiles.userId, ctx.user.id),
-      });
-      if (existing) {
-        await db.update(userProfiles).set(data).where(eq(userProfiles.id, existing.id));
-        return db.query.userProfiles.findFirst({
-          where: eq(userProfiles.id, existing.id),
-          with: { user: true },
-        });
+      const existing = await db.select().from(userProfiles).where(eq(userProfiles.userId, ctx.user.id)).limit(1);
+      if (existing[0]) {
+        await db.update(userProfiles).set(data).where(eq(userProfiles.id, existing[0].id));
       } else {
         await db.insert(userProfiles).values({ userId: ctx.user.id, ...data });
-        return db.query.userProfiles.findFirst({
-          where: eq(userProfiles.userId, ctx.user.id),
-          with: { user: true },
-        });
       }
-    }),
 
-  listProfiles: publicQuery.query(async () => {
-    const db = getDb();
-    return db.query.userProfiles.findMany({
-      where: eq(userProfiles.isPublic, true),
-      with: { user: true },
-      orderBy: desc(userProfiles.updatedAt),
-    });
-  }),
+      const profiles = await db.select().from(userProfiles).where(eq(userProfiles.userId, ctx.user.id)).limit(1);
+      const p = profiles[0];
+      if (!p) return null;
+      const userRows = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+      return { ...p, user: userRows[0] ?? null };
+    }),
 
   listPosts: publicQuery
     .input(z.object({ category: z.string().optional(), limit: z.number().min(1).max(50).default(20), offset: z.number().min(0).default(0) }))
     .query(async ({ input }) => {
       const db = getDb();
-      const whereClause = input.category ? eq(forumPosts.category, input.category) : undefined;
-      return db.query.forumPosts.findMany({
-        where: whereClause,
-        with: { author: true },
-        orderBy: [desc(forumPosts.isPinned), desc(forumPosts.createdAt)],
-        limit: input.limit,
-        offset: input.offset,
-      });
+      const rows = await db.select().from(forumPosts).orderBy(desc(forumPosts.createdAt)).limit(input.limit).offset(input.offset);
+      return Promise.all(rows.map(async (p) => {
+        const u = await db.select().from(users).where(eq(users.id, p.authorId)).limit(1);
+        return { ...p, author: u[0] ?? null };
+      }));
     }),
 
   getPost: publicQuery
     .input(z.object({ postId: z.number() }))
     .query(async ({ input }) => {
       const db = getDb();
-      return db.query.forumPosts.findFirst({
-        where: eq(forumPosts.id, input.postId),
-        with: { author: true, comments: { with: { author: true } } },
-      }) ?? null;
+      const posts = await db.select().from(forumPosts).where(eq(forumPosts.id, input.postId)).limit(1);
+      const post = posts[0];
+      if (!post) return null;
+      const u = await db.select().from(users).where(eq(users.id, post.authorId)).limit(1);
+      const comments = await db.select().from(forumComments).where(eq(forumComments.postId, input.postId)).orderBy(asc(forumComments.createdAt));
+      const commentsWithAuthors = await Promise.all(comments.map(async (c) => {
+        const cu = await db.select().from(users).where(eq(users.id, c.authorId)).limit(1);
+        return { ...c, author: cu[0] ?? null };
+      }));
+      return { ...post, author: u[0] ?? null, comments: commentsWithAuthors };
     }),
 
   createPost: authedQuery
@@ -113,25 +100,6 @@ export const socialRouter = createRouter({
       const db = getDb();
       await db.insert(forumPosts).values({ authorId: ctx.user.id, title: input.title, content: input.content, category: input.category });
       return { success: true };
-    }),
-
-  likePost: authedQuery
-    .input(z.object({ postId: z.number() }))
-    .mutation(async ({ input }) => {
-      const db = getDb();
-      await db.update(forumPosts).set({ likes: 1 }).where(eq(forumPosts.id, input.postId));
-      return { success: true };
-    }),
-
-  listComments: publicQuery
-    .input(z.object({ postId: z.number() }))
-    .query(async ({ input }) => {
-      const db = getDb();
-      return db.query.forumComments.findMany({
-        where: eq(forumComments.postId, input.postId),
-        with: { author: true },
-        orderBy: asc(forumComments.createdAt),
-      });
     }),
 
   createComment: authedQuery
@@ -144,10 +112,11 @@ export const socialRouter = createRouter({
 
   listFriends: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    return db.query.friends.findMany({
-      where: eq(friends.addresseeId, ctx.user.id),
-      with: { requester: true },
-    });
+    const rows = await db.select().from(friends).where(eq(friends.addresseeId, ctx.user.id));
+    return Promise.all(rows.map(async (f) => {
+      const u = await db.select().from(users).where(eq(users.id, f.requesterId)).limit(1);
+      return { ...f, requester: u[0] ?? null };
+    }));
   }),
 
   sendFriendRequest: authedQuery

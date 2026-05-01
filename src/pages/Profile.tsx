@@ -43,8 +43,8 @@ function ProfileContent() {
       console.log("[Profile] Save success:", result);
       toast.success("Profile saved!");
       setEditOpen(false);
-      utils.social.getProfile.invalidate({ userId: profileUserId });
-      utils.social.getMyProfile.invalidate();
+      utils.social.getProfile.setData({ userId: profileUserId }, data);
+      utils.social.getMyProfile.setData(undefined, data);
       setTimeout(() => window.location.reload(), 500);
     },
     onError: (err) => {
@@ -67,7 +67,7 @@ function ProfileContent() {
   }, [updateProfile]);
 
   const sendFriendRequest = trpc.social.sendFriendRequest.useMutation({
-    onSuccess: () => { utils.social.listFriends.invalidate(); toast.success("Friend request sent!"); },
+    onSuccess: (data) => { utils.social.listFriends.invalidate(); toast.success("Friend request sent!"); },
     onError: (err) => toast.error(err.message),
   });
 

@@ -1,15 +1,12 @@
-import { useState } from "react";
+import os
+os.chdir(os.path.expanduser('~/RamenAnime'))
+code = r'''import { useState } from "react";
 import { Link, useLocation } from "react-router";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -86,7 +83,7 @@ export default function Navbar() {
             <Link to="/donate" className={`text-sm font-medium transition-colors ${isActive("/donate") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
               {t("nav.donate")}
             </Link>
-            {isAuthenticated ? null : (
+            {!isAuthenticated && (
               <Link to="/login" className={`text-sm font-medium transition-colors ${isActive("/login") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
                 {t("nav.login")}
               </Link>
@@ -200,7 +197,7 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {isAuthenticated ? null : (
+                  {!isAuthenticated && (
                     <Link to="/login" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-primary bg-primary/10">
                       {t("nav.login")}
                     </Link>
@@ -220,3 +217,7 @@ export default function Navbar() {
     </nav>
   );
 }
+'''
+with open('src/components/Navbar.tsx', 'w') as f:
+    f.write(code)
+print('Navbar.tsx written')

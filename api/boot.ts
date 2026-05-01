@@ -42,48 +42,38 @@ app.get("/api/run-migration", async (c) => {
 
   try {
     const mysql = await import("mysql2/promise");
-
-    // Parse database name from URL
-    const urlObj = new URL(dbUrl);
-    const database = urlObj.pathname.replace("/", "") || "test";
-
     conn = await mysql.createConnection({
-      host: urlObj.hostname,
-      port: parseInt(urlObj.port || "4000"),
-      user: decodeURIComponent(urlObj.username),
-      password: decodeURIComponent(urlObj.password),
-      database,
+      uri: dbUrl,
       connectTimeout: 60000,
       ssl: { rejectUnauthorized: false }
     });
+    results.push("Connected");
 
-    results.push(`Connected to database: ${database}`);
-
-    // Step 1: add username
+    // Add username column (no AFTER, no UNIQUE — TiDB compatible)
     try {
-      await conn.query("ALTER TABLE users ADD COLUMN username VARCHAR(50) NULL");
-      results.push("Added username column");
+      await conn.query("ALTER TABLE users ADD COLUMN username VARCHAR(50)");
+      results.push("Added username");
     } catch (e: any) {
       results.push("username: " + (e.message || "exists"));
     }
 
-    // Step 2: add password_hash
+    // Add password_hash column (no AFTER)
     try {
-      await conn.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL");
-      results.push("Added password_hash column");
+      await conn.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)");
+      results.push("Added password_hash");
     } catch (e: any) {
       results.push("password_hash: " + (e.message || "exists"));
     }
 
-    // Step 3: add auth_type
+    // Add auth_type column (no AFTER)
     try {
       await conn.query("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL");
-      results.push("Added auth_type column");
+      results.push("Added auth_type");
     } catch (e: any) {
       results.push("auth_type: " + (e.message || "exists"));
     }
 
-    // Step 4: create password_reset_tokens
+    // Create password_reset_tokens table
     try {
       await conn.query(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -92,7 +82,7 @@ app.get("/api/run-migration", async (c) => {
         expiresAt TIMESTAMP NOT NULL,
         createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
       )`);
-      results.push("Created password_reset_tokens table");
+      results.push("Created password_reset_tokens");
     } catch (e: any) {
       results.push("password_reset_tokens: " + e.message);
     }

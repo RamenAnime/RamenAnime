@@ -7,37 +7,37 @@ import { createContext } from "./context";
 import { env } from "./lib/env";
 import { createOAuthCallbackHandler } from "./kimi/auth";
 import { Paths } from "@contracts/constants";
-import mysql from "mysql2/promise";
 
 const ALLOWED_COUNTRIES = ["US", "CA", "JP", "KR", "CN", "FR"];
 
-// ─── Auto database migration on startup ───
+// ─── Auto database migration (runs in background, doesn't block server start) ───
 async function runMigrations() {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) { console.log("[migrate] No DATABASE_URL, skipping migrations"); return; }
   try {
-    const conn = await mysql.createConnection(dbUrl);
-    console.log("[migrate] Connected to database");
+    // Use dynamic import so schema modules load first
+    const { getDb } = await import("./queries/connection");
+    const db = getDb();
+    console.log("[migrate] Database connected");
 
-    // Add missing columns to users table
-    const [cols] = await conn.execute("SHOW COLUMNS FROM users") as any;
+    // Check and add missing columns to users table
+    const columnsResult = await db.execute("SHOW COLUMNS FROM users");
+    const cols = Array.isArray(columnsResult) ? columnsResult[0] : columnsResult;
     const names = cols.map((c: any) => c.Field);
 
     if (!names.includes("username")) {
-      await conn.execute("ALTER TABLE users ADD COLUMN username VARCHAR(50) UNIQUE AFTER unionId");
+      await db.execute("ALTER TABLE users ADD COLUMN username VARCHAR(50) UNIQUE AFTER unionId");
       console.log("[migrate] Added username column");
     }
     if (!names.includes("password_hash")) {
-      await conn.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) AFTER username");
+      await db.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) AFTER username");
       console.log("[migrate] Added password_hash column");
     }
     if (!names.includes("auth_type")) {
-      await conn.execute("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL AFTER password_hash");
+      await db.execute("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL AFTER password_hash");
       console.log("[migrate] Added auth_type column");
     }
 
     // Create password_reset_tokens table
-    await conn.execute(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    await db.execute(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
       id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       userId BIGINT UNSIGNED NOT NULL UNIQUE,
       token VARCHAR(255) NOT NULL UNIQUE,
@@ -45,16 +45,11 @@ async function runMigrations() {
       createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
     )`);
     console.log("[migrate] password_reset_tokens table ready");
-
-    await conn.end();
     console.log("[migrate] All migrations complete");
   } catch (err: any) {
     console.error("[migrate] Error:", err.message);
   }
 }
-
-// Run migrations immediately on module load (before server starts)
-runMigrations();
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
@@ -91,5 +86,8 @@ app.use("/api/trpc/*", async (c) => {
 });
 
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
+
+// Start migrations in the background after a short delay (let server start first)
+setTimeout(runMigrations, 2000);
 
 export default app;

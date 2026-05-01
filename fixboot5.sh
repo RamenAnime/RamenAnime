@@ -1,0 +1,155 @@
+#!/bin/bash
+set -e
+
+echo "Fix: Go back to private endpoint + fix ALTER TABLE syntax..."
+
+cat << 'BOOTEEOF' > api/boot.ts
+import { Hono } from "hono";
+import { bodyLimit } from "hono/body-limit";
+import type { HttpBindings } from "@hono/node-server";
+import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
+import { appRouter } from "./router";
+import { createContext } from "./context";
+import { env } from "./lib/env";
+import { createOAuthCallbackHandler } from "./kimi/auth";
+import { Paths } from "@contracts/constants";
+
+const ALLOWED_COUNTRIES = ["US", "CA", "JP", "KR", "CN", "FR"];
+
+const app = new Hono<{ Bindings: HttpBindings }>();
+
+app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
+
+// ─── Geoblocking Middleware ───
+app.use("/api/*", async (c, next) => {
+  const path = c.req.path;
+  if (path === "/api/ping" || path === Paths.oauthCallback || path.includes("geo.checkAccess") || path === "/api/run-migration") {
+    return next();
+  }
+
+  const countryHeader = c.req.header("X-Country-Code");
+  if (countryHeader) {
+    const country = countryHeader.toUpperCase();
+    if (!ALLOWED_COUNTRIES.includes(country)) {
+      return c.json({ error: "GEO_BLOCKED", message: "Service not available in your country." }, 403);
+    }
+  }
+
+  return next();
+});
+
+// ─── One-click database migration ───
+app.get("/api/run-migration", async (c) => {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) return c.json({ error: "No DATABASE_URL" }, 500);
+
+  let conn: any = null;
+  const results: string[] = [];
+
+  try {
+    const mysql = await import("mysql2/promise");
+    conn = await mysql.createConnection({
+      uri: dbUrl,
+      connectTimeout: 60000,
+      ssl: { rejectUnauthorized: false }
+    });
+    results.push("Connected");
+
+    // Add username column (no AFTER, no UNIQUE — TiDB compatible)
+    try {
+      await conn.query("ALTER TABLE users ADD COLUMN username VARCHAR(50)");
+      results.push("Added username");
+    } catch (e: any) {
+      results.push("username: " + (e.message || "exists"));
+    }
+
+    // Add password_hash column (no AFTER)
+    try {
+      await conn.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)");
+      results.push("Added password_hash");
+    } catch (e: any) {
+      results.push("password_hash: " + (e.message || "exists"));
+    }
+
+    // Add auth_type column (no AFTER)
+    try {
+      await conn.query("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL");
+      results.push("Added auth_type");
+    } catch (e: any) {
+      results.push("auth_type: " + (e.message || "exists"));
+    }
+
+    // Create password_reset_tokens table
+    try {
+      await conn.query(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        userId BIGINT UNSIGNED NOT NULL UNIQUE,
+        token VARCHAR(255) NOT NULL UNIQUE,
+        expiresAt TIMESTAMP NOT NULL,
+        createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )`);
+      results.push("Created password_reset_tokens");
+    } catch (e: any) {
+      results.push("password_reset_tokens: " + e.message);
+    }
+
+    await conn.end();
+    return c.json({ success: true, results });
+  } catch (err: any) {
+    if (conn) {
+      try { await conn.end(); } catch (_) { /* ignore */ }
+    }
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
+app.get(Paths.oauthCallback, createOAuthCallbackHandler());
+app.get("/api/ping", (c) => c.json({ ok: true, ts: Date.now() }));
+
+app.use("/api/trpc/*", async (c) => {
+  return fetchRequestHandler({
+    endpoint: "/api/trpc",
+    req: c.req.raw,
+    router: appRouter,
+    createContext,
+  });
+});
+
+app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
+
+// ─── Production Server Startup ───
+if (env.isProduction) {
+  const { serve } = await import("@hono/node-server");
+  const { serveStaticFiles } = await import("./lib/vite");
+  serveStaticFiles(app);
+
+  const port = parseInt(process.env.PORT || "3000");
+  serve({ fetch: app.fetch, port }, () => {
+    console.log(`Server running on http://localhost:${port}/`);
+  });
+}
+
+export default app;
+BOOTEEOF
+
+echo ""
+echo "========================================"
+echo "IMPORTANT: Change DATABASE_URL back to"
+echo "your OLD private endpoint URL in Render"
+echo "========================================"
+echo ""
+echo "Go to https://dashboard.render.com"
+echo "Click ramen-anime > Environment"
+echo "Edit DATABASE_URL and paste this:"
+echo ""
+echo "mysql://Ex6YbWnzvLcCpBP.root:6zqpRfTM4LODqp4WtDRUyHAEbzD4KGCj@ep-t4ni387b5e83b7519dc8.epsrv-t4n281l4mrmemi4zls9a.ap-southeast-1.privatelink.aliyuncs.com:4000/19ddeb04-2732-8e28-8000-09abf9cd6e93"
+echo ""
+echo "Save Changes, then deploy:"
+echo "  Manual Deploy > Clear Build Cache & Deploy"
+echo ""
+echo "Then visit:"
+echo "  https://ramen-anime-denj.onrender.com/api/run-migration"
+echo ""
+
+git add api/boot.ts
+git commit -m "fix: TiDB-compatible ALTER TABLE (no AFTER, no UNIQUE on nullable)" && git push origin main || echo "Push failed"

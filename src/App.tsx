@@ -19,6 +19,7 @@ import Donations from './pages/Donations'
 import Login from './pages/Login'
 import ForgotPassword from './pages/ForgotPassword'
 import ResetPassword from './pages/ResetPassword'
+import Admin from './pages/Admin'
 import NotFound from './pages/NotFound'
 
 export default function App() {
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>

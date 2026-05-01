@@ -4,6 +4,7 @@ import { tosRouter } from "./tos-router";
 import { marketplaceRouter } from "./marketplace-router";
 import { geoRouter } from "./geo-router";
 import { donationRouter } from "./donation-router";
+import { adminRouter } from "./admin-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -14,6 +15,7 @@ export const appRouter = createRouter({
   marketplace: marketplaceRouter,
   geo: geoRouter,
   donation: donationRouter,
+  admin: adminRouter,
 });
 
 export type AppRouter = typeof appRouter;

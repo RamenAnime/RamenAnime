@@ -170,9 +170,11 @@ export default function Navbar() {
                     </Link>
                     <Link
                       to="/friends"
+                    {user?.role === "admin" && (<Link to="/admin" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1"><Shield className="h-4 w-4" />Admin</Link>)}
                       onClick={() => setOpen(false)}
                       className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
                         isActive("/friends")
+                    {user?.role === "admin" && (<Link to="/admin" className="text-sm font-medium hover:text-primary transition-colors flex items-center gap-1"><Shield className="h-4 w-4" />Admin</Link>)}
                           ? "text-primary bg-primary/10"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       }`}

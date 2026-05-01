@@ -1,3 +1,14 @@
+#!/bin/bash
+echo "[Block C] Writing Login page, render.yaml, fixing package.json, git push..."
+
+if [ ! -f "package.json" ]; then
+  echo "ERROR: Run this from inside your RamenAnime project folder"
+  exit 1
+fi
+
+mkdir -p src/pages
+
+cat << 'EOF' > src/pages/Login.tsx
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,3 +101,65 @@ export default function Login() {
     </div>
   );
 }
+EOF
+
+cat << 'EOF' > render.yaml
+services:
+  - type: web
+    name: ramen-anime
+    runtime: node
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: npm install --include=dev && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/ping
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: APP_ID
+        sync: false
+      - key: APP_SECRET
+        sync: false
+      - key: VITE_APP_ID
+        sync: false
+      - key: VITE_KIMI_AUTH_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: KIMI_AUTH_URL
+        sync: false
+      - key: KIMI_OPEN_URL
+        sync: false
+      - key: OWNER_UNION_ID
+        sync: false
+EOF
+
+# Fix package.json: add bcryptjs to deps, remove external flag, fix start script
+if ! grep -q '"bcryptjs"' package.json; then
+  sed -i 's/"@trpc\/server": "\^11.8.1",/"@trpc\/server": "^11.8.1",\n    "bcryptjs": "^3.0.3",/' package.json
+fi
+sed -i 's/--external:bcryptjs //g' package.json
+sed -i 's/"start": "tsx api\/boot.ts"/"start": "node dist\/boot.js"/g' package.json
+
+echo "Git add + commit + push..."
+git add -A
+git commit -m "feat: direct username/password auth + ラーメンアニメ branding" || echo "(nothing new to commit)"
+
+echo ""
+echo "============================================"
+echo "PUSH TO GITHUB:"
+echo "============================================"
+if git remote -v > /dev/null 2>&1; then
+  git push origin main
+  echo ""
+  echo "Done! Now go to Render Dashboard > ramen-anime"
+  echo "Click: Manual Deploy > Clear Build Cache & Deploy"
+else
+  echo "No git remote found. Add your GitHub repo:"
+  echo "  git remote add origin https://github.com/RamenAnime/RamenAnime.git"
+  echo "  git push origin main"
+fi
+echo ""

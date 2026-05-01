@@ -5,13 +5,7 @@ import { TRPCError } from "@trpc/server";
 import { Session } from "@contracts/constants";
 import { getSessionCookieOptions } from "./lib/cookies";
 import { createRouter, publicQuery, authedQuery } from "./middleware";
-import {
-  findUserByUsername,
-  findUserById,
-  createLocalUser,
-  updateLastSignIn,
-  countAdmins,
-} from "./queries/users";
+import { findUserByUsername, findUserById, createLocalUser, updateLastSignIn, countAdmins } from "./queries/users";
 import { signSessionToken } from "./kimi/session";
 import { env } from "./lib/env";
 
@@ -23,141 +17,49 @@ export const authRouter = createRouter({
 
   logout: authedQuery.mutation(async ({ ctx }) => {
     const opts = getSessionCookieOptions(ctx.req.headers);
-    ctx.resHeaders.append(
-      "set-cookie",
-      cookie.serialize(Session.cookieName, "", {
-        httpOnly: opts.httpOnly,
-        path: opts.path,
-        sameSite: opts.sameSite?.toLowerCase() as "lax" | "none",
-        secure: opts.secure,
-        maxAge: 0,
-      }),
-    );
+    ctx.resHeaders.append("set-cookie", cookie.serialize(Session.cookieName, "", {
+      httpOnly: opts.httpOnly, path: opts.path, sameSite: opts.sameSite?.toLowerCase() as "lax" | "none", secure: opts.secure, maxAge: 0,
+    }));
     return { success: true };
   }),
 
   register: publicQuery
-    .input(
-      z.object({
-        username: z
-          .string()
-          .min(3)
-          .max(30)
-          .regex(/^[a-zA-Z0-9_]+$/),
-        password: z.string().min(6).max(100),
-        email: z.string().email().optional(),
-      }),
-    )
+    .input(z.object({
+      username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_]+$/),
+      password: z.string().min(6).max(100),
+      email: z.string().email().optional(),
+    }))
     .mutation(async ({ input, ctx }) => {
       const existing = await findUserByUsername(input.username);
-      if (existing) {
-        throw new TRPCError({
-          code: "CONFLICT",
-          message: "Username already taken.",
-        });
-      }
-
+      if (existing) throw new TRPCError({ code: "CONFLICT", message: "Username already taken." });
       const passwordHash = await bcrypt.hash(input.password, 12);
-
       const adminCount = await countAdmins();
       const role = adminCount === 0 ? "admin" : "user";
-
-      const insertResult = await createLocalUser({
-        username: input.username,
-        passwordHash,
-        name: input.username,
-        email: input.email,
-        role,
-      });
-
+      const insertResult = await createLocalUser({ username: input.username, passwordHash, name: input.username, email: input.email, role });
       const userId = Number((insertResult as any).insertId);
       const user = await findUserById(userId);
-      if (!user) {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Failed to create user.",
-        });
-      }
-
-      const token = await signSessionToken({
-        userId: user.id,
-        clientId: env.appId,
-      });
-
+      if (!user) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create user." });
+      const token = await signSessionToken({ userId: user.id, clientId: env.appId });
       const cookieOpts = getSessionCookieOptions(ctx.req.headers);
-      ctx.resHeaders.append(
-        "set-cookie",
-        cookie.serialize(Session.cookieName, token, {
-          httpOnly: cookieOpts.httpOnly,
-          path: cookieOpts.path,
-          sameSite: cookieOpts.sameSite?.toLowerCase() as "lax" | "none",
-          secure: cookieOpts.secure,
-          maxAge: Session.maxAgeMs / 1000,
-        }),
-      );
-
-      return {
-        success: true,
-        user: {
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          role: user.role,
-        },
-      };
+      ctx.resHeaders.append("set-cookie", cookie.serialize(Session.cookieName, token, {
+        httpOnly: cookieOpts.httpOnly, path: cookieOpts.path, sameSite: cookieOpts.sameSite?.toLowerCase() as "lax" | "none", secure: cookieOpts.secure, maxAge: Session.maxAgeMs / 1000,
+      }));
+      return { success: true, user: { id: user.id, username: user.username, name: user.name, role: user.role } };
     }),
 
   login: publicQuery
-    .input(
-      z.object({
-        username: z.string().min(1),
-        password: z.string().min(1),
-      }),
-    )
+    .input(z.object({ username: z.string().min(1), password: z.string().min(1) }))
     .mutation(async ({ input, ctx }) => {
       const user = await findUserByUsername(input.username);
-      if (!user || !user.passwordHash) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid username or password.",
-        });
-      }
-
+      if (!user || !user.passwordHash) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid username or password." });
       const valid = await bcrypt.compare(input.password, user.passwordHash);
-      if (!valid) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "Invalid username or password.",
-        });
-      }
-
+      if (!valid) throw new TRPCError({ code: "UNAUTHORIZED", message: "Invalid username or password." });
       await updateLastSignIn(user.id);
-
-      const token = await signSessionToken({
-        userId: user.id,
-        clientId: env.appId,
-      });
-
+      const token = await signSessionToken({ userId: user.id, clientId: env.appId });
       const cookieOpts = getSessionCookieOptions(ctx.req.headers);
-      ctx.resHeaders.append(
-        "set-cookie",
-        cookie.serialize(Session.cookieName, token, {
-          httpOnly: cookieOpts.httpOnly,
-          path: cookieOpts.path,
-          sameSite: cookieOpts.sameSite?.toLowerCase() as "lax" | "none",
-          secure: cookieOpts.secure,
-          maxAge: Session.maxAgeMs / 1000,
-        }),
-      );
-
-      return {
-        success: true,
-        user: {
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          role: user.role,
-        },
-      };
+      ctx.resHeaders.append("set-cookie", cookie.serialize(Session.cookieName, token, {
+        httpOnly: cookieOpts.httpOnly, path: cookieOpts.path, sameSite: cookieOpts.sameSite?.toLowerCase() as "lax" | "none", secure: cookieOpts.secure, maxAge: Session.maxAgeMs / 1000,
+      }));
+      return { success: true, user: { id: user.id, username: user.username, name: user.name, role: user.role } };
     }),
 });

@@ -1,3 +1,14 @@
+#!/bin/bash
+echo "[Block A] Writing schema + auth types + session + auth handler..."
+
+if [ ! -f "package.json" ]; then
+  echo "ERROR: Run this from inside your RamenAnime project folder"
+  exit 1
+fi
+
+mkdir -p db api/kimi api/queries
+
+cat << 'EOF' > db/schema.ts
 import {
   mysqlTable,
   mysqlEnum,
@@ -224,3 +235,163 @@ export const idVerificationsRelations = relations(idVerifications, ({ one }) => 
   user: one(users, { fields: [idVerifications.userId], references: [users.id] }),
   reviewer: one(users, { fields: [idVerifications.reviewedBy], references: [users.id] }),
 }));
+EOF
+
+cat << 'EOF' > api/kimi/types.ts
+export type TokenResponse = {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token?: string;
+  scope: string;
+};
+
+export type SessionPayload = {
+  unionId?: string;
+  userId?: number;
+  clientId: string;
+};
+
+export type UserProfile = {
+  user_id: string;
+  name: string;
+  avatar_url: string;
+};
+EOF
+
+cat << 'EOF' > api/kimi/session.ts
+import * as jose from "jose";
+import { env } from "../lib/env";
+import type { SessionPayload } from "./types";
+
+const JWT_ALG = "HS256";
+
+export async function signSessionToken(payload: SessionPayload): Promise<string> {
+  const secret = new TextEncoder().encode(env.appSecret);
+  return new jose.SignJWT(payload)
+    .setProtectedHeader({ alg: JWT_ALG })
+    .setIssuedAt()
+    .setExpirationTime("1 year")
+    .sign(secret);
+}
+
+export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
+  if (!token) {
+    console.warn("[session] No token provided for verification.");
+    return null;
+  }
+  try {
+    const secret = new TextEncoder().encode(env.appSecret);
+    const { payload } = await jose.jwtVerify(token, secret, { algorithms: [JWT_ALG] });
+    const { unionId, userId, clientId } = payload;
+    if ((!unionId && !userId) || !clientId) {
+      console.warn("[session] JWT payload missing required fields.");
+      return null;
+    }
+    return { unionId, userId, clientId } as SessionPayload;
+  } catch (error) {
+    console.warn("[session] JWT verification failed:", error);
+    return null;
+  }
+}
+EOF
+
+cat << 'EOF' > api/kimi/auth.ts
+import type { Context } from "hono";
+import { setCookie } from "hono/cookie";
+import * as jose from "jose";
+import * as cookie from "cookie";
+import { env } from "../lib/env";
+import { getSessionCookieOptions } from "../lib/cookies";
+import { Session } from "@contracts/constants";
+import { Errors } from "@contracts/errors";
+import { signSessionToken, verifySessionToken } from "./session";
+import { users as kimiUsers } from "./platform";
+import { findUserByUnionId, findUserById, upsertUser } from "../queries/users";
+import type { TokenResponse } from "./types";
+
+async function exchangeAuthCode(code: string, redirectUri: string): Promise<TokenResponse> {
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    code,
+    client_id: env.appId,
+    redirect_uri: redirectUri,
+    client_secret: env.appSecret,
+  });
+  const resp = await fetch(`${env.kimiAuthUrl}/api/oauth/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+  if (!resp.ok) {
+    const text = await resp.text();
+    throw new Error(`Token exchange failed (${resp.status}): ${text}`);
+  }
+  return resp.json() as Promise<TokenResponse>;
+}
+
+const jwks = jose.createRemoteJWKSet(new URL(`${env.kimiAuthUrl}/api/.well-known/jwks.json`));
+
+async function verifyAccessToken(accessToken: string): Promise<{ userId: string; clientId: string }> {
+  const { payload } = await jose.jwtVerify(accessToken, jwks);
+  const userId = payload.user_id as string;
+  const clientId = payload.client_id as string;
+  if (!userId) throw new Error("user_id missing from access token");
+  return { userId, clientId };
+}
+
+export async function authenticateRequest(headers: Headers) {
+  const cookies = cookie.parse(headers.get("cookie") || "");
+  const token = cookies[Session.cookieName];
+  if (!token) {
+    console.warn("[auth] No session cookie found.");
+    throw Errors.forbidden("Invalid authentication token.");
+  }
+  const claim = await verifySessionToken(token);
+  if (!claim) throw Errors.forbidden("Invalid authentication token.");
+  if (claim.unionId) {
+    const user = await findUserByUnionId(claim.unionId);
+    if (!user) throw Errors.forbidden("User not found. Please re-login.");
+    return user;
+  }
+  if (claim.userId) {
+    const user = await findUserById(claim.userId);
+    if (!user) throw Errors.forbidden("User not found. Please re-login.");
+    return user;
+  }
+  throw Errors.forbidden("Invalid session token.");
+}
+
+export function createOAuthCallbackHandler() {
+  return async (c: Context) => {
+    const code = c.req.query("code");
+    const state = c.req.query("state");
+    const error = c.req.query("error");
+    const errorDescription = c.req.query("error_description");
+    if (error) {
+      if (error === "access_denied") return c.redirect("/", 302);
+      return c.json({ error, error_description: errorDescription }, 400);
+    }
+    if (!code || !state) return c.json({ error: "code and state are required" }, 400);
+    try {
+      const redirectUri = atob(state);
+      const tokenResp = await exchangeAuthCode(code, redirectUri);
+      const { userId } = await verifyAccessToken(tokenResp.access_token);
+      const userProfile = await kimiUsers.getProfile(tokenResp.access_token);
+      if (!userProfile) throw new Error("Failed to fetch user profile from Kimi Open");
+      await upsertUser({ unionId: userId, name: userProfile.name, avatar: userProfile.avatar_url, lastSignInAt: new Date() });
+      const token = await signSessionToken({ unionId: userId, clientId: env.appId });
+      const cookieOpts = getSessionCookieOptions(c.req.raw.headers);
+      setCookie(c, Session.cookieName, token, { ...cookieOpts, maxAge: Session.maxAgeMs / 1000 });
+      return c.redirect("/", 302);
+    } catch (error) {
+      console.error("[OAuth] Callback failed", error);
+      return c.json({ error: "OAuth callback failed" }, 500);
+    }
+  };
+}
+
+export { exchangeAuthCode, verifyAccessToken };
+EOF
+
+echo "Block A complete."

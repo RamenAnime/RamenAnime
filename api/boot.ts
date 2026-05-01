@@ -14,46 +14,64 @@ const BLOCKED_MESSAGE = JSON.stringify({
   code: "GEO_BLOCKED",
 });
 
-// ─── Auto database migration (runs in background) ───
+// ─── Auto database migration (runs in background, non-blocking) ───
 async function runMigrations() {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) { console.log("[migrate] No DATABASE_URL set"); return; }
+  
+  let conn: any = null;
   try {
-    const { getDb } = await import("./queries/connection");
-    const db = getDb();
-    console.log("[migrate] Database connected");
+    console.log("[migrate] Connecting to database for schema updates...");
+    const mysql = await import("mysql2/promise");
+    conn = await mysql.createConnection({
+      uri: dbUrl,
+      connectTimeout: 60000,
+      ssl: { rejectUnauthorized: false }
+    });
+    console.log("[migrate] Database connected for DDL");
 
-    // Add username column (nullable so existing rows aren't affected)
+    // Add username column (nullable so existing rows are fine)
     try {
-      await db.execute("ALTER TABLE users ADD COLUMN username VARCHAR(50) NULL UNIQUE AFTER unionId");
+      await conn.query("ALTER TABLE users ADD COLUMN username VARCHAR(50) NULL");
       console.log("[migrate] Added username column");
     } catch (e: any) {
-      if (e.message?.includes("Duplicate") || e.message?.includes("already exists") || e.message?.includes("Exists")) {
-        console.log("[migrate] username column already exists");
-      } else { console.error("[migrate] username error:", e.message); }
+      const msg = e.message || "";
+      if (msg.includes("Duplicate") || msg.includes("already exists") || msg.includes("Exists") || msg.includes("Column") || msg.includes("column")) {
+        console.log("[migrate] username column already exists or handled");
+      } else {
+        console.error("[migrate] username ALTER error:", msg);
+      }
     }
 
-    // Add password_hash column (nullable so existing rows aren't affected)
+    // Add password_hash column (nullable)
     try {
-      await db.execute("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL AFTER username");
+      await conn.query("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255) NULL");
       console.log("[migrate] Added password_hash column");
     } catch (e: any) {
-      if (e.message?.includes("Duplicate") || e.message?.includes("already exists") || e.message?.includes("Exists")) {
-        console.log("[migrate] password_hash column already exists");
-      } else { console.error("[migrate] password_hash error:", e.message); }
+      const msg = e.message || "";
+      if (msg.includes("Duplicate") || msg.includes("already exists") || msg.includes("Exists") || msg.includes("Column") || msg.includes("column")) {
+        console.log("[migrate] password_hash column already exists or handled");
+      } else {
+        console.error("[migrate] password_hash ALTER error:", msg);
+      }
     }
 
-    // Add auth_type column (has default value, so existing rows get 'oauth')
+    // Add auth_type column (has default 'oauth', so NOT NULL is fine)
     try {
-      await db.execute("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL AFTER password_hash");
+      await conn.query("ALTER TABLE users ADD COLUMN auth_type ENUM('oauth','local') DEFAULT 'oauth' NOT NULL");
       console.log("[migrate] Added auth_type column");
     } catch (e: any) {
-      if (e.message?.includes("Duplicate") || e.message?.includes("already exists") || e.message?.includes("Exists")) {
-        console.log("[migrate] auth_type column already exists");
-      } else { console.error("[migrate] auth_type error:", e.message); }
+      const msg = e.message || "";
+      if (msg.includes("Duplicate") || msg.includes("already exists") || msg.includes("Exists") || msg.includes("Column") || msg.includes("column")) {
+        console.log("[migrate] auth_type column already exists or handled");
+      } else {
+        console.error("[migrate] auth_type ALTER error:", msg);
+      }
     }
 
     // Create password_reset_tokens table
     try {
-      await db.execute(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      await conn.query(`CREATE TABLE IF NOT EXISTS password_reset_tokens (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         userId BIGINT UNSIGNED NOT NULL UNIQUE,
         token VARCHAR(255) NOT NULL UNIQUE,
@@ -65,9 +83,13 @@ async function runMigrations() {
       console.error("[migrate] password_reset_tokens error:", e.message);
     }
 
+    await conn.end();
     console.log("[migrate] All migrations complete");
   } catch (err: any) {
-    console.error("[migrate] Fatal error:", err.message);
+    console.error("[migrate] Fatal connection error:", err.message);
+    if (conn) {
+      try { await conn.end(); } catch (_) { /* ignore */ }
+    }
   }
 }
 
@@ -107,8 +129,8 @@ app.use("/api/trpc/*", async (c) => {
 
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
-// Start migrations in background after server starts
-setTimeout(runMigrations, 2000);
+// Run migrations in background after server starts (don't block startup)
+setTimeout(runMigrations, 3000);
 
 // ─── Production Server Startup ───
 if (env.isProduction) {

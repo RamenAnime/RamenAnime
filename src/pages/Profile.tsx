@@ -226,6 +226,7 @@ function ProfileContent() {
 }
 
 function ProfileEditForm({ profile, onSave, isPending }: { profile?: any; onSave: (data: any) => void; isPending: boolean }) {
+  const { t } = useTranslation();
   const defaults = profile ?? {};
   const [form, setForm] = useState({
     displayName: defaults.displayName ?? "",

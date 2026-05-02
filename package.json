@@ -8,6 +8,7 @@
     "dev": "concurrently \"vite\" \"tsx watch api/dev.ts\"",
     "build": "vite build && esbuild api/boot.ts --platform=node --bundle --format=esm --outdir=dist --external:nodemailer --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
     "preview": "vite preview",
+    "start": "node dist/boot.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

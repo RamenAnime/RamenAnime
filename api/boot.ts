@@ -6,7 +6,7 @@ import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
 
-const ALLOWED_COUNTRIES = ["US", "CA", "JP", "KR", "CN", "FR"];
+const ALLOWED_COUNTRIES = ["US","CA","JP","KR","CN","HK","AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"];
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 

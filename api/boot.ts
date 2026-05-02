@@ -5,6 +5,8 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
+import { getDb } from "./queries/connection";
+import { sql } from "drizzle-orm";
 
 const ALLOWED_COUNTRIES = [
   // North America
@@ -36,7 +38,7 @@ app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 // Geoblocking Middleware
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
-  if (path === "/api/ping" || path.includes("geo.checkAccess")) {
+  if (path === "/api/ping" || path.includes("geo.checkAccess") || path === "/api/run-migration") {
     return next();
   }
   const countryHeader = c.req.header("X-Country-Code");
@@ -51,6 +53,7 @@ app.use("/api/*", async (c, next) => {
 
 app.get("/api/ping", (c) => c.json({ ok: true, ts: Date.now() }));
 
+// tRPC batch endpoint (POST /api/trpc)
 app.use("/api/trpc", async (c) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",
@@ -60,6 +63,7 @@ app.use("/api/trpc", async (c) => {
   });
 });
 
+// tRPC individual endpoint (GET/POST /api/trpc/*)
 app.use("/api/trpc/*", async (c) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",
@@ -67,6 +71,23 @@ app.use("/api/trpc/*", async (c) => {
     router: appRouter,
     createContext,
   });
+});
+
+app.get("/api/run-migration", async (c) => {
+  try {
+    const db = getDb();
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS tax_rates (
+      id VARCHAR(128) PRIMARY KEY,
+      country_code VARCHAR(2) NOT NULL,
+      rate DECIMAL(5,2) NOT NULL,
+      vat_name VARCHAR(50) DEFAULT 'VAT',
+      updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+      UNIQUE KEY (country_code)
+    )`);
+    return c.json({ ok: true, message: "tax_rates table created or already exists" });
+  } catch (e) {
+    return c.json({ ok: false, error: (e as Error).message }, 500);
+  }
 });
 
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));

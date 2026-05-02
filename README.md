@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/MySQL-TiDB-4479A1?logo=mysql" alt="TiDB" />
 </p>
 
-A fullstack anime merchandise and community platform built with React 19, TypeScript, tRPC 11, Hono, Drizzle ORM, and TiDB Cloud. Features an e-commerce storefront, MySpace-style social forum, user marketplace, admin dashboard, real-time notifications, internal messaging, auto-moderation bot, multi-language support, and enterprise-grade security.
+A fullstack anime merchandise and community platform built with React 19, TypeScript, tRPC 11, Hono, Drizzle ORM, and TiDB Cloud. Features an e-commerce storefront, customizable social forum, user marketplace, admin dashboard, real-time notifications, internal messaging, auto-moderation bot, multi-language support, and enterprise-grade security.
 
 **Production URL:** [https://ramen-anime-denj.onrender.com](https://ramen-anime-denj.onrender.com)
 
@@ -40,7 +40,7 @@ A fullstack anime merchandise and community platform built with React 19, TypeSc
 - Tax calculation with live VAT/GST rates for 46 countries
 
 ### Social Forum
-- MySpace-style customizable user profiles
+- customizable customizable user profiles
 - Forum posts with categories, likes, and views
 - Comment threads with author attribution
 - Friends system with friend requests

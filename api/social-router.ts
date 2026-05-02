@@ -3,7 +3,8 @@ import { createRouter, publicQuery, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { userProfiles, forumPosts, forumComments, friends, users } from "@db/schema";
 import { eq, desc, asc } from "drizzle-orm";
-import { createNotification } from "./queries/users";\nimport { moderateContent } from "./lib/moderator";\nimport { moderateContent } from "./lib/moderator";
+import { createNotification } from "./queries/users";
+import { moderateContent } from "./lib/moderator";
 
 async function attachUser<T extends { userId: number }>(row: T | undefined) {
   if (!row) return null;
@@ -22,10 +23,10 @@ export const socialRouter = createRouter({
     }),
 
   getMyProfile: authedQuery.query(async ({ ctx }) => {
-    const db = getDb();
-    const rows = await db.select().from(userProfiles).where(eq(userProfiles.userId, ctx.user.id)).limit(1);
-    return attachUser(rows[0]);
-  }),
+      const db = getDb();
+      const rows = await db.select().from(userProfiles).where(eq(userProfiles.userId, ctx.user.id)).limit(1);
+      return attachUser(rows[0]);
+    }),
 
   createOrUpdateProfile: authedQuery
     .input(
@@ -97,19 +98,32 @@ export const socialRouter = createRouter({
     .input(z.object({ title: z.string().min(1).max(255), content: z.string().min(1), category: z.string().default("general") }))
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-      const modResult = await moderateContent(ctx.user.id, "post", 0, input.title + " " + input.content, ctx.user.username ?? undefined);\n      if (modResult.action === "ban") throw new Error("Your account has been suspended due to repeated TOS violations.");\n      if (modResult.action === "remove") throw new Error(`Your post was blocked: ${modResult.reason}`);\n      const modResult = await moderateContent(ctx.user.id, "post", 0, input.title + " " + input.content, ctx.user.username ?? undefined);\n      if (modResult.action === "ban") throw new Error("Your account has been suspended due to repeated TOS violations.");\n      if (modResult.action === "remove") throw new Error(`Your post was blocked: ${modResult.reason}`);\n      await db.insert(forumPosts).values({ authorId: ctx.user.id, title: input.title, content: input.content, category: input.category });
-      return { success: true };
+      const combined = `${input.title} ${input.content}`;
+      const modResult = await moderateContent(ctx.user.id, "post", 0, combined, ctx.user.username ?? undefined);
+      if (modResult.action === "ban") {
+        throw new Error("Your account has been suspended due to repeated TOS violations.");
+      }
+      if (modResult.action === "remove") {
+        throw new Error(`Your post was blocked: ${modResult.reason}`);
+      }
+      await db.insert(forumPosts).values({ authorId: ctx.user.id, title: input.title, content: input.content, category: input.category });
+      return { success: true, flagged: modResult.action === "flag", flagReason: modResult.action === "flag" ? modResult.reason : undefined };
     }),
 
   createComment: authedQuery
     .input(z.object({ postId: z.number(), content: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-      // Get post author for notification
+      const modResult = await moderateContent(ctx.user.id, "comment", 0, input.content, ctx.user.username ?? undefined);
+      if (modResult.action === "ban") {
+        throw new Error("Your account has been suspended due to repeated TOS violations.");
+      }
+      if (modResult.action === "remove") {
+        throw new Error(`Your comment was blocked: ${modResult.reason}`);
+      }
       const posts = await db.select().from(forumPosts).where(eq(forumPosts.id, input.postId)).limit(1);
       const post = posts[0];
       await db.insert(forumComments).values({ postId: input.postId, authorId: ctx.user.id, content: input.content });
-      // Notify post author (if not self-commenting)
       if (post && post.authorId !== ctx.user.id) {
         await createNotification({
           userId: post.authorId,
@@ -119,7 +133,7 @@ export const socialRouter = createRouter({
           link: `/post/${input.postId}`,
         });
       }
-      return { success: true };
+      return { success: true, flagged: modResult.action === "flag", flagReason: modResult.action === "flag" ? modResult.reason : undefined };
     }),
 
   likePost: authedQuery
@@ -135,20 +149,19 @@ export const socialRouter = createRouter({
     }),
 
   listFriends: authedQuery.query(async ({ ctx }) => {
-    const db = getDb();
-    const rows = await db.select().from(friends).where(eq(friends.addresseeId, ctx.user.id));
-    return Promise.all(rows.map(async (f) => {
-      const u = await db.select().from(users).where(eq(users.id, f.requesterId)).limit(1);
-      return { ...f, requester: u[0] ?? null };
-    }));
-  }),
+      const db = getDb();
+      const rows = await db.select().from(friends).where(eq(friends.addresseeId, ctx.user.id));
+      return Promise.all(rows.map(async (f) => {
+        const u = await db.select().from(users).where(eq(users.id, f.requesterId)).limit(1);
+        return { ...f, requester: u[0] ?? null };
+      }));
+    }),
 
   sendFriendRequest: authedQuery
     .input(z.object({ addresseeId: z.number() }))
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
       await db.insert(friends).values({ requesterId: ctx.user.id, addresseeId: input.addresseeId });
-      // Notify recipient
       await createNotification({
         userId: input.addresseeId,
         type: "friend_request",
@@ -159,4 +172,3 @@ export const socialRouter = createRouter({
       return { success: true };
     }),
 });
-

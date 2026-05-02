@@ -20,7 +20,6 @@ function ProfileContent() {
   const { id } = useParams<{ id: string }>();
   const profileUserId = parseInt(id ?? "0");
   const { t } = useTranslation();
-  const { t } = useTranslation();
   const { user: me, isAuthenticated } = useAuth();
   const isMyProfile = isAuthenticated && me?.id === profileUserId;
   const [editOpen, setEditOpen] = useState(false);

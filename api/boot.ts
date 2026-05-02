@@ -6,7 +6,28 @@ import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
 
-const ALLOWED_COUNTRIES = ["US","CA","JP","KR","CN","HK","AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE"];
+const ALLOWED_COUNTRIES = [
+  // North America
+  "US", "CA",
+  // Oceania
+  "AU", "NZ",
+  // Americas
+  "MX", "BR",
+  // EU (27 member states - IE removed)
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
+  "DE", "GR", "HU", "IT", "LV", "LT", "LU", "MT", "NL", "PL",
+  "PT", "RO", "SK", "SI", "ES", "SE",
+  // Asia (all)
+  "AF", "AM", "AZ", "BH", "BD", "BT", "BN", "KH", "CN", "GE",
+  "IN", "ID", "IR", "IQ", "IL", "JP", "JO", "KZ", "KW", "KG",
+  "LA", "LB", "MY", "MV", "MN", "MM", "NP", "OM", "PK", "PH",
+  "QA", "SA", "SG", "KR", "LK", "SY", "TW", "TJ", "TH", "TL",
+  "TR", "TM", "AE", "UZ", "VN", "YE", "HK",
+];
+const BLOCKED_MESSAGE = JSON.stringify({
+  error: "Service not available in your region.",
+  code: "GEO_BLOCKED",
+});
 
 const app = new Hono<{ Bindings: HttpBindings }>();
 
@@ -25,7 +46,6 @@ app.use("/api/*", async (c, next) => {
       return c.json({ error: "GEO_BLOCKED", message: "Service not available in your country." }, 403);
     }
   }
-  const clientIP = c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || (c.env ? (c.env as any).incoming?.socket?.remoteAddress : null) || "unknown";
   return next();
 });
 

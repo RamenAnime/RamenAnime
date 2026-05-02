@@ -92,7 +92,7 @@ function getClientIp(req: Request): string {
 }
 
 async function verifyRecaptcha(token: string | undefined): Promise<boolean> {
-  const secret = process.env.RECAPTCHA_SECRET_KEY; if (!token) return !secret;
+  if (!token) return false;
   const secret = process.env.RECAPTCHA_SECRET_KEY;
   if (!secret) {
     logger.debug("No RECAPTCHA_SECRET_KEY set, skipping verification");

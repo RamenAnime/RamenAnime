@@ -11,7 +11,7 @@ import {
   boolean,
 } from "drizzle-orm/mysql-core";
 import {
-  decimal, relations } from "drizzle-orm";
+  relations } from "drizzle-orm";
 
 export const users = mysqlTable("users", {
   id: serial("id").primaryKey(),

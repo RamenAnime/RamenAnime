@@ -1,4 +1,5 @@
 import { useParams, Link } from "react-router";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";

@@ -51,6 +51,15 @@ app.use("/api/*", async (c, next) => {
 
 app.get("/api/ping", (c) => c.json({ ok: true, ts: Date.now() }));
 
+app.use("/api/trpc", async (c) => {
+  return fetchRequestHandler({
+    endpoint: "/api/trpc",
+    req: c.req.raw,
+    router: appRouter,
+    createContext,
+  });
+});
+
 app.use("/api/trpc/*", async (c) => {
   return fetchRequestHandler({
     endpoint: "/api/trpc",

@@ -45,8 +45,8 @@ function ProfileContent() {
       console.log("[Profile] Save success:", result);
       toast.success("Profile saved!");
       setEditOpen(false);
-      utils.social.getProfile.setData({ userId: profileUserId }, data);
-      utils.social.getMyProfile.setData(undefined, data);
+      utils.social.getProfile.setData({ userId: profileUserId }, result);
+      utils.social.getMyProfile.setData(undefined, result);
       setTimeout(() => window.location.reload(), 500);
     },
     onError: (err) => {

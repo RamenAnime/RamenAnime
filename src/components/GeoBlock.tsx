@@ -3,9 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Globe, Ban, AlertCircle, Loader2 } from "lucide-react";
 
-const ALLOWED_COUNTRIES = ["US", "CA", "JP", "KR", "CN", "FR"];
+const ALLOWED_COUNTRIES = ["US","CA","JP","KR","CN","HK","AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE","SG","MY","GB"];
 const COUNTRY_NAMES: Record<string, string> = {
-  US: "United States", CA: "Canada", JP: "Japan", KR: "South Korea", CN: "China", FR: "France",
+  US: "United States", CA: "Canada", JP: "Japan", KR: "South Korea", CN: "China", HK: "Hong Kong", FR: "France", DE: "Germany", GB: "United Kingdom", SG: "Singapore", MY: "Malaysia",
 };
 
 const GEO_KEY = "ramen_anime_geo_verified";

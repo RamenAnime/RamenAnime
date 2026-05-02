@@ -15,7 +15,6 @@ const FALLBACK_RATES: Record<string, number> = {
   VN: 10, PH: 12, ID: 11, IN: 18, TW: 5,
 };
 
-// Cache rates for 24 hours in memory
 const rateCache: Map<string, { rate: number; updatedAt: number }> = new Map();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -24,7 +23,6 @@ function getFallbackRate(cc: string): number {
 }
 
 export const taxRouter = createRouter({
-  // Get current tax rate for a country
   getRate: publicQuery
     .input(z.object({ countryCode: z.string().length(2) }))
     .query(async ({ input }) => {
@@ -44,7 +42,6 @@ export const taxRouter = createRouter({
       return { countryCode: cc, rate: fallback, source: "fallback" };
     }),
 
-  // Calculate total with tax
   calculate: publicQuery
     .input(z.object({
       subtotal: z.number().min(0),
@@ -70,9 +67,8 @@ export const taxRouter = createRouter({
       };
     }),
 
-  // Public seed endpoint - seeds fallback rates into DB
   seedRates: publicQuery
-    .mutation(async () => {
+    .query(async () => {
       const db = getDb();
       const entries = Object.entries(FALLBACK_RATES);
       for (const [cc, rate] of entries) {
@@ -90,7 +86,6 @@ export const taxRouter = createRouter({
       return { success: true, seeded: entries.length };
     }),
 
-  // Admin: Refresh EU VAT rates from European Commission API
   refreshRates: adminQuery
     .mutation(async () => {
       const results: Array<{ country: string; rate: number; status: string }> = [];

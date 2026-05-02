@@ -7,6 +7,8 @@ import { donationRouter } from "./donation-router";
 import { adminRouter } from "./admin-router";
 import { taxRouter } from "./tax-router";
 import { notificationRouter } from "./notification-router";
+import { messageRouter } from "./message-router";
+import { moderationRouter } from "./moderation-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -20,7 +22,8 @@ export const appRouter = createRouter({
   admin: adminRouter,
   tax: taxRouter,
   notification: notificationRouter,
+  message: messageRouter,
+  moderation: moderationRouter,
 });
 
 export type AppRouter = typeof appRouter;
-

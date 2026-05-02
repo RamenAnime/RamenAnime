@@ -3,7 +3,7 @@ import { createRouter, publicQuery, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { userProfiles, forumPosts, forumComments, friends, users } from "@db/schema";
 import { eq, desc, asc } from "drizzle-orm";
-import { createNotification } from "./queries/users";
+import { createNotification } from "./queries/users";\nimport { moderateContent } from "./lib/moderator";\nimport { moderateContent } from "./lib/moderator";
 
 async function attachUser<T extends { userId: number }>(row: T | undefined) {
   if (!row) return null;
@@ -97,7 +97,7 @@ export const socialRouter = createRouter({
     .input(z.object({ title: z.string().min(1).max(255), content: z.string().min(1), category: z.string().default("general") }))
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
-      await db.insert(forumPosts).values({ authorId: ctx.user.id, title: input.title, content: input.content, category: input.category });
+      const modResult = await moderateContent(ctx.user.id, "post", 0, input.title + " " + input.content, ctx.user.username ?? undefined);\n      if (modResult.action === "ban") throw new Error("Your account has been suspended due to repeated TOS violations.");\n      if (modResult.action === "remove") throw new Error(`Your post was blocked: ${modResult.reason}`);\n      const modResult = await moderateContent(ctx.user.id, "post", 0, input.title + " " + input.content, ctx.user.username ?? undefined);\n      if (modResult.action === "ban") throw new Error("Your account has been suspended due to repeated TOS violations.");\n      if (modResult.action === "remove") throw new Error(`Your post was blocked: ${modResult.reason}`);\n      await db.insert(forumPosts).values({ authorId: ctx.user.id, title: input.title, content: input.content, category: input.category });
       return { success: true };
     }),
 

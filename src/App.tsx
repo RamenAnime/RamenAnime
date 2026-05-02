@@ -2,7 +2,6 @@ import { Suspense, lazy } from 'react'
 import { Routes, Route } from 'react-router'
 import GeoBlock from '@/components/GeoBlock'
 import EnhancedAgeGate from '@/components/EnhancedAgeGate'
-import { CookieConsent } from '@/components/legal/ComplianceRouter'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Home from './pages/Home'
@@ -14,6 +13,7 @@ const TradingCards = lazy(() => import('./pages/TradingCards'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Terms = lazy(() => import('./pages/Terms'))
 const Privacy = lazy(() => import('./pages/Privacy'))
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const Social = lazy(() => import('./pages/Social'))
 const ForumPost = lazy(() => import('./pages/ForumPost'))
 const Profile = lazy(() => import('./pages/Profile'))
@@ -50,6 +50,7 @@ export default function App() {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/donate" element={<Donations />} />
                 <Route path="/social" element={<Social />} />
                 <Route path="/post/:id" element={<ForumPost />} />
@@ -63,10 +64,10 @@ export default function App() {
               </Routes>
             </Suspense>
           </main>
-          <CookieConsent />
           <Footer />
         </div>
       </EnhancedAgeGate>
     </GeoBlock>
   )
 }
+

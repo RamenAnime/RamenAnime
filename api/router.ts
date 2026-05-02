@@ -6,6 +6,7 @@ import { geoRouter } from "./geo-router";
 import { donationRouter } from "./donation-router";
 import { adminRouter } from "./admin-router";
 import { taxRouter } from "./tax-router";
+import { notificationRouter } from "./notification-router";
 import { createRouter, publicQuery } from "./middleware";
 
 export const appRouter = createRouter({
@@ -18,6 +19,8 @@ export const appRouter = createRouter({
   donation: donationRouter,
   admin: adminRouter,
   tax: taxRouter,
+  notification: notificationRouter,
 });
 
 export type AppRouter = typeof appRouter;
+

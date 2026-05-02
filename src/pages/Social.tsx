@@ -16,10 +16,12 @@ import {
   Plus,
   Search,
   Clock,
+  ChevronDown,
 } from "lucide-react";
 import TosGate from "@/components/TosGate";
 
 const categories = ["All", "general", "anime", "gaming", "trading", "3dprints", "offtopic"];
+const PAGE_SIZE = 10;
 
 function ForumContent() {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -28,11 +30,23 @@ function ForumContent() {
   const [newPostTitle, setNewPostTitle] = useState("");
   const [newPostContent, setNewPostContent] = useState("");
   const [newPostCategory, setNewPostCategory] = useState("general");
+  const [offset, setOffset] = useState(0);
+  const [allPosts, setAllPosts] = useState<any[]>([]);
+  const [hasMore, setHasMore] = useState(true);
 
   const { data: posts, isLoading } = trpc.social.listPosts.useQuery({
     category: activeCategory === "All" ? undefined : activeCategory,
-    limit: 50,
-    offset: 0,
+    limit: PAGE_SIZE,
+    offset,
+  }, {
+    onSuccess: (data) => {
+      if (offset === 0) {
+        setAllPosts(data);
+      } else {
+        setAllPosts((prev) => [...prev, ...data]);
+      }
+      setHasMore(data.length === PAGE_SIZE);
+    },
   });
 
   const utils = trpc.useUtils();
@@ -42,6 +56,8 @@ function ForumContent() {
       setNewPostOpen(false);
       setNewPostTitle("");
       setNewPostContent("");
+      setOffset(0);
+      setAllPosts([]);
     },
   });
 
@@ -49,7 +65,11 @@ function ForumContent() {
     onSuccess: () => utils.social.listPosts.invalidate(),
   });
 
-  const filteredPosts = posts?.filter((p) =>
+  const loadMore = () => {
+    setOffset((prev) => prev + PAGE_SIZE);
+  };
+
+  const filteredPosts = allPosts.filter((p) =>
     p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -57,7 +77,6 @@ function ForumContent() {
   return (
     <div className="min-h-screen py-8">
       <div className="container px-4 md:px-6 max-w-5xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">Social Forum</h1>
@@ -131,7 +150,6 @@ function ForumContent() {
           </Dialog>
         </div>
 
-        {/* Search & Filter */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -148,7 +166,7 @@ function ForumContent() {
                 key={cat}
                 variant={activeCategory === cat ? "default" : "outline"}
                 size="sm"
-                onClick={() => setActiveCategory(cat)}
+                onClick={() => { setActiveCategory(cat); setOffset(0); setAllPosts([]); }}
                 className={
                   activeCategory === cat
                     ? "bg-primary text-primary-foreground capitalize"
@@ -161,8 +179,7 @@ function ForumContent() {
           </div>
         </div>
 
-        {/* Posts List */}
-        {isLoading ? (
+        {isLoading && offset === 0 ? (
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
               <Card key={i} className="bg-card/50 border-border/50 animate-pulse">
@@ -241,6 +258,19 @@ function ForumContent() {
                 </CardContent>
               </Card>
             ))}
+            {hasMore && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="outline"
+                  onClick={loadMore}
+                  disabled={isLoading}
+                  className="border-border/50"
+                >
+                  <ChevronDown className="mr-2 h-4 w-4" />
+                  {isLoading ? "Loading..." : "Load More"}
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <Card className="bg-card/50 border-border/50">
@@ -265,3 +295,4 @@ export default function Social() {
     </TosGate>
   );
 }
+

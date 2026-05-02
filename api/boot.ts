@@ -37,8 +37,9 @@ app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 
 // Geoblocking Middleware
 app.use("/api/*", async (c, next) => {
+  // Skip geoblock for health checks and public country-check endpoint
   const path = c.req.path;
-  if (path === "/api/ping" || path.includes("geo.checkAccess") || path === "/api/run-migration") {
+  if (path === "/api/ping" || path.includes("geo.checkAccess")) {
     return next();
   }
   const countryHeader = c.req.header("X-Country-Code");
@@ -76,6 +77,7 @@ app.use("/api/trpc/*", async (c) => {
 app.get("/api/run-migration", async (c) => {
   try {
     const db = getDb();
+    // Create tax_rates table
     await db.execute(sql`CREATE TABLE IF NOT EXISTS tax_rates (
       id VARCHAR(128) PRIMARY KEY,
       country_code VARCHAR(2) NOT NULL,
@@ -84,7 +86,35 @@ app.get("/api/run-migration", async (c) => {
       updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
       UNIQUE KEY (country_code)
     )`);
-    return c.json({ ok: true, message: "tax_rates table created or already exists" });
+    // Create notifications table
+    await db.execute(sql`CREATE TABLE IF NOT EXISTS notifications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      userId INT UNSIGNED NOT NULL,
+      type VARCHAR(50) NOT NULL,
+      title VARCHAR(255) NOT NULL,
+      message TEXT NOT NULL,
+      link VARCHAR(500),
+      is_read BOOLEAN DEFAULT FALSE NOT NULL,
+      createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+    )`);
+    // Add new columns to users if they don't exist (MySQL style)
+    try {
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN DEFAULT FALSE NOT NULL`);
+    } catch { /* already exists */ }
+    try {
+      await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN DEFAULT FALSE NOT NULL`);
+    } catch { /* already exists */ }
+    // Add indexes for performance
+    try {
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+    } catch { /* may already exist */ }
+    try {
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_forum_posts_author ON forum_posts(authorId)`);
+    } catch { /* may already exist */ }
+    try {
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(userId)`);
+    } catch { /* may already exist */ }
+    return c.json({ ok: true, message: "All tables and indexes created or already exist" });
   } catch (e) {
     return c.json({ ok: false, error: (e as Error).message }, 500);
   }
@@ -103,3 +133,4 @@ if (env.isProduction) {
     console.log(`Server running on http://localhost:${port}/`);
   });
 }
+

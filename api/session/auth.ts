@@ -3,22 +3,35 @@ import { Session } from "@contracts/constants";
 import { Errors } from "@contracts/errors";
 import { verifySessionToken } from "./session";
 import { findUserByUnionId, findUserById } from "../queries/users";
+import { logger } from "../lib/logger";
 
 export async function authenticateRequest(headers: Headers) {
   const cookies = cookie.parse(headers.get("cookie") || "");
   const token = cookies[Session.cookieName];
-  if (token == null) { console.warn("[auth] No session cookie."); throw Errors.forbidden("Invalid auth token."); }
+  if (!token) {
+    logger.warn("No session cookie found in request");
+    throw Errors.forbidden("Invalid authentication token.");
+  }
   const claim = await verifySessionToken(token);
-  if (claim == null) { throw Errors.forbidden("Invalid auth token."); }
+  if (!claim) {
+    throw Errors.forbidden("Invalid authentication token.");
+  }
+
+  let user;
   if (claim.unionId) {
-    const user = await findUserByUnionId(claim.unionId);
-    if (user == null) { throw Errors.forbidden("User not found."); }
-    return user;
+    user = await findUserByUnionId(claim.unionId);
+  } else if (claim.userId) {
+    user = await findUserById(claim.userId);
   }
-  if (claim.userId) {
-    const user = await findUserById(claim.userId);
-    if (user == null) { throw Errors.forbidden("User not found."); }
-    return user;
+
+  if (!user) {
+    throw Errors.forbidden("User not found. Please re-login.");
   }
-  throw Errors.forbidden("Invalid session token.");
+
+  if (user.isBanned) {
+    throw Errors.forbidden("Your account has been suspended.");
+  }
+
+  return user;
 }
+

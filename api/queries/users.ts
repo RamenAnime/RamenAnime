@@ -25,9 +25,10 @@ export async function findUserByEmail(email: string) {
   return rows.at(0);
 }
 
-export async function findUserByResetToken(token: string) {
+// Find user by SHA-256 hash of reset token
+export async function findUserByResetTokenHash(hash: string) {
   const db = getDb();
-  const tokens = await db.select().from(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.token, token)).limit(1);
+  const tokens = await db.select().from(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.token, hash)).limit(1);
   const t = tokens.at(0);
   if (!t) return undefined;
   if (new Date() > new Date(t.expiresAt)) return undefined;
@@ -72,10 +73,11 @@ export async function updatePassword(userId: number, newHash: string) {
   await getDb().update(schema.users).set({ passwordHash: newHash }).where(eq(schema.users.id, userId));
 }
 
-export async function setResetToken(userId: number, token: string, expiresAt: Date) {
+// Store SHA-256 hash of reset token (not raw token)
+export async function setResetTokenHash(userId: number, hash: string, expiresAt: Date) {
   const db = getDb();
   await db.delete(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.userId, userId));
-  await db.insert(schema.passwordResetTokens).values({ userId, token, expiresAt });
+  await db.insert(schema.passwordResetTokens).values({ userId, token: hash, expiresAt });
 }
 
 export async function clearResetToken(userId: number) {
@@ -86,3 +88,30 @@ export async function countAdmins() {
   const rows = await getDb().select().from(schema.users).where(eq(schema.users.role, "admin"));
   return rows.length;
 }
+
+export async function verifyUserEmail(userId: number) {
+  await getDb().update(schema.users).set({ isEmailVerified: true }).where(eq(schema.users.id, userId));
+}
+
+export async function banUser(userId: number, banned: boolean) {
+  await getDb().update(schema.users).set({ isBanned: banned }).where(eq(schema.users.id, userId));
+}
+
+export async function createNotification(data: {
+  userId: number;
+  type: string;
+  title: string;
+  message: string;
+  link?: string;
+}) {
+  const db = getDb();
+  await db.insert(schema.notifications).values({
+    userId: data.userId,
+    type: data.type,
+    title: data.title,
+    message: data.message,
+    link: data.link ?? null,
+    isRead: false,
+  });
+}
+

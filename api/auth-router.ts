@@ -18,7 +18,7 @@ import {
   clearResetToken,
   countAdmins,
 } from "./queries/users";
-import { signSessionToken } from "./kimi/session";
+import { signSessionToken } from "./session/session";
 import { env } from "./lib/env";
 
 const scryptAsync = promisify(scrypt);

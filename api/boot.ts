@@ -5,8 +5,6 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
-import { createOAuthCallbackHandler } from "./kimi/auth";
-import { Paths } from "@contracts/constants";
 
 const ALLOWED_COUNTRIES = ["US", "CA", "JP", "KR", "CN", "FR"];
 
@@ -16,7 +14,6 @@ app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
 
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
-  if (path === "/api/ping" || path === Paths.oauthCallback || path.includes("geo.checkAccess") || path === "/api/run-migration") {
     return next();
   }
   const countryHeader = c.req.header("X-Country-Code");
@@ -242,7 +239,6 @@ app.get("/api/run-migration", async (c) => {
   }
 });
 
-app.get(Paths.oauthCallback, createOAuthCallbackHandler());
 app.get("/api/ping", (c) => c.json({ ok: true, ts: Date.now() }));
 
 app.use("/api/trpc/*", async (c) => {

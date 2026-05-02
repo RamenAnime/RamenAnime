@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { MessageCircle, Shield, ArrowLeft, UserPlus, LogIn, Eye, EyeOff, AlertCircle, Check, X, KeyRound } from "lucide-react";
 import { Link, useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { trpc } from "@/providers/trpc";
 import { toast } from "sonner";
 
@@ -30,6 +32,8 @@ function PasswordRequirements({ password }: { password: string }) {
 
 export default function Login() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

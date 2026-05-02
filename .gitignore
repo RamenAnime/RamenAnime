@@ -39,3 +39,13 @@ build/
 # Test coverage
 coverage/
 .nyc_output/
+
+# Junk files
+Build
+Common
+FETCH_HEAD
+file
+fix-all.sh
+nav.js
+nav.py
+*.sh

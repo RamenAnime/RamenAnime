@@ -248,7 +248,6 @@ export const taxRates = mysqlTable("tax_rates", {
 export type TaxRate = typeof taxRates.$inferSelect;
 export type InsertTaxRate = typeof taxRates.$inferInsert;
 
-
 // Notifications
 export const notifications = mysqlTable("notifications", {
   id: serial("id").primaryKey(),
@@ -263,6 +262,41 @@ export const notifications = mysqlTable("notifications", {
 
 export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = typeof notifications.$inferInsert;
+
+// Internal Messages (PM system - replaces external email)
+export const messages = mysqlTable("messages", {
+  id: serial("id").primaryKey(),
+  senderId: bigint("sender_id", { mode: "number", unsigned: true }).notNull(),
+  recipientId: bigint("recipient_id", { mode: "number", unsigned: true }).notNull(),
+  subject: varchar("subject", { length: 255 }).notNull(),
+  body: text("body").notNull(),
+  isRead: boolean("is_read").default(false).notNull(),
+  senderDeleted: boolean("sender_deleted").default(false).notNull(),
+  recipientDeleted: boolean("recipient_deleted").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = typeof messages.$inferInsert;
+
+// Moderation logs (auto-mod and manual actions)
+export const moderationLogs = mysqlTable("moderation_logs", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull(),
+  targetType: varchar("target_type", { length: 50 }).notNull(),
+  targetId: bigint("target_id", { mode: "number", unsigned: true }).notNull(),
+  action: varchar("action", { length: 50 }).notNull(),
+  rule: varchar("rule", { length: 100 }).notNull(),
+  reason: text("reason").notNull(),
+  contentSnapshot: text("content_snapshot"),
+  autoModerated: boolean("auto_moderated").default(true).notNull(),
+  reviewedBy: bigint("reviewed_by", { mode: "number", unsigned: true }),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ModerationLog = typeof moderationLogs.$inferSelect;
+export type InsertModerationLog = typeof moderationLogs.$inferInsert;
 
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
@@ -352,4 +386,3 @@ export const idVerificationsRelations = relations(idVerifications, ({ one }) => 
     references: [users.id],
   }),
 }));
-

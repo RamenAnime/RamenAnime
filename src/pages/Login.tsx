@@ -7,6 +7,7 @@ import { MessageCircle, Shield, ArrowLeft, UserPlus, LogIn, Eye, EyeOff, AlertCi
 import { Link, useNavigate } from "react-router";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { trpc } from "@/providers/trpc";
 
 function PasswordRequirements({ password }: { password: string }) {
   const reqs = [

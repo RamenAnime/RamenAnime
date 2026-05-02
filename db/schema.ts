@@ -192,6 +192,18 @@ export const passwordResetTokens = mysqlTable("password_reset_tokens", {
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
 export type InsertPasswordResetToken = typeof passwordResetTokens.$inferInsert;
 
+// Tax Rates
+export const taxRates = mysqlTable("tax_rates", {
+  id: varchar("id", { length: 128 }).primaryKey(),
+  countryCode: varchar("country_code", { length: 2 }).notNull().unique(),
+  rate: decimal("rate", { precision: 5, scale: 2 }).notNull(),
+  vatName: varchar("vat_name", { length: 50 }).default("VAT"),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+
+export type TaxRate = typeof taxRates.$inferSelect;
+export type InsertTaxRate = typeof taxRates.$inferInsert;
+
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, { fields: [users.id], references: [userProfiles.userId] }),
   posts: many(forumPosts),

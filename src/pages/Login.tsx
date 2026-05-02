@@ -33,7 +33,6 @@ function PasswordRequirements({ password }: { password: string }) {
 export default function Login() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { t } = useTranslation();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");

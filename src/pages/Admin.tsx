@@ -146,9 +146,9 @@ export default function Admin() {
                       {userList?.map((u) => (
                         <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30">
                           <td className="py-2 pr-4 text-muted-foreground">{u.id}</td>
-                          <td className="py-2 pr-4 font-medium">{u.username ?? "—"}</td>
-                          <td className="py-2 pr-4">{u.name ?? "—"}</td>
-                          <td className="py-2 pr-4 text-muted-foreground">{u.email ?? "—"}</td>
+                          <td className="py-2 pr-4 font-medium">{u.username ?? "-"}</td>
+                          <td className="py-2 pr-4">{u.name ?? "-"}</td>
+                          <td className="py-2 pr-4 text-muted-foreground">{u.email ?? "-"}</td>
                           <td className="py-2 pr-4">
                             <Badge variant={u.role === "admin" ? "default" : "secondary"} className="text-xs">
                               {u.role === "admin" ? <Crown className="h-3 w-3 mr-1" /> : null}
@@ -156,7 +156,7 @@ export default function Admin() {
                             </Badge>
                           </td>
                           <td className="py-2 pr-4 text-muted-foreground">{u.authType}</td>
-                          <td className="py-2 pr-4 text-muted-foreground text-xs">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
+                          <td className="py-2 pr-4 text-muted-foreground text-xs">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "-"}</td>
                           <td className="py-2 flex gap-1">
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/profile/${u.id}`)}><Eye className="h-3 w-3" /></Button>
                             {u.role !== "admin" && (
@@ -266,7 +266,7 @@ export default function Admin() {
                           <td className="py-2 pr-4">
                             <Badge variant={d.paymentStatus === "completed" ? "default" : "secondary"} className="text-xs">{d.paymentStatus}</Badge>
                           </td>
-                          <td className="py-2 text-muted-foreground text-xs">{d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "—"}</td>
+                          <td className="py-2 text-muted-foreground text-xs">{d.createdAt ? new Date(d.createdAt).toLocaleDateString() : "-"}</td>
                         </tr>
                       ))}
                     </tbody>

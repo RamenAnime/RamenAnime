@@ -40,7 +40,7 @@ export default function Navbar() {
 
           <div className="hidden md:flex items-center gap-6">
             <Link to="/shop" className={`text-sm font-medium ${isActive("/shop") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.shop")}</Link>
-            <Link to="/social" className={`text-sm font-medium ${isActive("/social") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.forum")}</Link>
+            <Link to="/social" className={`text-sm font-medium ${isActive("/social") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.social")}</Link>
             <Link to="/marketplace" className={`text-sm font-medium ${isActive("/marketplace") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.marketplace")}</Link>
             <Link to="/donate" className={`text-sm font-medium ${isActive("/donate") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.donate")}</Link>
             {isAuthenticated ? null : <Link to="/login" className={`text-sm font-medium ${isActive("/login") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>{t("nav.login")}</Link>}
@@ -81,7 +81,7 @@ export default function Navbar() {
                 <div className="flex flex-col gap-1 mt-4">
                   <Link to="/" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${isActive("/") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>{t("nav.home")}</Link>
                   <Link to="/shop" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${isActive("/shop") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>{t("nav.shop")}</Link>
-                  <Link to="/social" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${isActive("/social") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>{t("nav.forum")}</Link>
+                  <Link to="/social" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${isActive("/social") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>{t("nav.social")}</Link>
                   <Link to="/marketplace" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${isActive("/marketplace") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>{t("nav.marketplace")}</Link>
                   <Link to="/donate" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${isActive("/donate") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>{t("nav.donate")}</Link>
                   {isAuthenticated && <Link to={`/profile/${user?.id}`} onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium ${isActive(`/profile/${user?.id}`) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}><User className="h-4 w-4" /> {t("nav.myProfile")}</Link>}

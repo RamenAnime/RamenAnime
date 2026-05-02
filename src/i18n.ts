@@ -5,7 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 const resources = {
   en: {
     translation: {
-      nav: { home: 'Home', shop: 'Shop', prints3d: '3D Prints', cards: 'Trading Cards', contact: 'Contact', social: 'Social Forum', login: 'Join / Login', terms: 'Terms', friends: 'Friends', profile: 'Profile', marketplace: 'Marketplace' },
+      nav: { home: 'Home', shop: 'Shop', prints3d: '3D Prints', cards: 'Trading Cards', contact: 'Contact', social: 'Social Forum', brand: 'ラーメンアニメ', donate: 'Donate', myProfile: 'My Profile', admin: 'Admin Dashboard', logout: 'Logout', menu: 'Menu', language: 'Language', login: 'Join / Login', terms: 'Terms', friends: 'Friends', profile: 'Profile', marketplace: 'Marketplace' },
       hero: { title: 'ラーメンアニメ', subtitle: 'Your one-stop shop for custom 3D printed anime goods and trading cards. Handcrafted with passion. Shipped with care.', shopNow: 'Shop Now', joinCommunity: 'Join Community' },
       features: { prints: 'Custom 3D Prints', printsDesc: 'Made to order anime-themed prints with premium PLA and resin', cards: 'Trading Cards', cardsDesc: 'Pokemon, One Piece, Naruto, Dragon Ball, Yu-Gi-Oh & more', shipping: 'Fast Shipping', shippingDesc: 'Quick dispatch on all orders with tracking', verified: 'eBay Verified', verifiedDesc: 'Trusted seller with 100+ positive reviews' },
       products: { title: 'Our Products', subtitle: 'Shop Collection', viewAll: 'View All Products', orderNow: 'Order Now', viewOnEbay: 'View on eBay' },

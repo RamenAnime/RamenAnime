@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { Routes, Route } from 'react-router'
 import GeoBlock from '@/components/GeoBlock'
 import EnhancedAgeGate from '@/components/EnhancedAgeGate'
+import { CookieConsent } from '@/components/legal/ComplianceRouter'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import Home from './pages/Home'
@@ -62,6 +63,7 @@ export default function App() {
               </Routes>
             </Suspense>
           </main>
+          <CookieConsent />
           <Footer />
         </div>
       </EnhancedAgeGate>

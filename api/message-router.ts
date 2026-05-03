@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createRouter, publicQuery, protectedQuery } from "./middleware";
-import { db } from "../db";
+import { createRouter, publicQuery, authedQuery } from "./middleware";
+import { db } from "../../db";
 import { messages, users } from "../db/schema";
 import { eq, and, or, desc, sql, lt } from "drizzle-orm";
 
@@ -15,7 +15,7 @@ setInterval(() => {
 }, 10000);
 
 export const messageRouter = createRouter({
-  getConversations: protectedQuery.query(async ({ ctx }) => {
+  getConversations: authedQuery.query(async ({ ctx }) => {
     const userId = ctx.user.id;
     const result = await db.select({
       otherUserId: sql<number>`CASE WHEN ${messages.senderId} = ${userId} THEN ${messages.recipientId} ELSE ${messages.senderId} END`,
@@ -33,7 +33,7 @@ export const messageRouter = createRouter({
     return conversations;
   }),
 
-  getMessages: protectedQuery.input(z.object({ otherUserId: z.number(), cursor: z.number().optional(), limit: z.number().default(50) })).query(async ({ ctx, input }) => {
+  getMessages: authedQuery.input(z.object({ otherUserId: z.number(), cursor: z.number().optional(), limit: z.number().default(50) })).query(async ({ ctx, input }) => {
     const userId = ctx.user.id;
     const { otherUserId, cursor, limit } = input;
     const conditions = [or(and(eq(messages.senderId, userId), eq(messages.recipientId, otherUserId)), and(eq(messages.senderId, otherUserId), eq(messages.recipientId, userId)))];
@@ -45,12 +45,12 @@ export const messageRouter = createRouter({
     return { messages: result.reverse(), nextCursor: result.length === limit ? result[result.length - 1]?.id : undefined };
   }),
 
-  sendMessage: protectedQuery.input(z.object({ recipientId: z.number(), content: z.string().min(1).max(5000), attachments: z.array(z.string().url()).max(5).optional(), replyToId: z.number().optional() })).mutation(async ({ ctx, input }) => {
+  sendMessage: authedQuery.input(z.object({ recipientId: z.number(), content: z.string().min(1).max(5000), attachments: z.array(z.string().url()).max(5).optional(), replyToId: z.number().optional() })).mutation(async ({ ctx, input }) => {
     const [message] = await db.insert(messages).values({ senderId: ctx.user.id, recipientId: input.recipientId, content: input.content, attachments: input.attachments || [], replyToId: input.replyToId, read: false }).returning();
     return message;
   }),
 
-  editMessage: protectedQuery.input(z.object({ messageId: z.number(), content: z.string().min(1).max(5000) })).mutation(async ({ ctx, input }) => {
+  editMessage: authedQuery.input(z.object({ messageId: z.number(), content: z.string().min(1).max(5000) })).mutation(async ({ ctx, input }) => {
     const [msg] = await db.select().from(messages).where(eq(messages.id, input.messageId)).limit(1);
     if (!msg || msg.senderId !== ctx.user.id) throw new Error("Unauthorized");
     if (Date.now() - new Date(msg.createdAt).getTime() > 15 * 60 * 1000) throw new Error("Too old");
@@ -58,14 +58,14 @@ export const messageRouter = createRouter({
     return { success: true };
   }),
 
-  deleteMessage: protectedQuery.input(z.object({ messageId: z.number() })).mutation(async ({ ctx, input }) => {
+  deleteMessage: authedQuery.input(z.object({ messageId: z.number() })).mutation(async ({ ctx, input }) => {
     const [msg] = await db.select().from(messages).where(eq(messages.id, input.messageId)).limit(1);
     if (!msg || (msg.senderId !== ctx.user.id && msg.recipientId !== ctx.user.id)) throw new Error("Unauthorized");
     await db.delete(messages).where(eq(messages.id, input.messageId));
     return { success: true };
   }),
 
-  react: protectedQuery.input(z.object({ messageId: z.number(), emoji: z.string().min(1).max(10) })).mutation(async ({ ctx, input }) => {
+  react: authedQuery.input(z.object({ messageId: z.number(), emoji: z.string().min(1).max(10) })).mutation(async ({ ctx, input }) => {
     const [msg] = await db.select().from(messages).where(eq(messages.id, input.messageId)).limit(1);
     if (!msg || (msg.senderId !== ctx.user.id && msg.recipientId !== ctx.user.id)) throw new Error("Unauthorized");
     const reactions = (msg.reactions || {}) as Record<string, number[]>;
@@ -77,21 +77,21 @@ export const messageRouter = createRouter({
     return { success: true, reactions };
   }),
 
-  typing: protectedQuery.input(z.object({ recipientId: z.number(), isTyping: z.boolean() })).mutation(async ({ ctx, input }) => {
+  typing: authedQuery.input(z.object({ recipientId: z.number(), isTyping: z.boolean() })).mutation(async ({ ctx, input }) => {
     if (!typingStore.has(ctx.user.id)) typingStore.set(ctx.user.id, new Map());
     if (input.isTyping) typingStore.get(ctx.user.id)?.set(input.recipientId, Date.now());
     else typingStore.get(ctx.user.id)?.delete(input.recipientId);
     return { success: true };
   }),
 
-  getTyping: protectedQuery.input(z.object({ otherUserId: z.number() })).query(async ({ ctx, input }) => {
+  getTyping: authedQuery.input(z.object({ otherUserId: z.number() })).query(async ({ ctx, input }) => {
     const ts = typingStore.get(input.otherUserId)?.get(ctx.user.id);
     if (!ts) return { isTyping: false };
     if (Date.now() - ts > TYPING_TTL) { typingStore.get(input.otherUserId)?.delete(ctx.user.id); return { isTyping: false }; }
     return { isTyping: true };
   }),
 
-  getUnreadCount: protectedQuery.query(async ({ ctx }) => {
+  getUnreadCount: authedQuery.query(async ({ ctx }) => {
     const result = await db.select({ count: sql<number>`COUNT(*)` }).from(messages).where(and(eq(messages.recipientId, ctx.user.id), eq(messages.read, false)));
     return result[0]?.count || 0;
   }),

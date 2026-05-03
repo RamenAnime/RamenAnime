@@ -1,172 +1,225 @@
-import { useState } from "react";
-import { Link } from "react-router";
-import { trpc } from "@/providers/trpc";
+import { useEffect, useRef, useState } from "react";
+import { trpc } from "@/utils/trpc";
+import { useAuth } from "@/hooks/useAuth";
+import { formatDistanceToNow } from "date-fns";
+import { Send, Pencil, Trash2, Smile, Check, CheckCheck, Loader2, MessageCircle } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Mail, Trash2, Eye, Plus, MessageSquare, Inbox, Send, ArrowLeft } from "lucide-react";
-import { toast } from "sonner";
 
-function MessageList({ messages, loading, onView, type, onDelete }: {
-  messages: any[]; loading: boolean; onView: (id: number) => void; type: string; onDelete: (id: number) => void;
-n}) {
-  if (loading) return <div className="space-y-3">{[...Array(3)].map((_, i) => <Card key={i} className="bg-card/50 animate-pulse h-20" />)}</div>;
-  if (!messages.length) return (
-    <Card className="bg-card border-border p-8 text-center">
-      <MessageSquare className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
-      <p className="text-muted-foreground">No messages</p>
-    </Card>
-  );
-  return (
-    <ScrollArea className="h-[60vh]">
-      <div className="space-y-2">
-        {messages.map((m) => (
-          <Card key={m.id} className={`bg-card border-border hover:border-primary/30 transition-colors cursor-pointer ${!m.isRead && type === "inbox" ? "border-primary/30 bg-primary/5" : ""}`} onClick={() => onView(m.id)}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-sm truncate">{m.subject}</p>
-                  {!m.isRead && type === "inbox" && <Badge variant="default" className="text-[10px] h-4">New</Badge>}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {type === "inbox" ? `From: ${m.senderName}` : `To: ${m.recipientName}`} | {new Date(m.createdAt).toLocaleDateString()}
-                </p>
-                <p className="text-xs text-muted-foreground line-clamp-1 mt-1">{m.body}</p>
-              </div>
-              <div className="flex gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
-                <Button size="sm" variant="ghost" onClick={() => onView(m.id)}><Eye className="h-3 w-3" /></Button>
-                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onDelete(m.id)}><Trash2 className="h-3 w-3" /></Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </ScrollArea>
-  );
-}
+const EMOJI_LIST = ["👍", "❤️", "😂", "😮", "😢", "🔥"];
 
-function ComposeForm({ onSent }: { onSent: () => void }) {
-  const [recipientId, setRecipientId] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
-  const utils = trpc.useUtils();
-  const send = trpc.message.send.useMutation({
-    onSuccess: () => { onSent(); utils.message.inbox.invalidate(); utils.message.sent.invalidate(); },
-    onError: (err) => toast.error(err.message),
-  });
+export default function MessagesPage() {
+  const { t } = useTranslation();
+  const { user } = useAuth();
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [input, setInput] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [showReactions, setShowReactions] = useState(null);
+  const bottomRef = useRef(null);
+  const typingTimeout = useRef(null);
 
-  return (
-    <div className="space-y-4 pt-2">
-      <div>
-        <label className="text-sm font-medium mb-1 block">Recipient User ID</label>
-        <Input value={recipientId} onChange={(e) => setRecipientId(e.target.value)} placeholder="Enter recipient's user ID number" className="bg-muted/50" />
-        <p className="text-xs text-muted-foreground mt-1">Find this on their profile page URL</p>
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Subject</label>
-        <Input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="bg-muted/50" />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-1 block">Message</label>
-        <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write your message..." rows={5} className="bg-muted/50" />
-      </div>
-      <Button
-        className="w-full bg-primary text-primary-foreground"
-        disabled={!recipientId.trim() || !subject.trim() || !body.trim() || send.isPending}
-        onClick={() => send.mutate({ recipientId: parseInt(recipientId), subject, body })}
-      >
-        {send.isPending ? "Sending..." : "Send Message"}
-      </Button>
-    </div>
-  );
-}
+  const { data: conversations } = trpc.message.conversations.useQuery();
+  const utils = trpc.useContext();
 
-export default function Messages() {
-  const [activeTab, setActiveTab] = useState("inbox");
-  const [viewingMessage, setViewingMessage] = useState<number | null>(null);
-  const [composeOpen, setComposeOpen] = useState(false);
+  const { data: messagesData, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    trpc.message.messages.useInfiniteQuery(
+      { conversationId: activeConversation },
+      { enabled: !!activeConversation, getNextPageParam: (last) => last.nextCursor }
+    );
 
-  const utils = trpc.useUtils();
-  const { data: inbox, isLoading: inboxLoading } = trpc.message.inbox.useQuery();
-  const { data: sent, isLoading: sentLoading } = trpc.message.sent.useQuery();
-  const { data: messageDetail } = trpc.message.get.useQuery(
-    { id: viewingMessage ?? 0 }, { enabled: viewingMessage !== null }
+  const messages = messagesData?.pages.flatMap((p) => p.items).reverse() ?? [];
+
+  const { mutate: setTyping } = trpc.message.typing.useMutation();
+  const { data: typingUsers } = trpc.message.whoIsTyping.useQuery(
+    { conversationId: activeConversation },
+    { enabled: !!activeConversation, refetchInterval: 2000 }
   );
 
-  const deleteMsg = trpc.message.delete.useMutation({
+  const sendMsg = trpc.message.send.useMutation({
     onSuccess: () => {
-      toast.success("Message deleted");
-      utils.message.inbox.invalidate();
-      utils.message.sent.invalidate();
-      setViewingMessage(null);
+      utils.message.messages.invalidate({ conversationId: activeConversation });
+      utils.message.conversations.invalidate();
+      setInput("");
+      setTyping({ conversationId: activeConversation, isTyping: false });
     },
   });
 
-  if (viewingMessage && messageDetail) {
+  const editMsg = trpc.message.edit.useMutation({
+    onSuccess: () => {
+      utils.message.messages.invalidate({ conversationId: activeConversation });
+      setEditingId(null);
+    },
+  });
+
+  const deleteMsg = trpc.message.delete.useMutation({
+    onSuccess: () => utils.message.messages.invalidate({ conversationId: activeConversation }),
+  });
+
+  const reactMsg = trpc.message.react.useMutation({
+    onSuccess: () => utils.message.messages.invalidate({ conversationId: activeConversation }),
+  });
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages.length]);
+
+  const handleInputChange = (val) => {
+    setInput(val);
+    if (activeConversation) {
+      setTyping({ conversationId: activeConversation, isTyping: true });
+      if (typingTimeout.current) clearTimeout(typingTimeout.current);
+      typingTimeout.current = setTimeout(() => {
+        setTyping({ conversationId: activeConversation, isTyping: false });
+      }, 2000);
+    }
+  };
+
+  const handleSend = () => {
+    if (!input.trim() || !activeConversation) return;
+    if (editingId) {
+      editMsg.mutate({ messageId: editingId, content: input.trim() });
+    } else {
+      sendMsg.mutate({ conversationId: activeConversation, content: input.trim() });
+    }
+  };
+
+  if (!user) {
     return (
-      <div className="min-h-screen py-8">
-        <div className="container px-4 max-w-3xl mx-auto">
-          <Button variant="ghost" onClick={() => setViewingMessage(null)} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back
-          </Button>
-          <Card className="bg-card border-border">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-xl font-bold">{messageDetail.subject}</h2>
-                  <p className="text-sm text-muted-foreground">
-                    From: <strong>{messageDetail.senderName}</strong> | To: <strong>{messageDetail.recipientName}</strong>
-                  </p>
-                  <p className="text-xs text-muted-foreground">{new Date(messageDetail.createdAt).toLocaleString()}</p>
-                </div>
-                <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteMsg.mutate({ id: messageDetail.id })}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="border-t border-border pt-4 whitespace-pre-wrap text-sm">{messageDetail.body}</div>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-muted-foreground">{t("loginRequired")}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen py-8">
-      <div className="container px-4 max-w-4xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Mail className="h-7 w-7 text-primary" />
-            <h1 className="text-2xl font-bold">Messages</h1>
-          </div>
-          <Dialog open={composeOpen} onOpenChange={setComposeOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-primary text-primary-foreground"><Plus className="h-4 w-4 mr-2" /> New Message</Button>
-            </DialogTrigger>
-            <DialogContent className="bg-card border-border max-w-lg">
-              <DialogHeader><DialogTitle>Send Message</DialogTitle></DialogHeader>
-              <ComposeForm onSent={() => { setComposeOpen(false); utils.message.inbox.invalidate(); utils.message.sent.invalidate(); }} />
-            </DialogContent>
-          </Dialog>
+    <div className="flex h-[calc(100vh-64px)] bg-background">
+      <aside className="w-80 border-r flex flex-col">
+        <div className="p-4 border-b font-semibold text-lg">{t("messages")}</div>
+        <div className="flex-1 overflow-y-auto">
+          {conversations?.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setActiveConversation(c.id)}
+              className={`w-full text-left px-4 py-3 border-b hover:bg-muted transition ${
+                activeConversation === c.id ? "bg-muted" : ""
+              }`}
+            >
+              <div className="flex justify-between items-center">
+                <span className="font-medium truncate">{c.title || t("untitledChat")}</span>
+                {c.unread_count > 0 && (
+                  <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5">
+                    {c.unread_count}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground truncate mt-1">{c.last_message || t("noMessages")}</p>
+            </button>
+          ))}
+          {(!conversations || conversations.length === 0) && (
+            <div className="p-6 text-center text-muted-foreground text-sm">{t("noConversations")}</div>
+          )}
         </div>
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 bg-muted">
-            <TabsTrigger value="inbox"><Inbox className="h-4 w-4 mr-1" /> Inbox</TabsTrigger>
-            <TabsTrigger value="sent"><Send className="h-4 w-4 mr-1" /> Sent</TabsTrigger>
-          </TabsList>
-          <TabsContent value="inbox">
-            <MessageList messages={inbox ?? []} loading={inboxLoading} onView={setViewingMessage} type="inbox" onDelete={(id) => deleteMsg.mutate({ id })} />
-          </TabsContent>
-          <TabsContent value="sent">
-            <MessageList messages={sent ?? []} loading={sentLoading} onView={setViewingMessage} type="sent" onDelete={(id) => deleteMsg.mutate({ id })} />
-          </TabsContent>
-        </Tabs>
-      </div>
+      </aside>
+
+      <main className="flex-1 flex flex-col">
+        {!activeConversation ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground">
+            <MessageCircle className="w-12 h-12 mb-4 opacity-20" />
+            <p>{t("selectConversation")}</p>
+          </div>
+        ) : (
+          <>
+            <div className="h-14 border-b flex items-center px-4 justify-between">
+              <span className="font-medium">
+                {conversations?.find((c) => c.id === activeConversation)?.title || t("chat")}
+              </span>
+              <div className="flex gap-1">
+                {(typingUsers?.userIds ?? []).map((uid) => (
+                  <span key={uid} className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    {t("typing")}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              {hasNextPage && (
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => fetchNextPage()} disabled={isFetchingNextPage}>
+                  {isFetchingNextPage ? <Loader2 className="w-4 h-4 animate-spin" /> : t("loadMore")}
+                </Button>
+              )}
+              {messages.map((msg) => {
+                const isMe = msg.sender_id === user.id;
+                const reactions = JSON.parse(msg.reactions || "[]");
+                return (
+                  <div key={msg.id} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
+                    <div className={`max-w-[70%] rounded-2xl px-4 py-2 relative group ${isMe ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                      <div className="text-xs opacity-70 mb-1">{msg.username}</div>
+                      <div className="text-sm whitespace-pre-wrap">{msg.content}</div>
+                      <div className="flex items-center gap-1 mt-1 justify-end">
+                        <span className="text-[10px] opacity-50">
+                          {formatDistanceToNow(new Date(msg.created_at), { addSuffix: false })}
+                        </span>
+                        {isMe && <span className="opacity-60">{msg.read ? <CheckCheck className="w-3 h-3" /> : <Check className="w-3 h-3" />}</span>}
+                      </div>
+
+                      {reactions.length > 0 && (
+                        <div className="flex gap-1 mt-1 flex-wrap">
+                          {reactions.map((r, i) => (
+                            <span key={i} className="text-xs bg-black/10 dark:bg-white/10 rounded-full px-1.5 py-0.5">{r.emoji}</span>
+                          ))}
+                        </div>
+                      )}
+
+                      <div className={`absolute top-2 ${isMe ? "left-0 -translate-x-full pr-2" : "right-0 translate-x-full pl-2"} hidden group-hover:flex items-center gap-1`}>
+                        <button onClick={() => setShowReactions(showReactions === msg.id ? null : msg.id)} className="p-1 rounded hover:bg-muted">
+                          <Smile className="w-4 h-4" />
+                        </button>
+                        {isMe && (
+                          <>
+                            <button onClick={() => { setEditingId(msg.id); setInput(msg.content); }} className="p-1 rounded hover:bg-muted">
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => deleteMsg.mutate({ messageId: msg.id })} className="p-1 rounded hover:bg-muted text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {showReactions === msg.id && (
+                        <div className={`absolute z-10 bg-popover border rounded-lg p-1 flex gap-1 shadow-lg ${isMe ? "left-0 bottom-full mb-1" : "right-0 bottom-full mb-1"}`}>
+                          {EMOJI_LIST.map((e) => (
+                            <button key={e} onClick={() => { reactMsg.mutate({ messageId: msg.id, emoji: e }); setShowReactions(null); }} className="hover:bg-muted p-1 rounded">{e}</button>
+                          ))}
+                        </div>
+                      )}
+
+                      {msg.edited && <div className="text-[10px] opacity-40 italic mt-0.5">{t("edited")}</div>}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={bottomRef} />
+            </div>
+
+            <div className="h-16 border-t px-4 flex items-center gap-2">
+              <Input
+                value={input}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder={editingId ? t("editMessage") + "..." : t("typeMessage") + "..."}
+                className="flex-1"
+              />
+              <Button onClick={handleSend} disabled={!input.trim() || sendMsg.isPending}>
+                {sendMsg.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 }

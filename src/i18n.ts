@@ -2,6 +2,16 @@ import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
+const RTL_LANGUAGES = new Set(['ar', 'he']);
+
+function setDocumentDirection(lng: string) {
+  const base = lng.split('-')[0];
+  const dir = RTL_LANGUAGES.has(base) ? 'rtl' : 'ltr';
+  document.documentElement.dir = dir;
+  document.documentElement.lang = lng;
+}
+
+
 const resources = {
   en: {
     translation: {
@@ -719,4 +729,6 @@ i18n
     interpolation: { escapeValue: false },
   });
 
+setDocumentDirection(i18n.language ?? 'en');
+i18n.on('languageChanged', setDocumentDirection);
 export default i18n;

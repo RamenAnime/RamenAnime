@@ -87,3 +87,9 @@
   animation: fadeIn 0.6s ease-out 0.2s forwards;
   opacity: 0;
 }
+
+/* RTL support utilities */
+[dir="rtl"] .rtl-flip { transform: scaleX(-1); }
+[dir="rtl"] .rtl-text-left { text-align: right; }
+[dir="rtl"] .rtl-text-right { text-align: left; }
+[dir="rtl"] .rtl-space-x-reverse > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1; }

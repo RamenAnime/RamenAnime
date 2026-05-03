@@ -1,212 +1,134 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { trpc } from "@/providers/trpc";
 
-// Country to currency mapping for all allowed geoblock countries
-export const COUNTRY_CURRENCY: Record<string, { code: string; symbol: string; name: string; rate: number }> = {
-  // North America
-  US: { code: "USD", symbol: "$", name: "US Dollar", rate: 1 },
-  CA: { code: "CAD", symbol: "C$", name: "Canadian Dollar", rate: 1.36 },
-  MX: { code: "MXN", symbol: "MX$", name: "Mexican Peso", rate: 17.0 },
-  // Oceania
-  AU: { code: "AUD", symbol: "A$", name: "Australian Dollar", rate: 1.52 },
-  NZ: { code: "NZD", symbol: "NZ$", name: "New Zealand Dollar", rate: 1.64 },
-  // Americas
-  BR: { code: "BRL", symbol: "R$", name: "Brazilian Real", rate: 4.95 },
-  // EU - all EUR
-  AT: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  BE: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  BG: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  HR: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  CY: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  CZ: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  DK: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  EE: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  FI: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  FR: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  DE: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  GR: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  HU: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  IT: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  LV: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  LT: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  LU: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  MT: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  NL: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  PL: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  PT: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  RO: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  SK: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  SI: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  ES: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  SE: { code: "EUR", symbol: "\u20AC", name: "Euro", rate: 0.92 },
-  // Asia
-  JP: { code: "JPY", symbol: "\u00A5", name: "Japanese Yen", rate: 151.0 },
-  KR: { code: "KRW", symbol: "\u20A9", name: "South Korean Won", rate: 1350.0 },
-  CN: { code: "CNY", symbol: "\u00A5", name: "Chinese Yuan", rate: 7.24 },
-  HK: { code: "HKD", symbol: "HK$", name: "Hong Kong Dollar", rate: 7.83 },
-  SG: { code: "SGD", symbol: "S$", name: "Singapore Dollar", rate: 1.35 },
-  MY: { code: "MYR", symbol: "RM", name: "Malaysian Ringgit", rate: 4.75 },
-  TH: { code: "THB", symbol: "\u0E3F", name: "Thai Baht", rate: 36.5 },
-  VN: { code: "VND", symbol: "\u20AB", name: "Vietnamese Dong", rate: 25000.0 },
-  ID: { code: "IDR", symbol: "Rp", name: "Indonesian Rupiah", rate: 15800.0 },
-  PH: { code: "PHP", symbol: "\u20B1", name: "Philippine Peso", rate: 56.5 },
-  IN: { code: "INR", symbol: "\u20B9", name: "Indian Rupee", rate: 83.5 },
-  TW: { code: "TWD", symbol: "NT$", name: "Taiwan Dollar", rate: 32.0 },
-  TR: { code: "TRY", symbol: "\u20BA", name: "Turkish Lira", rate: 32.0 },
-  SA: { code: "SAR", symbol: "\uFDFC", name: "Saudi Riyal", rate: 3.75 },
-  AE: { code: "AED", symbol: "dh", name: "UAE Dirham", rate: 3.67 },
-  IL: { code: "ILS", symbol: "\u20AA", name: "Israeli Shekel", rate: 3.72 },
-  // Fallback for any other allowed country
-  DEFAULT: { code: "USD", symbol: "$", name: "US Dollar", rate: 1 },
-};
+export type CurrencyCode =
+  | "USD" | "EUR" | "JPY" | "GBP" | "CAD" | "AUD" | "NZD"
+  | "MXN" | "BRL" | "KRW" | "CNY" | "HKD" | "SGD" | "MYR"
+  | "THB" | "VND" | "IDR" | "PHP" | "INR" | "TWD" | "TRY"
+  | "SAR" | "AED" | "ILS" | "PLN" | "CZK" | "DKK" | "SEK"
+  | "HUF" | "RON" | "CHF" | "NOK" | "ZAR" | "PKR" | "BDT";
 
-const CURRENCY_STORAGE_KEY = "ramen_anime_currency";
-const COUNTRY_STORAGE_KEY = "ramen_anime_country";
-
-// All available currencies for manual selection
 export const ALL_CURRENCIES = [
-  { code: "USD", symbol: "$", name: "US Dollar" },
-  { code: "EUR", symbol: "\u20AC", name: "Euro" },
-  { code: "JPY", symbol: "\u00A5", name: "Japanese Yen" },
-  { code: "GBP", symbol: "\u00A3", name: "British Pound" },
-  { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
-  { code: "AUD", symbol: "A$", name: "Australian Dollar" },
-  { code: "NZD", symbol: "NZ$", name: "New Zealand Dollar" },
-  { code: "MXN", symbol: "MX$", name: "Mexican Peso" },
-  { code: "BRL", symbol: "R$", name: "Brazilian Real" },
-  { code: "KRW", symbol: "\u20A9", name: "South Korean Won" },
-  { code: "CNY", symbol: "\u00A5", name: "Chinese Yuan" },
-  { code: "HKD", symbol: "HK$", name: "Hong Kong Dollar" },
-  { code: "SGD", symbol: "S$", name: "Singapore Dollar" },
-  { code: "MYR", symbol: "RM", name: "Malaysian Ringgit" },
-  { code: "THB", symbol: "\u0E3F", name: "Thai Baht" },
-  { code: "VND", symbol: "\u20AB", name: "Vietnamese Dong" },
-  { code: "IDR", symbol: "Rp", name: "Indonesian Rupiah" },
-  { code: "PHP", symbol: "\u20B1", name: "Philippine Peso" },
-  { code: "INR", symbol: "\u20B9", name: "Indian Rupee" },
-  { code: "TWD", symbol: "NT$", name: "Taiwan Dollar" },
-  { code: "TRY", symbol: "\u20BA", name: "Turkish Lira" },
-  { code: "SAR", symbol: "\uFDFC", name: "Saudi Riyal" },
-  { code: "AED", symbol: "dh", name: "UAE Dirham" },
-  { code: "ILS", symbol: "\u20AA", name: "Israeli Shekel" },
-  { code: "PLN", symbol: "z\u0142", name: "Polish Zloty" },
-  { code: "CZK", symbol: "K\u010D", name: "Czech Koruna" },
-  { code: "DKK", symbol: "kr", name: "Danish Krone" },
-  { code: "SEK", symbol: "kr", name: "Swedish Krona" },
-  { code: "HUF", symbol: "Ft", name: "Hungarian Forint" },
-  { code: "RON", symbol: "lei", name: "Romanian Leu" },
+  { code: "USD", name: "US Dollar" }, { code: "EUR", name: "Euro" },
+  { code: "JPY", name: "Japanese Yen" }, { code: "GBP", name: "British Pound" },
+  { code: "CAD", name: "Canadian Dollar" }, { code: "AUD", name: "Australian Dollar" },
+  { code: "NZD", name: "New Zealand Dollar" }, { code: "MXN", name: "Mexican Peso" },
+  { code: "BRL", name: "Brazilian Real" }, { code: "KRW", name: "South Korean Won" },
+  { code: "CNY", name: "Chinese Yuan" }, { code: "HKD", name: "Hong Kong Dollar" },
+  { code: "SGD", name: "Singapore Dollar" }, { code: "MYR", name: "Malaysian Ringgit" },
+  { code: "THB", name: "Thai Baht" }, { code: "VND", name: "Vietnamese Dong" },
+  { code: "IDR", name: "Indonesian Rupiah" }, { code: "PHP", name: "Philippine Peso" },
+  { code: "INR", name: "Indian Rupee" }, { code: "TWD", name: "Taiwan Dollar" },
+  { code: "TRY", name: "Turkish Lira" }, { code: "SAR", name: "Saudi Riyal" },
+  { code: "AED", name: "UAE Dirham" }, { code: "ILS", name: "Israeli Shekel" },
+  { code: "PLN", name: "Polish Zloty" }, { code: "CZK", name: "Czech Koruna" },
+  { code: "DKK", name: "Danish Krone" }, { code: "SEK", name: "Swedish Krona" },
+  { code: "HUF", name: "Hungarian Forint" }, { code: "RON", name: "Romanian Leu" },
+  { code: "CHF", name: "Swiss Franc" }, { code: "NOK", name: "Norwegian Krone" },
+  { code: "ZAR", name: "South African Rand" }, { code: "PKR", name: "Pakistani Rupee" },
+  { code: "BDT", name: "Bangladeshi Taka" },
 ];
 
-export function getCurrencyForCountry(countryCode: string) {
-  return COUNTRY_CURRENCY[countryCode.toUpperCase()] ?? COUNTRY_CURRENCY.DEFAULT;
-}
+const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
+  US: "USD", GB: "GBP", CA: "CAD", AU: "AUD", NZ: "NZD", JP: "JPY",
+  KR: "KRW", CN: "CNY", TW: "TWD", HK: "HKD", SG: "SGD", PH: "PHP",
+  TH: "THB", VN: "VND", ID: "IDR", MY: "MYR", IN: "INR", PK: "PKR",
+  BD: "BDT", DE: "EUR", FR: "EUR", IT: "EUR", ES: "EUR", NL: "EUR",
+  BE: "EUR", AT: "EUR", PT: "EUR", IE: "EUR", FI: "EUR", GR: "EUR",
+  SK: "EUR", SI: "EUR", LU: "EUR", MT: "EUR", CY: "EUR", EE: "EUR",
+  LV: "EUR", LT: "EUR", PL: "PLN", CZ: "CZK", HU: "HUF", RO: "RON",
+  BG: "RON", HR: "EUR", DK: "DKK", SE: "SEK", NO: "NOK", CH: "CHF",
+  TR: "TRY", SA: "SAR", AE: "AED", IL: "ILS", ZA: "ZAR", MX: "MXN",
+  BR: "BRL",
+};
 
-// Convert USD amount to target currency
-export function convertPrice(usdAmount: number, currencyCode: string): number {
-  const currency = ALL_CURRENCIES.find((c) => c.code === currencyCode);
-  if (!currency) return usdAmount;
-  const countryEntry = Object.values(COUNTRY_CURRENCY).find((c) => c.code === currencyCode);
-  const rate = countryEntry?.rate ?? 1;
-  return Math.round(usdAmount * rate * 100) / 100;
-}
+const STATIC_RATES: Record<string, number> = {
+  USD: 1, EUR: 0.92, JPY: 150.5, GBP: 0.79, CAD: 1.35, AUD: 1.52,
+  NZD: 1.62, MXN: 17.1, BRL: 4.95, KRW: 1330, CNY: 7.2, HKD: 7.82,
+  SGD: 1.34, MYR: 4.72, THB: 35.8, VND: 24500, IDR: 15600, PHP: 56.2,
+  INR: 83.2, TWD: 31.5, TRY: 30.5, SAR: 3.75, AED: 3.67, ILS: 3.65,
+  PLN: 4.0, CZK: 23.2, DKK: 6.9, SEK: 10.4, HUF: 358, RON: 4.6,
+  CHF: 0.88, NOK: 10.6, ZAR: 18.8, PKR: 278, BDT: 110,
+};
 
-// Format price with currency symbol
-export function formatPrice(amount: number, currencyCode: string): string {
-  const currency = ALL_CURRENCIES.find((c) => c.code === currencyCode);
-  const symbol = currency?.symbol ?? "$";
-  // For high-value currencies, no decimals
-  if (["JPY", "KRW", "VND", "IDR"].includes(currencyCode)) {
-    return `${symbol}${Math.round(amount).toLocaleString()}`;
-  }
-  return `${symbol}${amount.toFixed(2)}`;
-}
-
-// Main hook
 export function useCurrency() {
-  const [currencyCode, setCurrencyCode] = useState<string>(() => {
-    // Check for manual override first
-    const stored = localStorage.getItem(CURRENCY_STORAGE_KEY);
-    if (stored) return stored;
-    // Auto-detect from country
-    const country = localStorage.getItem(COUNTRY_STORAGE_KEY);
-    if (country) {
-      const curr = getCurrencyForCountry(country);
-      return curr.code;
-    }
-    return "USD";
-  });
+  const [currencyCode, setCurrency] = useState<CurrencyCode>("USD");
+  const [detectedCountry, setDetectedCountry] = useState<string | null>(null);
 
-  const [detectedCountry, setDetectedCountry] = useState<string>(() => {
-    return localStorage.getItem(COUNTRY_STORAGE_KEY) ?? "";
-  });
+  const { data: liveRates } = trpc.currency.exchangeRates.useQuery(
+    { base: "USD" },
+    { staleTime: 30 * 60 * 1000, retry: 2 }
+  );
 
-  // Auto-detect country on mount
   useEffect(() => {
-    const detectCountry = async () => {
-      const stored = localStorage.getItem(COUNTRY_STORAGE_KEY);
-      if (stored) {
-        setDetectedCountry(stored);
-        // Only auto-set currency if no manual override
-        if (!localStorage.getItem(CURRENCY_STORAGE_KEY)) {
-          const curr = getCurrencyForCountry(stored);
-          setCurrencyCode(curr.code);
-        }
-        return;
-      }
-      try {
-        const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(5000) });
-        if (res.ok) {
-          const data = await res.json();
-          const cc = data.country_code?.toUpperCase() ?? "US";
-          localStorage.setItem(COUNTRY_STORAGE_KEY, cc);
-          setDetectedCountry(cc);
-          if (!localStorage.getItem(CURRENCY_STORAGE_KEY)) {
-            const curr = getCurrencyForCountry(cc);
-            setCurrencyCode(curr.code);
-          }
-        }
-      } catch {
-        // Fallback to USD
-        setCurrencyCode("USD");
-      }
-    };
-    detectCountry();
+    const stored = localStorage.getItem("userCurrency") as CurrencyCode | null;
+    if (stored && ALL_CURRENCIES.some((c) => c.code === stored)) {
+      setCurrency(stored);
+    }
+    fetch("https://ipapi.co/json/")
+      .then((r) => r.json())
+      .then((data) => {
+        const country = data?.country_code ?? "";
+        setDetectedCountry(country);
+        if (!stored) setCurrency(COUNTRY_TO_CURRENCY[country] ?? "USD");
+      })
+      .catch(() => { if (!stored) setCurrency("USD"); });
   }, []);
 
-  const setCurrency = useCallback((code: string) => {
-    localStorage.setItem(CURRENCY_STORAGE_KEY, code);
-    setCurrencyCode(code);
+  const setCurrencyWithStorage = useCallback((code: CurrencyCode) => {
+    localStorage.setItem("userCurrency", code);
+    setCurrency(code);
   }, []);
 
   const resetToAuto = useCallback(() => {
-    localStorage.removeItem(CURRENCY_STORAGE_KEY);
-    if (detectedCountry) {
-      const curr = getCurrencyForCountry(detectedCountry);
-      setCurrencyCode(curr.code);
-    } else {
-      setCurrencyCode("USD");
-    }
+    localStorage.removeItem("userCurrency");
+    setCurrency(detectedCountry ? (COUNTRY_TO_CURRENCY[detectedCountry] ?? "USD") : "USD");
   }, [detectedCountry]);
 
-  const convert = useCallback(
-    (usdAmount: number) => {
-      const rate =
-        Object.values(COUNTRY_CURRENCY).find((c) => c.code === currencyCode)?.rate ?? 1;
-      return Math.round(usdAmount * rate * 100) / 100;
-    },
-    [currencyCode]
-  );
+  const getRate = useCallback((code: CurrencyCode): number => {
+    if (code === "USD") return 1;
+    if (liveRates?.rates?.[code]) return liveRates.rates[code];
+    return STATIC_RATES[code] ?? 1;
+  }, [liveRates]);
 
-  const format = useCallback(
-    (amount: number) => formatPrice(amount, currencyCode),
-    [currencyCode]
-  );
+  const convert = useCallback((usdAmount: number, targetCode: CurrencyCode = currencyCode): number => {
+    return usdAmount * getRate(targetCode);
+  }, [currencyCode, getRate]);
 
-  return {
-    currencyCode,
-    setCurrency,
-    resetToAuto,
-    detectedCountry,
-    convert,
-    format,
+  const format = useCallback((usdAmount: number, targetCode: CurrencyCode = currencyCode): string => {
+    const converted = convert(usdAmount, targetCode);
+    const locale = getLocaleForCurrency(targetCode);
+    try {
+      return new Intl.NumberFormat(locale, {
+        style: "currency", currency: targetCode,
+        minimumFractionDigits: 0, maximumFractionDigits: 2,
+      }).format(converted);
+    } catch {
+      return `${targetCode} ${converted.toFixed(2)}`;
+    }
+  }, [currencyCode, convert]);
+
+  return { currencyCode, setCurrency: setCurrencyWithStorage, resetToAuto, detectedCountry, convert, format };
+}
+
+function getLocaleForCurrency(code: CurrencyCode): string {
+  const map: Record<string, string> = {
+    USD: "en-US", EUR: "de-DE", JPY: "ja-JP", GBP: "en-GB", CAD: "en-CA",
+    AUD: "en-AU", NZD: "en-NZ", MXN: "es-MX", BRL: "pt-BR", KRW: "ko-KR",
+    CNY: "zh-CN", HKD: "zh-HK", SGD: "en-SG", MYR: "ms-MY", THB: "th-TH",
+    VND: "vi-VN", IDR: "id-ID", PHP: "fil-PH", INR: "hi-IN", TWD: "zh-TW",
+    TRY: "tr-TR", SAR: "ar-SA", AED: "ar-AE", ILS: "he-IL", PLN: "pl-PL",
+    CZK: "cs-CZ", DKK: "da-DK", SEK: "sv-SE", HUF: "hu-HU", RON: "ro-RO",
+    CHF: "de-CH", NOK: "nb-NO", ZAR: "en-ZA", PKR: "ur-PK", BDT: "bn-BD",
   };
+  return map[code] ?? "en-US";
+}
+
+const RTL_LANGUAGES = new Set(["ar", "he"]);
+export function isRTLLanguage(langCode: string): boolean {
+  return RTL_LANGUAGES.has(langCode.split("-")[0]);
+}
+export function updateDocumentDirection(langCode: string) {
+  document.documentElement.dir = isRTLLanguage(langCode) ? "rtl" : "ltr";
+  document.documentElement.lang = langCode;
 }

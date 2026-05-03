@@ -298,3 +298,95 @@ export const idVerificationsRelations = relations(idVerifications, ({ one }) => 
   user: one(users, { fields: [idVerifications.userId], references: [users.id] }),
   reviewer: one(users, { fields: [idVerifications.reviewedBy], references: [users.id] }),
 }));
+
+// ─── Auction Bids ───
+export const auctionBids = mysqlTable("auction_bids", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  bidderId: bigint("bidder_id", { mode: "number", unsigned: true }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  isProxy: boolean("is_proxy").default(false).notNull(),
+  proxyMax: decimal("proxy_max", { precision: 10, scale: 2 }),
+  isAutoBid: boolean("is_auto_bid").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Watchlist ───
+export const watchlistItems = mysqlTable("watchlist_items", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  notifyOutbid: boolean("notify_outbid").default(true).notNull(),
+  notifyEnding: boolean("notify_ending").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Q&A ───
+export const listingQuestions = mysqlTable("listing_questions", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  askerId: bigint("asker_id", { mode: "number", unsigned: true }).notNull(),
+  question: text("question").notNull(),
+  answer: text("answer"),
+  answeredAt: timestamp("answeredAt"),
+  isPublic: boolean("is_public").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Seller Ratings ───
+export const sellerRatings = mysqlTable("seller_ratings", {
+  id: serial("id").primaryKey(),
+  sellerId: bigint("seller_id", { mode: "number", unsigned: true }).notNull(),
+  raterId: bigint("rater_id", { mode: "number", unsigned: true }).notNull(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  rating: int("rating").notNull(),
+  comment: text("comment"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Listing Views ───
+export const listingViews = mysqlTable("listing_views", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  viewerId: bigint("viewer_id", { mode: "number", unsigned: true }),
+  ipAddress: varchar("ip_address", { length: 45 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Price Offers ───
+export const priceOffers = mysqlTable("price_offers", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  buyerId: bigint("buyer_id", { mode: "number", unsigned: true }).notNull(),
+  offeredPrice: decimal("offered_price", { precision: 10, scale: 2 }).notNull(),
+  message: text("message"),
+  status: mysqlEnum("status", ["pending", "accepted", "rejected", "expired", "countered"]).default("pending").notNull(),
+  counterPrice: decimal("counter_price", { precision: 10, scale: 2 }),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Auction Deposits ───
+export const auctionDeposits = mysqlTable("auction_deposits", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  bidderId: bigint("bidder_id", { mode: "number", unsigned: true }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: mysqlEnum("status", ["held", "returned", "forfeited", "applied"]).default("held").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── Seller Profiles ───
+export const sellerProfiles = mysqlTable("seller_profiles", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().unique(),
+  level: mysqlEnum("level", ["bronze", "silver", "gold", "platinum", "diamond"]).default("bronze").notNull(),
+  totalSales: int("total_sales").default(0).notNull(),
+  totalRevenue: decimal("total_revenue", { precision: 12, scale: 2 }).default("0").notNull(),
+  avgRating: decimal("avg_rating", { precision: 3, scale: 2 }).default("0"),
+  ratingCount: int("rating_count").default(0).notNull(),
+  successfulAuctions: int("successful_auctions").default(0).notNull(),
+  verifiedSeller: boolean("verified_seller").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});

@@ -1,56 +1,153 @@
+import { useState } from "react";
+import { Link } from "react-router";
+import { trpc } from "@/providers/trpc";
+import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
-import { Link } from "react-router";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Layers, Search, Plus, Tag, Gavel, Clock, ArrowLeft, ImageIcon, Loader2,
+} from "lucide-react";
 
-const products = [
-  { id: 5, name: "Pokémon Card Lots", price: "From $9.99", image: "/product-pokemon.jpg", description: "Bulk Pokémon card lots, various sets. Great for collectors and players.", },
-  { id: 6, name: "One Piece Card Game", price: "From $4.99", image: "/product-onepiece.jpg", description: "One Piece TCG singles and packs. Ships fast and securely.", },
-  { id: 7, name: "Dragon Ball Super Cards", price: "From $3.99", image: "/product-dbz.jpg", description: "DBS card singles and sets. Anime fans' favorite.", },
-  { id: 8, name: "Naruto Collectible Cards", price: "From $5.99", image: "/product-naruto-cards.jpg", description: "Rare and common Naruto collectible cards. Perfect for Naruto fans.", },
-  { id: 9, name: "Yu-Gi-Oh! Cards", price: "From $4.99", image: "/product-yugioh.jpg", description: "Yu-Gi-Oh! TCG singles and lots. Blue-Eyes White Dragon, Dark Magician & more.", },
-];
+function getTimeLeft(endDate: string | null): string {
+  if (!endDate) return "";
+  const diff = new Date(endDate).getTime() - Date.now();
+  if (diff <= 0) return "Ended";
+  const d = Math.floor(diff / 86400000);
+  const h = Math.floor((diff % 86400000) / 3600000);
+  if (d > 0) return `${d}d ${h}h left`;
+  const m = Math.floor((diff % 3600000) / 60000);
+  return `${h}h ${m}m left`;
+}
 
 export default function TradingCards() {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
+  const [search, setSearch] = useState("");
+
+  const { data: listings, isLoading } = trpc.marketplace.listListings.useQuery({
+    category: "trading-cards",
+    search: search || undefined,
+    listingType: "all",
+    limit: 50,
+    offset: 0,
+  });
 
   return (
     <div className="min-h-screen py-12">
       <div className="container px-4 md:px-6">
-        <Link to="/shop" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
-          <ArrowLeft className="mr-1 h-4 w-4" />
-          Back to Shop
+        <Link to="/marketplace" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
+          <ArrowLeft className="mr-1 h-4 w-4" /> Marketplace
         </Link>
+
         <div className="text-center mb-10 space-y-4">
           <p className="text-sm font-medium text-primary tracking-wider uppercase">{t("features.cards")}</p>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground">{t("nav.cards")}</h1>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center justify-center gap-3">
+            <Layers className="h-8 w-8 text-primary" />
+            {t("nav.cards")}
+          </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Curated trading card collections. All cards are verified authentic and shipped with protective sleeves.
+            Trading cards from the community marketplace. All items are verified authentic and seller-reviewed.
           </p>
+          <div className="max-w-md mx-auto relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search cards..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-muted/50" />
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div key={product.id} className="group relative rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/30 transition-all duration-300 card-glow">
-              <div className="aspect-square overflow-hidden bg-muted/20">
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-              </div>
-              <div className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground">{product.name}</h3>
-                  <Badge variant="outline" className="text-xs border-primary/30 text-primary">Cards</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{product.description}</p>
-                <div className="flex items-center justify-between pt-2">
-                  <span className="font-bold text-primary">{product.price}</span>
-                  <a href="https://ebay.com" target="_blank" rel="noopener noreferrer">
-                    <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 text-xs">{t("products.viewOnEbay")}</Button>
-                  </a>
-                </div>
-              </div>
-            </div>
-          ))}
+
+        <div className="flex items-center justify-center gap-3 mb-6">
+          {isAuthenticated && (
+            <Link to="/marketplace/create">
+              <Button size="sm" className="bg-primary">
+                <Plus className="mr-1 h-4 w-4" /> Sell Cards
+              </Button>
+            </Link>
+          )}
         </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : listings && listings.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {listings.map((listing: any) => {
+              const imgs: string[] = listing.images ? JSON.parse(listing.images) : [];
+              const isAuction = listing.listingType === "auction";
+              return (
+                <Link key={listing.id} to={`/marketplace/${listing.id}`}>
+                  <Card className="bg-card/50 border-border/50 hover:border-primary/30 transition-all duration-300 card-glow overflow-hidden h-full">
+                    {imgs.length > 0 ? (
+                      <div className="relative h-48 bg-muted">
+                        <img src={imgs[0]} alt={listing.title} className="w-full h-full object-cover" />
+                        {imgs.length > 1 && (
+                          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                            {imgs.length} photos
+                          </div>
+                        )}
+                        {isAuction && (
+                          <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1">
+                            <Gavel className="w-3 h-3" /> Auction
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-48 bg-muted flex items-center justify-center">
+                        <ImageIcon className="w-12 h-12 text-muted-foreground/30" />
+                      </div>
+                    )}
+                    <CardContent className="p-5 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-xs capitalize">{listing.condition}</Badge>
+                        {listing.copyrightStatus === "clear" && (
+                          <Badge variant="outline" className="text-xs text-green-600 border-green-300">Verified</Badge>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-foreground line-clamp-2">{listing.title}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{listing.description}</p>
+                      <div className="pt-2 border-t border-border/30">
+                        {isAuction ? (
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-primary text-lg">${listing.currentBid || listing.startPrice}</span>
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="w-3 h-3" /> {listing.bidCount || 0} bids
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="font-bold text-primary text-lg">{listing.price}</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="bg-primary/10 text-primary text-[10px]">{listing.seller?.name?.charAt(0) ?? "U"}</AvatarFallback>
+                        </Avatar>
+                        <span>{listing.seller?.name ?? "User"}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <Card className="bg-card/50 border-border/50">
+            <CardContent className="p-12 text-center">
+              <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
+              <h3 className="text-lg font-medium mb-2">No trading cards listed yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">
+                {isAuthenticated ? "Be the first to sell trading cards!" : "Log in to start selling."}
+              </p>
+              {isAuthenticated && (
+                <Link to="/marketplace/create">
+                  <Button><Plus className="mr-1 h-4 w-4" /> List Cards</Button>
+                </Link>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );

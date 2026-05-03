@@ -10,7 +10,7 @@ let instance: ReturnType<typeof drizzle<typeof fullSchema>>;
 
 export function getDb() {
   if (!instance) {
-    // TiDB Cloud requires SSL — create pool with SSL enabled
+    // TiDB Cloud requires SSL - create pool with SSL enabled
     const pool = mysql.createPool({
       uri: env.databaseUrl,
       ssl: { rejectUnauthorized: false },

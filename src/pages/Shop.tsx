@@ -19,11 +19,11 @@ const allProducts = [
   { id: 2, name: "Naruto Keychain", category: "3D Prints", price: 6.99, image: "/product-keychain.jpg", description: "High detail 3D printed Naruto themed keychain. Lightweight and durable.", },
   { id: 3, name: "Custom Name Plate", category: "3D Prints", price: 9.99, image: "/product-nameplate.jpg", description: "Personalized 3D printed name plate with Japanese kanji styling.", },
   { id: 4, name: "Phone Stand (Anime Edition)", category: "3D Prints", price: 8.99, image: "/product-phonestand.jpg", description: "Sleek 3D printed phone stand featuring anime-inspired wave design.", },
-  { id: 5, name: "Pokemon Card Lots", category: "Trading Cards", price: 9.99, image: "/product-pokemon.jpg", description: "Bulk Pokemon card lots, various sets. Great for collectors and players.", ebay: true },
-  { id: 6, name: "One Piece Card Game", category: "Trading Cards", price: 4.99, image: "/product-onepiece.jpg", description: "One Piece TCG singles and packs. Ships fast and securely.", ebay: true },
-  { id: 7, name: "Dragon Ball Super Cards", category: "Trading Cards", price: 3.99, image: "/product-dbz.jpg", description: "DBS card singles and sets. Anime fans' favorite.", ebay: true },
-  { id: 8, name: "Naruto Collectible Cards", category: "Trading Cards", price: 5.99, image: "/product-naruto-cards.jpg", description: "Rare and common Naruto collectible cards. Perfect for Naruto fans.", ebay: true },
-  { id: 9, name: "Yu-Gi-Oh! Cards", category: "Trading Cards", price: 4.99, image: "/product-yugioh.jpg", description: "Yu-Gi-Oh! TCG singles and lots. Blue-Eyes White Dragon, Dark Magician & more.", ebay: true },
+  { id: 5, name: "Pokemon Card Lots", category: "Trading Cards", price: 9.99, image: "/product-pokemon.jpg", description: "Bulk Pokemon card lots, various sets. Great for collectors and players.", marketplace: true },
+  { id: 6, name: "One Piece Card Game", category: "Trading Cards", price: 4.99, image: "/product-onepiece.jpg", description: "One Piece TCG singles and packs. Ships fast and securely.", marketplace: true },
+  { id: 7, name: "Dragon Ball Super Cards", category: "Trading Cards", price: 3.99, image: "/product-dbz.jpg", description: "DBS card singles and sets. Anime fans' favorite.", marketplace: true },
+  { id: 8, name: "Naruto Collectible Cards", category: "Trading Cards", price: 5.99, image: "/product-naruto-cards.jpg", description: "Rare and common Naruto collectible cards. Perfect for Naruto fans.", marketplace: true },
+  { id: 9, name: "Yu-Gi-Oh! Cards", category: "Trading Cards", price: 4.99, image: "/product-yugioh.jpg", description: "Yu-Gi-Oh! TCG singles and lots. Blue-Eyes White Dragon, Dark Magician & more.", marketplace: true },
 ];
 
 const categories = ["All Products", "3D Prints", "Trading Cards"];
@@ -80,7 +80,7 @@ export default function Shop() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {filtered.map((product) => {
-            const displayPrice = product.ebay
+            const displayPrice = product.marketplace
               ? `From ${format(product.price)}`
               : format(product.price);
             return (
@@ -96,9 +96,9 @@ export default function Shop() {
                   <p className="text-sm text-muted-foreground line-clamp-2">{product.description}</p>
                   <div className="flex items-center justify-between pt-2">
                     <span className="font-bold text-primary">{displayPrice}</span>
-                    {product.ebay ? (
-                      <a href="https://ebay.com" target="_blank" rel="noopener noreferrer">
-                        <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 text-xs">{t("products.viewOnEbay")}</Button>
+                    {product.marketplace ? (
+                      <a href="https://marketplace.com" target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 text-xs">{t("products.viewListing")}</Button>
                       </a>
                     ) : (
                       <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 text-xs">{t("products.orderNow")}</Button>

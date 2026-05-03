@@ -390,3 +390,15 @@ export const sellerProfiles = mysqlTable("seller_profiles", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });
+
+// ─── Copyright Scans ───
+export const copyrightScans = mysqlTable("copyright_scans", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  scanType: mysqlEnum("scan_type", ["text", "image", "video"]).notNull(),
+  status: mysqlEnum("status", ["pending", "clear", "flagged", "rejected"]).default("pending").notNull(),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }),
+  matchedTerms: text("matched_terms"),
+  reason: text("reason"),
+  scannedAt: timestamp("scannedAt").defaultNow().notNull(),
+});

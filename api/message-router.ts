@@ -1,98 +1,108 @@
+import { randomUUID } from "crypto";
 import { z } from "zod";
+import { db } from "./db";
 import { createRouter, publicQuery, authedQuery } from "./middleware";
-import { db } from "../../db";
-import { messages, users } from "../db/schema";
-import { eq, and, or, desc, sql, lt } from "drizzle-orm";
 
-const typingStore = new Map<number, Map<number, number>>();
-const TYPING_TTL = 5000;
-setInterval(() => {
-  const now = Date.now();
-  for (const [uid, recips] of typingStore) {
-    for (const [rid, ts] of recips) { if (now - ts > TYPING_TTL) recips.delete(rid); }
-    if (recips.size === 0) typingStore.delete(uid);
-  }
-}, 10000);
+const typingStore = new Map();
+function notifyTyping(cid: string, uid: string, typing: boolean) {
+  const s = typingStore.get(cid) ?? new Set<string>();
+  typing ? s.add(uid) : s.delete(uid);
+  typingStore.set(cid, s);
+}
 
 export const messageRouter = createRouter({
-  getConversations: authedQuery.query(async ({ ctx }) => {
-    const userId = ctx.user.id;
-    const result = await db.select({
-      otherUserId: sql<number>`CASE WHEN ${messages.senderId} = ${userId} THEN ${messages.recipientId} ELSE ${messages.senderId} END`,
-      lastMessageAt: sql<string>`MAX(${messages.createdAt})`,
-      unreadCount: sql<number>`SUM(CASE WHEN ${messages.recipientId} = ${userId} AND ${messages.read} = false THEN 1 ELSE 0 END)`,
-    }).from(messages).where(or(eq(messages.senderId, userId), eq(messages.recipientId, userId)))
-      .groupBy(sql`CASE WHEN ${messages.senderId} = ${userId} THEN ${messages.recipientId} ELSE ${messages.senderId} END`)
-      .orderBy(desc(sql`MAX(${messages.createdAt})`));
-
-    const conversations = [];
-    for (const conv of result) {
-      const [otherUser] = await db.select({ id: users.id, username: users.username, displayName: users.displayName, avatarUrl: users.avatarUrl, lastActive: users.lastActive }).from(users).where(eq(users.id, conv.otherUserId)).limit(1);
-      if (otherUser) conversations.push({ ...conv, otherUser, isOnline: otherUser.lastActive ? Date.now() - new Date(otherUser.lastActive).getTime() < 5 * 60 * 1000 : false });
-    }
-    return conversations;
+  conversations: authedQuery.query(async ({ ctx }) => {
+    return db.execute(
+      `SELECT c.id, c.title, c.created_at, c.updated_at,
+        (SELECT COUNT(*) FROM messages m WHERE m.conversation_id=c.id AND m.read=0 AND m.sender_id!=?) as unread_count,
+        (SELECT content FROM messages WHERE conversation_id=c.id ORDER BY created_at DESC LIMIT 1) as last_message
+       FROM conversations c
+       JOIN conversation_participants cp ON cp.conversation_id=c.id
+       WHERE cp.user_id=?
+       ORDER BY c.updated_at DESC`,
+      [ctx.user.id, ctx.user.id]
+    );
   }),
 
-  getMessages: authedQuery.input(z.object({ otherUserId: z.number(), cursor: z.number().optional(), limit: z.number().default(50) })).query(async ({ ctx, input }) => {
-    const userId = ctx.user.id;
-    const { otherUserId, cursor, limit } = input;
-    const conditions = [or(and(eq(messages.senderId, userId), eq(messages.recipientId, otherUserId)), and(eq(messages.senderId, otherUserId), eq(messages.recipientId, userId)))];
-    if (cursor) conditions.push(lt(messages.id, cursor));
+  messages: authedQuery
+    .input(z.object({ conversationId: z.string(), cursor: z.string().optional(), limit: z.number().min(1).max(50).default(20) }))
+    .query(async ({ ctx, input }) => {
+      const { conversationId, cursor, limit } = input;
+      const rows = await db.execute(
+        `SELECT m.id, m.sender_id, m.content, m.created_at, m.updated_at, m.read, m.reactions, m.edited, u.username
+         FROM messages m JOIN users u ON u.id=m.sender_id
+         WHERE m.conversation_id=? ${cursor ? "AND m.created_at<?" : ""}
+         ORDER BY m.created_at DESC LIMIT ?`,
+        cursor ? [conversationId, cursor, limit + 1] : [conversationId, limit + 1]
+      );
+      const items = rows.slice(0, limit);
+      const nextCursor = rows.length > limit ? rows[limit]?.created_at : undefined;
+      await db.execute(
+        `UPDATE messages SET read=1 WHERE conversation_id=? AND sender_id!=? AND read=0`,
+        [conversationId, ctx.user.id]
+      );
+      return { items, nextCursor };
+    }),
 
-    const result = await db.select({ id: messages.id, senderId: messages.senderId, recipientId: messages.recipientId, content: messages.content, createdAt: messages.createdAt, read: messages.read, readAt: messages.readAt, attachments: messages.attachments, editedAt: messages.editedAt, replyToId: messages.replyToId, reactions: messages.reactions }).from(messages).where(and(...conditions)).orderBy(desc(messages.createdAt)).limit(limit);
+  send: authedQuery
+    .input(z.object({ conversationId: z.string(), content: z.string().min(1).max(2000) }))
+    .mutation(async ({ ctx, input }) => {
+      const id = randomUUID();
+      const now = new Date().toISOString();
+      await db.execute(
+        `INSERT INTO messages (id, conversation_id, sender_id, content, created_at, updated_at, read, reactions)
+         VALUES (?, ?, ?, ?, ?, ?, 0, '[]')`,
+        [id, input.conversationId, ctx.user.id, input.content, now, now]
+      );
+      await db.execute(`UPDATE conversations SET updated_at=? WHERE id=?`, [now, input.conversationId]);
+      return { id, createdAt: now };
+    }),
 
-    await db.update(messages).set({ read: true, readAt: new Date() }).where(and(eq(messages.recipientId, userId), eq(messages.senderId, otherUserId), eq(messages.read, false)));
-    return { messages: result.reverse(), nextCursor: result.length === limit ? result[result.length - 1]?.id : undefined };
-  }),
+  edit: authedQuery
+    .input(z.object({ messageId: z.string(), content: z.string().min(1).max(2000) }))
+    .mutation(async ({ ctx, input }) => {
+      const now = new Date().toISOString();
+      const ownerCheck = await db.execute(
+        `SELECT id FROM messages WHERE id=? AND sender_id=?`,
+        [input.messageId, ctx.user.id]
+      );
+      if (!ownerCheck.length) throw new Error("Not found or not owner");
+      await db.execute(
+        `UPDATE messages SET content=?, updated_at=?, edited=1 WHERE id=?`,
+        [input.content, now, input.messageId]
+      );
+      return { success: true, updatedAt: now };
+    }),
 
-  sendMessage: authedQuery.input(z.object({ recipientId: z.number(), content: z.string().min(1).max(5000), attachments: z.array(z.string().url()).max(5).optional(), replyToId: z.number().optional() })).mutation(async ({ ctx, input }) => {
-    const [message] = await db.insert(messages).values({ senderId: ctx.user.id, recipientId: input.recipientId, content: input.content, attachments: input.attachments || [], replyToId: input.replyToId, read: false }).returning();
-    return message;
-  }),
+  delete: authedQuery
+    .input(z.object({ messageId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await db.execute(`DELETE FROM messages WHERE id=? AND sender_id=?`, [input.messageId, ctx.user.id]);
+      return { success: true };
+    }),
 
-  editMessage: authedQuery.input(z.object({ messageId: z.number(), content: z.string().min(1).max(5000) })).mutation(async ({ ctx, input }) => {
-    const [msg] = await db.select().from(messages).where(eq(messages.id, input.messageId)).limit(1);
-    if (!msg || msg.senderId !== ctx.user.id) throw new Error("Unauthorized");
-    if (Date.now() - new Date(msg.createdAt).getTime() > 15 * 60 * 1000) throw new Error("Too old");
-    await db.update(messages).set({ content: input.content, editedAt: new Date() }).where(eq(messages.id, input.messageId));
-    return { success: true };
-  }),
+  react: authedQuery
+    .input(z.object({ messageId: z.string(), emoji: z.string().min(1).max(10) }))
+    .mutation(async ({ ctx, input }) => {
+      const rows = await db.execute(`SELECT reactions FROM messages WHERE id=?`, [input.messageId]);
+      if (!rows.length) throw new Error("Message not found");
+      let reactions = JSON.parse(rows[0].reactions || "[]");
+      reactions = reactions.filter((r: any) => !(r.userId === ctx.user.id && r.emoji === input.emoji));
+      reactions.push({ userId: ctx.user.id, emoji: input.emoji });
+      await db.execute(`UPDATE messages SET reactions=? WHERE id=?`, [JSON.stringify(reactions), input.messageId]);
+      return { success: true, reactions };
+    }),
 
-  deleteMessage: authedQuery.input(z.object({ messageId: z.number() })).mutation(async ({ ctx, input }) => {
-    const [msg] = await db.select().from(messages).where(eq(messages.id, input.messageId)).limit(1);
-    if (!msg || (msg.senderId !== ctx.user.id && msg.recipientId !== ctx.user.id)) throw new Error("Unauthorized");
-    await db.delete(messages).where(eq(messages.id, input.messageId));
-    return { success: true };
-  }),
+  typing: authedQuery
+    .input(z.object({ conversationId: z.string(), isTyping: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      notifyTyping(input.conversationId, ctx.user.id, input.isTyping);
+      return { success: true };
+    }),
 
-  react: authedQuery.input(z.object({ messageId: z.number(), emoji: z.string().min(1).max(10) })).mutation(async ({ ctx, input }) => {
-    const [msg] = await db.select().from(messages).where(eq(messages.id, input.messageId)).limit(1);
-    if (!msg || (msg.senderId !== ctx.user.id && msg.recipientId !== ctx.user.id)) throw new Error("Unauthorized");
-    const reactions = (msg.reactions || {}) as Record<string, number[]>;
-    if (!reactions[input.emoji]) reactions[input.emoji] = [];
-    const idx = reactions[input.emoji].indexOf(ctx.user.id);
-    if (idx === -1) reactions[input.emoji].push(ctx.user.id); else reactions[input.emoji].splice(idx, 1);
-    if (reactions[input.emoji].length === 0) delete reactions[input.emoji];
-    await db.update(messages).set({ reactions }).where(eq(messages.id, input.messageId));
-    return { success: true, reactions };
-  }),
-
-  typing: authedQuery.input(z.object({ recipientId: z.number(), isTyping: z.boolean() })).mutation(async ({ ctx, input }) => {
-    if (!typingStore.has(ctx.user.id)) typingStore.set(ctx.user.id, new Map());
-    if (input.isTyping) typingStore.get(ctx.user.id)?.set(input.recipientId, Date.now());
-    else typingStore.get(ctx.user.id)?.delete(input.recipientId);
-    return { success: true };
-  }),
-
-  getTyping: authedQuery.input(z.object({ otherUserId: z.number() })).query(async ({ ctx, input }) => {
-    const ts = typingStore.get(input.otherUserId)?.get(ctx.user.id);
-    if (!ts) return { isTyping: false };
-    if (Date.now() - ts > TYPING_TTL) { typingStore.get(input.otherUserId)?.delete(ctx.user.id); return { isTyping: false }; }
-    return { isTyping: true };
-  }),
-
-  getUnreadCount: authedQuery.query(async ({ ctx }) => {
-    const result = await db.select({ count: sql<number>`COUNT(*)` }).from(messages).where(and(eq(messages.recipientId, ctx.user.id), eq(messages.read, false)));
-    return result[0]?.count || 0;
-  }),
+  whoIsTyping: publicQuery
+    .input(z.object({ conversationId: z.string() }))
+    .query(async ({ input }) => {
+      return { userIds: Array.from(typingStore.get(input.conversationId) ?? []) };
+    }),
 });

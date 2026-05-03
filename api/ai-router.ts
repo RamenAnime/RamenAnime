@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createRouter, publicQuery, protectedQuery } from "./middleware";
+import { createRouter, publicQuery } from "./middleware";
 
 async function searchTrends(query: string): Promise<any[]> {
   try {
@@ -41,7 +41,7 @@ export const aiRouter = createRouter({
       const trends = await searchTrends(input.query);
       return { trends };
     }),
-  listingSuggest: protectedQuery
+  listingSuggest: publicQuery
     .input(z.object({ title: z.string().min(1), category: z.string().default("Other"), condition: z.string().default("New") }))
     .mutation(async ({ input }) => generateSuggestion(input.title, input.category, input.condition)),
 });

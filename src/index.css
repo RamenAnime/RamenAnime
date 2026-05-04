@@ -93,3 +93,140 @@
 [dir="rtl"] .rtl-text-left { text-align: right; }
 [dir="rtl"] .rtl-text-right { text-align: left; }
 [dir="rtl"] .rtl-space-x-reverse > :not([hidden]) ~ :not([hidden]) { --tw-space-x-reverse: 1; }
+
+/* ======================== */
+/* RESPONSIVE / MOBILE CSS  */
+/* ======================== */
+
+/* Base: Fluid typography scaling */
+html {
+  font-size: clamp(14px, 0.8vw + 12px, 18px);
+}
+
+/* Viewport height fix for mobile browsers */
+@supports (height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
+/* Touch targets - minimum 44px for mobile */
+button, a, [role="button"], input, textarea, select {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevent text size adjustment on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Forum spoiler text */
+.spoiler-text {
+  background-color: hsl(var(--muted));
+  color: transparent;
+  border-radius: 0.25rem;
+  padding: 0 0.25rem;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+.spoiler-text:hover {
+  color: hsl(var(--foreground));
+}
+
+/* Mobile breakpoint: 768px and below */
+@media (max-width: 768px) {
+  /* Stack grid layouts vertically */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Forum sidebar stacks below content */
+  .flex-col-reverse-mobile {
+    flex-direction: column-reverse !important;
+  }
+
+  /* Reduce padding on mobile */
+  .container {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Full-width buttons on mobile */
+  button.w-full-mobile,
+  .w-full-mobile {
+    width: 100% !important;
+  }
+
+  /* Hide complex hover effects on touch */
+  .group-hover\\:opacity-100 {
+    opacity: 1 !important;
+  }
+
+  /* Reduce font sizes slightly */
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+
+  /* Ensure cards don't overflow */
+  .max-w-7xl,
+  .max-w-5xl,
+  .max-w-4xl,
+  .max-w-3xl {
+    max-width: 100% !important;
+  }
+
+  /* Forum thread indentation less aggressive on mobile */
+  .ml-12 {
+    margin-left: 1rem !important;
+  }
+  .ml-6 {
+    margin-left: 0.5rem !important;
+  }
+
+  /* Bottom safe area for mobile browsers */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+}
+
+/* Tablet breakpoint: 769px - 1024px */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .grid-cols-4 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .grid-cols-3 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+/* Large screens: cap max width for readability */
+@media (min-width: 1440px) {
+  .container {
+    max-width: 1400px;
+  }
+}
+
+/* Ultra-wide: center content */
+@media (min-width: 1920px) {
+  .container {
+    max-width: 1600px;
+  }
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

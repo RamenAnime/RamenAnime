@@ -1,231 +1,96 @@
+import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowLeft,
-  ThumbsUp,
-  MessageSquare,
-  Eye,
-  Clock,
-  Send,
-  Pin,
-} from "lucide-react";
-import { useState } from "react";
+import { ArrowLeft, ThumbsUp, MessageSquare, Eye, Clock, Send, Pin, Lock, Unlock, Quote, Reply, Calendar, Award } from "lucide-react";
 import TosGate from "@/components/TosGate";
 
-function PostContent() {
-  const { id } = useParams<{ id: string }>();
-  const postId = parseInt(id ?? "0");
-  const navigate = useNavigate();
-  const [commentContent, setCommentContent] = useState("");
+const REACTION_EMOJIS = ["👍", "❤️", "🔥", "😂", "🤔", "👏"];
 
-  const { data: post, isLoading } = trpc.social.getPost.useQuery(
-    { id: postId },
-    { enabled: postId > 0 }
-  );
+function getRankColor(color: string) {
+  const map: Record<string, string> = {
+    gray: "bg-gray-500/20 text-gray-400 border-gray-500/30",
+    blue: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    green: "bg-green-500/20 text-green-400 border-green-500/30",
+    purple: "bg-purple-500/20 text-purple-400 border-purple-500/30",
+    orange: "bg-orange-500/20 text-orange-400 border-orange-500/30",
+    amber: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    red: "bg-red-500/20 text-red-400 border-red-500/30",
+  };
+  return map[color] || map.gray;
+}
 
-  const utils = trpc.useUtils();
-  const createComment = trpc.social.createComment.useMutation({
-    onSuccess: () => {
-      utils.social.getPost.invalidate({ id: postId });
-      setCommentContent("");
-    },
-  });
+function parseBBCode(text: string): string {
+  return text.replace(/\\[b\\](.+?)\\[\\/b\\]/g, '<strong>$1</strong>').replace(/\\[i\\](.+?)\\[\\/i\\]/g, '<em>$1</em>').replace(/\\[u\\](.+?)\\[\\/u\\]/g, '<u>$1</u>').replace(/\\[s\\](.+?)\\[\\/s\\]/g, '<s>$1</s>').replace(/\\[url\\](.+?)\\[\\/url\\]/g, '<a href="$1" target="_blank" rel="noopener" class="text-primary hover:underline">$1</a>').replace(/\\[url=(.+?)\\](.+?)\\[\\/url\\]/g, '<a href="$1" target="_blank" rel="noopener" class="text-primary hover:underline">$2</a>').replace(/\\[code\\](.+?)\\[\\/code\\]/g, '<code class="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">$1</code>').replace(/\\[spoiler\\](.+?)\\[\\/spoiler\\]/g, '<span class="spoiler-text bg-muted text-transparent hover:text-foreground cursor-pointer rounded px-1 transition-colors">$1</span>').replace(/\\n/g, '<br/>');
+}
 
-  const likePost = trpc.social.likePost.useMutation({
-    onSuccess: () => utils.social.getPost.invalidate({ id: postId }),
-  });
+function RichText({ content }: { content: string }) {
+  return (<div className="text-foreground leading-relaxed prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: parseBBCode(content) }} />);
+}
 
-  const likeComment = trpc.social.likeComment.useMutation({
-    onSuccess: () => utils.social.getPost.invalidate({ id: postId }),
-  });
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen py-12 flex items-center justify-center">
-        <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!post) {
-    return (
-      <div className="min-h-screen py-12">
-        <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">Post not found</h1>
-          <Button onClick={() => navigate("/social")} variant="outline">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Forum
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
+function UserCard({ user, showStats }: { user: any; showStats?: boolean }) {
+  if (!user) return null;
   return (
-    <div className="min-h-screen py-8">
-      <div className="container px-4 md:px-6 max-w-3xl mx-auto">
-        <Button
-          variant="ghost"
-          className="mb-6 text-muted-foreground hover:text-foreground"
-          onClick={() => navigate("/social")}
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Forum
-        </Button>
-
-        {/* Post */}
-        <Card className="bg-card/50 border-border/50 mb-6">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <Link to={`/profile/${post.authorId}`}>
-                <Avatar className="h-12 w-12 border border-primary/20 shrink-0">
-                  <AvatarImage src={post.author?.avatar ?? undefined} />
-                  <AvatarFallback className="bg-primary/10 text-primary">
-                    {post.author?.name?.charAt(0) ?? "U"}
-                  </AvatarFallback>
-                </Avatar>
-              </Link>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 flex-wrap mb-2">
-                  <Link
-                    to={`/profile/${post.authorId}`}
-                    className="font-medium text-foreground hover:text-primary transition-colors"
-                  >
-                    {post.author?.name ?? "Anonymous"}
-                  </Link>
-                  <span className="text-xs text-muted-foreground">·</span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    {new Date(post.createdAt).toLocaleDateString()}
-                  </span>
-                  {post.isPinned && (
-                    <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-                      <Pin className="h-3 w-3 mr-1" />
-                      Pinned
-                    </Badge>
-                  )}
-                  <Badge variant="outline" className="text-xs border-border/50 text-muted-foreground capitalize">
-                    {post.category}
-                  </Badge>
-                </div>
-                <h1 className="text-xl font-bold text-foreground mb-3">{post.title}</h1>
-                <p className="text-foreground leading-relaxed whitespace-pre-wrap">{post.content}</p>
-                <div className="flex items-center gap-4 mt-4 pt-4 border-t border-border/50">
-                  <button
-                    onClick={() => likePost.mutate({ id: post.id })}
-                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    <ThumbsUp className="h-4 w-4" />
-                    {post.likes} Likes
-                  </button>
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MessageSquare className="h-4 w-4" />
-                    {post.comments?.length ?? 0} Comments
-                  </span>
-                  <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <Eye className="h-4 w-4" />
-                    {post.views} Views
-                  </span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Comment Form */}
-        <Card className="bg-card/50 border-border/50 mb-6">
-          <CardContent className="p-6">
-            <h3 className="font-semibold text-foreground mb-4">Add a Comment</h3>
-            <div className="space-y-3">
-              <Textarea
-                value={commentContent}
-                onChange={(e) => setCommentContent(e.target.value)}
-                placeholder="Share your thoughts..."
-                rows={3}
-                className="bg-muted/50 border-border/50"
-              />
-              <Button
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-                disabled={!commentContent.trim() || createComment.isPending}
-                onClick={() =>
-                  createComment.mutate({ postId: post.id, content: commentContent })
-                }
-              >
-                <Send className="mr-2 h-4 w-4" />
-                {createComment.isPending ? "Posting..." : "Post Comment"}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Comments */}
-        <div className="space-y-4">
-          <h3 className="font-semibold text-foreground flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-primary" />
-            Comments ({post.comments?.length ?? 0})
-          </h3>
-          {post.comments && post.comments.length > 0 ? (
-            post.comments.map((comment) => (
-              <Card key={comment.id} className="bg-card/30 border-border/30">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <Link to={`/profile/${comment.authorId}`}>
-                      <Avatar className="h-8 w-8 border border-primary/20 shrink-0">
-                        <AvatarImage src={comment.author?.avatar ?? undefined} />
-                        <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                          {comment.author?.name?.charAt(0) ?? "U"}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Link>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Link
-                          to={`/profile/${comment.authorId}`}
-                          className="text-sm font-medium text-foreground hover:text-primary transition-colors"
-                        >
-                          {comment.author?.name ?? "Anonymous"}
-                        </Link>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {new Date(comment.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground leading-relaxed">{comment.content}</p>
-                      <button
-                        onClick={() => likeComment.mutate({ id: comment.id })}
-                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors mt-2"
-                      >
-                        <ThumbsUp className="h-3 w-3" />
-                        {comment.likes}
-                      </button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card className="bg-card/30 border-border/30">
-              <CardContent className="p-8 text-center">
-                <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">No comments yet. Be the first to comment!</p>
-              </CardContent>
-            </Card>
-          )}
+    <div className="flex items-center gap-3">
+      <Link to={`/profile/${user.id}`}><Avatar className="h-10 w-10 border border-primary/20"><AvatarImage src={user.avatar ?? undefined} /><AvatarFallback className="bg-primary/10 text-primary text-sm">{user.name?.charAt(0) ?? user.username?.charAt(0) ?? "U"}</AvatarFallback></Avatar></Link>
+      <div>
+        <Link to={`/profile/${user.id}`} className="font-medium text-foreground hover:text-primary transition-colors text-sm">{user.name ?? user.username ?? "Anonymous"}</Link>
+        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+          {user.rank && (<Badge variant="outline" className={`text-[10px] px-1 py-0 ${getRankColor(user.rank.color)}`}><Award className="h-2.5 w-2.5 mr-0.5" />{user.rank.name}</Badge>)}
+          {showStats && (<><span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><MessageSquare className="h-2.5 w-2.5" />{user.postCount ?? 0} posts</span><span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Calendar className="h-2.5 w-2.5" />Joined {user.createdAt ? new Date(user.createdAt).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) : 'N/A'}</span></>)}
         </div>
       </div>
     </div>
   );
 }
 
-export default function ForumPost() {
+function PostContent() {
+  const { id } = useParams<{ id: string }>();
+  const postId = parseInt(id ?? "0");
+  const navigate = useNavigate();
+n  const { user, isAuthenticated } = useAuth();
+  const [commentContent, setCommentContent] = useState("");
+  const [replyTo, setReplyTo] = useState<{ id: number; authorName: string; content: string } | null>(null);
+  const utils = trpc.useUtils();
+
+  const { data: post, isLoading } = trpc.social.getPost.useQuery({ postId }, { enabled: postId > 0 });
+  const createComment = trpc.social.createComment.useMutation({ onSuccess: () => { utils.social.getPost.invalidate({ postId }); setCommentContent(""); setReplyTo(null); } });
+  const likePost = trpc.social.likePost.useMutation({ onSuccess: () => utils.social.getPost.invalidate({ postId }) });
+  const likeComment = trpc.social.likeComment.useMutation({ onSuccess: () => utils.social.getPost.invalidate({ postId }) });
+  const reactToPost = trpc.social.reactToPost.useMutation({ onSuccess: () => utils.social.getPost.invalidate({ postId }) });
+  const togglePin = trpc.social.togglePin.useMutation({ onSuccess: () => utils.social.getPost.invalidate({ postId }) });
+  const toggleLock = trpc.social.toggleLock.useMutation({ onSuccess: () => utils.social.getPost.invalidate({ postId }) });
+
+  const handleQuote = (comment: any) => {
+    const q = comment.content.length > 200 ? comment.content.substring(0, 200) + "..." : comment.content;
+    setReplyTo({ id: comment.id, authorName: comment.author?.name ?? "User", content: q });
+    setCommentContent(`[quote=${comment.author?.name ?? "User"}]${q}[/quote]\n`);
+  };
+
+  const handleReply = () => { if (!commentContent.trim()) return; createComment.mutate({ postId, content: commentContent, parentId: replyTo?.id }); };
+
+  if (isLoading) return (<div className="min-h-screen py-12 flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>);
+  if (!post) return (<div className="min-h-screen py-12"><div className="container px-4 md:px-6 max-w-4xl mx-auto text-center"><h1 className="text-2xl font-bold text-foreground mb-4">Thread not found</h1><Button onClick={() => navigate("/social")} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />Back to Community</Button></div></div>);
+
+  const isAdmin = user?.role === "admin";
+
   return (
-    <TosGate>
-      <PostContent />
-    </TosGate>
+    <div className="min-h-screen py-6">
+      <div className="container px-4 md:px-6 max-w-4xl mx-auto">
+        <Button variant="ghost" className="mb-4 text-muted-foreground hover:text-foreground" onClick={() => navigate("/social")}><ArrowLeft className="mr-2 h-4 w-4" />Back to Community</Button>
+        <div className="mb-4"><div className="flex items-center gap-2 flex-wrap mb-2"><Badge variant="outline" className="text-xs capitalize border-border/50 text-muted-foreground">{post.category}</Badge>{post.isPinned && (<Badge variant="outline" className="text-xs border-primary/30 text-primary"><Pin className="h-3 w-3 mr-1" />Pinned</Badge>)}{post.isLocked && (<Badge variant="outline" className="text-xs border-orange-500/30 text-orange-400"><Lock className="h-3 w-3 mr-1" />Locked</Badge>)}</div><h1 className="text-xl md:text-2xl font-bold text-foreground">{post.title}</h1></div>
+        {isAdmin && (<div className="flex gap-2 mb-4"><Button size="sm" variant="outline" onClick={() => togglePin.mutate({ postId })}><Pin className="mr-1 h-3.5 w-3.5" />{post.isPinned ? "Unpin" : "Pin"}</Button><Button size="sm" variant="outline" onClick={() => toggleLock.mutate({ postId })}>{post.isLocked ? <Unlock className="mr-1 h-3.5 w-3.5" /> : <Lock className="mr-1 h-3.5 w-3.5" />}{post.isLocked ? "Unlock" : "Lock"}</Button></div>)}
+        <Card className="border-border/50 mb-4"><CardContent className="p-5"><div className="flex items-start justify-between mb-4"><UserCard user={post.author} showStats /><span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(post.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div><div className="pl-0 md:pl-14"><RichText content={post.content} /></div>{post.author?.signature && (<div className="pl-0 md:pl-14 mt-4 pt-3 border-t border-border/30"><p className="text-xs text-muted-foreground italic">{post.author.signature}</p></div>)}<div className="pl-0 md:pl-14 mt-4 pt-3 border-t border-border/30 flex items-center gap-4 flex-wrap"><button onClick={() => likePost.mutate({ id: post.id })} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors"><ThumbsUp className="h-4 w-4" />{post.likes} Likes</button><span className="flex items-center gap-1 text-sm text-muted-foreground"><Eye className="h-4 w-4" />{post.views} Views</span><div className="flex items-center gap-1">{post.reactionCounts?.map((r: any, i: number) => (<button key={i} onClick={() => isAuthenticated && reactToPost.mutate({ postId, emoji: r.emoji })} className="flex items-center gap-1 text-xs bg-muted hover:bg-muted/80 rounded-full px-2 py-1 transition-colors"><span>{r.emoji}</span><span className="text-muted-foreground">{r.count}</span></button>))}</div>{isAuthenticated && (<div className="flex items-center gap-0.5">{REACTION_EMOJIS.map((emoji) => (<button key={emoji} onClick={() => reactToPost.mutate({ postId, emoji })} className="text-sm hover:bg-muted rounded-full px-1.5 py-0.5 transition-colors">{emoji}</button>))}</div>)}</div></CardContent></Card>
+        <div className="space-y-3"><h3 className="font-semibold text-foreground flex items-center gap-2"><MessageSquare className="h-5 w-5 text-primary" />Replies ({post.comments?.length ?? 0})</h3>{post.comments && post.comments.length > 0 ? (post.comments.map((comment: any) => (<Card key={comment.id} className={`border-border/30 ${comment.parentId ? 'ml-6 md:ml-12 border-l-2 border-l-primary/20' : ''}`}><CardContent className="p-4"><div className="flex items-start justify-between mb-3"><UserCard user={comment.author} showStats /><span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(comment.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div><div className="pl-0 md:pl-14">{comment.parentId && (<div className="bg-muted/50 border-l-2 border-l-primary/30 rounded-r-md p-2 mb-2 text-sm"><p className="text-xs text-muted-foreground mb-0.5">Replying to earlier comment</p></div>)}<RichText content={comment.content} /></div>{comment.author?.signature && (<div className="pl-0 md:pl-14 mt-3 pt-2 border-t border-border/20"><p className="text-xs text-muted-foreground italic">{comment.author.signature}</p></div>)}<div className="pl-0 md:pl-14 mt-3 flex items-center gap-3"><button onClick={() => likeComment.mutate({ id: comment.id })} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"><ThumbsUp className="h-3.5 w-3.5" />{comment.likes}</button><button onClick={() => handleQuote(comment)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"><Quote className="h-3.5 w-3.5" />Quote</button><button onClick={() => handleQuote(comment)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"><Reply className="h-3.5 w-3.5" />Reply</button></div></CardContent></Card>))) : (<Card className="border-border/30"><CardContent className="p-8 text-center"><MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" /><p className="text-sm text-muted-foreground">No replies yet. Be the first to reply!</p></CardContent></Card>)}</div>
+        {!post.isLocked && (<Card className="border-border/50 mt-6"><CardContent className="p-5"><h3 className="font-semibold text-foreground mb-3 flex items-center gap-2"><Reply className="h-4 w-4 text-primary" />{replyTo ? `Replying to ${replyTo.authorName}` : "Add a Reply"}</h3>{replyTo && (<div className="bg-muted/50 rounded-md p-2 mb-3 text-sm flex items-start justify-between"><div><p className="text-xs text-muted-foreground mb-0.5">Quoting {replyTo.authorName}</p><p className="text-muted-foreground line-clamp-2">{replyTo.content}</p></div><button onClick={() => { setReplyTo(null); setCommentContent(""); }} className="text-xs text-muted-foreground hover:text-foreground ml-2">Clear</button></div>)}<div className="space-y-3"><textarea value={commentContent} onChange={(e) => setCommentContent(e.target.value)} placeholder={isAuthenticated ? "Share your thoughts... Use [b]bold[/b], [i]italic[/i], [url]link[/url]" : "Login to reply"} rows={4} disabled={!isAuthenticated} className="w-full rounded-md bg-muted/50 border border-border/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-vertical disabled:opacity-50" /><div className="flex items-center justify-between"><div className="text-xs text-muted-foreground">BBCode: [b] [i] [u] [url] [code] [spoiler]</div><Button className="bg-primary text-primary-foreground hover:bg-primary/90" disabled={!commentContent.trim() || createComment.isPending || !isAuthenticated} onClick={handleReply}><Send className="mr-2 h-4 w-4" />{createComment.isPending ? "Posting..." : "Post Reply"}</Button></div></div></CardContent></Card>)}
+        {post.isLocked && (<Card className="border-orange-500/30 mt-6"><CardContent className="p-6 text-center"><Lock className="h-8 w-8 text-orange-400 mx-auto mb-2" /><p className="text-sm text-muted-foreground">This thread has been locked and cannot be replied to.</p></CardContent></Card>)}
+      </div>
+    </div>
   );
 }
+
+export default function ForumPost() { return (<TosGate><PostContent /></TosGate>); }

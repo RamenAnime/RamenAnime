@@ -67,8 +67,10 @@ export const forumPosts = mysqlTable("forum_posts", {
   content: text("content").notNull(),
   category: varchar("category", { length: 50 }).default("general").notNull(),
   likes: int("likes").default(0).notNull(),
+  parentId: bigint("parent_id", { mode: "number", unsigned: true }),
   views: int("views").default(0).notNull(),
   isPinned: boolean("is_pinned").default(false).notNull(),
+  isLocked: boolean("is_locked").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });
@@ -82,6 +84,7 @@ export const forumComments = mysqlTable("forum_comments", {
   authorId: bigint("authorId", { mode: "number", unsigned: true }).notNull(),
   content: text("content").notNull(),
   likes: int("likes").default(0).notNull(),
+  parentId: bigint("parent_id", { mode: "number", unsigned: true }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });
@@ -568,4 +571,33 @@ export const packageTrackingRelations = relations(packageTracking, ({ one }) => 
 export const warehouseItemsRelations = relations(warehouseItems, ({ one }) => ({
   user: one(users, { fields: [warehouseItems.userId], references: [users.id] }),
   order: one(orders, { fields: [warehouseItems.orderId], references: [orders.id] }),
+}));
+
+// --- Forum Reactions ---
+export const forumReactions = mysqlTable("forum_reactions", {
+  id: serial("id").primaryKey(),
+  postId: bigint("postId", { mode: "number", unsigned: true }).notNull(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull(),
+  emoji: varchar("emoji", { length: 20 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// --- User Signatures ---
+export const userSignatures = mysqlTable("user_signatures", {
+  id: serial("id").primaryKey(),
+  userId: bigint("userId", { mode: "number", unsigned: true }).notNull().unique(),
+  content: text("content"),
+  isVisible: boolean("is_visible").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+// Relations for forum reactions and signatures
+export const forumReactionsRelations = relations(forumReactions, ({ one }) => ({
+  user: one(users, { fields: [forumReactions.userId], references: [users.id] }),
+  post: one(forumPosts, { fields: [forumReactions.postId], references: [forumPosts.id] }),
+}));
+
+export const userSignaturesRelations = relations(userSignatures, ({ one }) => ({
+  user: one(users, { fields: [userSignatures.userId], references: [users.id] }),
 }));

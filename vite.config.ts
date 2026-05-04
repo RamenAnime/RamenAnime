@@ -1,37 +1,42 @@
-import devServer from "@hono/vite-dev-server"
 import path from "path"
-const __dirname = import.meta.dirname
-import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
+import react from "@vitejs/plugin-react"
+import { nodePolyfills } from "vite-plugin-node-polyfills"
 
 export default defineConfig({
-  plugins: [
-    devServer({ entry: "api/boot.ts", exclude: [/^\/(?!api\/).*$/] }),
-    react()],
-  server: { port: 3000 },
+  plugins: [react(), nodePolyfills()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      "@contracts": path.resolve(__dirname, "./contracts"),
       "@db": path.resolve(__dirname, "./db"),
-      "db": path.resolve(__dirname, "./db"),
+      "@contracts": path.resolve(__dirname, "./contracts"),
+      "@server": path.resolve(__dirname, "./api"),
     },
   },
-  envDir: path.resolve(__dirname),
-  build: {
-    outDir: path.resolve(__dirname, "dist/public"),
-    emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router"],
-          ui: ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-avatar", "@radix-ui/react-slot"],
-          query: ["@tanstack/react-query"],
-          trpc: ["@trpc/client", "@trpc/server", "@trpc/react-query"],
-          i18n: ["i18next", "react-i18next", "i18next-browser-languagedetector"],
-          utils: ["superjson", "zod", "jose"],
-        },
+  server: {
+    port: 3000,
+    proxy: {
+      "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
       },
     },
   },
-});
+  build: {
+    outDir: "dist/public",
+    rollupOptions: {
+      external: [
+        "@simplewebauthn/server",
+        "argon2",
+        "crypto",
+      ],
+    },
+  },
+  ssr: {
+    noExternal: ["@trpc/server"],
+    external: ["@simplewebauthn/server", "argon2"],
+  },
+  optimizeDeps: {
+    exclude: ["@simplewebauthn/server", "argon2"],
+  },
+})

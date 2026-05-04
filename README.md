@@ -1,44 +1,40 @@
-# ラーメンアニメ (Ramen Anime)
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react" />
+  <img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript" />
+  <img src="https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss" />
+  <img src="https://img.shields.io/badge/tRPC-11-2596BE?logo=trpc" />
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite" />
+  <img src="https://img.shields.io/badge/Drizzle-ORM-C5F74F?logo=drizzle" />
+</p>
 
-A full-stack anime merchandise marketplace with live auctions, fraud detection, multi-currency support (35 languages), and copyright scanning.
+<h1 align="center">ラーメンアニメ (Ramen Anime)</h1>
 
-![React](https://img.shields.io/badge/React-19-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
-![Tailwind](https://img.shields.io/badge/Tailwind-4-blue)
-![tRPC](https://img.shields.io/badge/tRPC-11-blue)
-![Drizzle](https://img.shields.io/badge/Drizzle-ORM-green)
-![MySQL](https://img.shields.io/badge/MySQL-TiDB_Cloud-orange)
+<p align="center">
+  <strong>A global anime merchandise marketplace with live auctions, fraud detection, and 35-language support.</strong>
+</p>
 
-## Live Site
-https://ramen-anime-denj.onrender.com
+<p align="center">
+  <a href="https://ramen-anime-denj.onrender.com">Live Demo</a> ·
+  <a href="#architecture">Architecture</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#roadmap">Roadmap</a>
+</p>
 
-## Features
-- Live auctions with anti-snipe protection
-- AI-powered copyright scanning bot
-- Multi-currency with 35-language support
-- Real-time fraud detection (z-score ML)
-- Analytics dashboard with P&L tracking
-- 21 inclusive gender options
-- Responsive mobile-first design
+---
 
-## Tech Stack
-- React 19, TypeScript, Vite 6
-- tRPC 11, Drizzle ORM, TiDB Cloud
-- Tailwind CSS, shadcn/ui, Recharts
-- Zustand state management
+## What is this?
 
-## Development Workflow (No local Node.js needed)
+Ramen Anime is a production-grade marketplace for anime collectors. Think of it as a specialized platform where fans can buy, sell, and auction trading cards, figures, 3D prints, and apparel - with built-in fraud protection and copyright scanning.
 
-All builds happen automatically on Render. To make code changes:
+### Why it exists
 
-```bash
-# Clone the repo
-git clone https://github.com/ramenanime/ramenanime.git
-cd ramenanime
+Most anime marketplaces are fragmented across platforms (eBay, Mercari, Facebook groups) with no built-in protections for:
+- Counterfeit detection
+- Fraudulent sellers
+- Cross-border currency/language support
 
-# Make your changes (edit files in src/, etc.)
+Ramen Anime solves this with an integrated platform that handles verification, currency conversion, and community moderation automatically.
 
-# Push to GitHub - Render auto-deploys
-git add -A
-git commit -m "Your changes"
-git push origin main
+---
+
+## Architecture

@@ -152,7 +152,7 @@ export default function Navbar() {
               </SheetTrigger>
               <SheetContent side="right" className="bg-background border-border">
                 <SheetTitle className="text-foreground">{t("nav.language")}</SheetTitle>
-                <div className="mt-4 space-y-2">
+                <div className="mt-4 space-y-2 max-h-[70vh] overflow-y-auto pr-2">
                   {languages.map((lang) => (
                     <button key={lang.code} onClick={() => changeLanguage(lang.code)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${i18n.language === lang.code ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
                       {lang.label}

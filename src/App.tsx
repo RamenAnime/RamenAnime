@@ -1,5 +1,5 @@
 import { Suspense, lazy } from 'react'
-import { Routes, Route } from 'react-router'
+import { Routes, Route, Navigate } from 'react-router'
 import GeoBlock from '@/components/GeoBlock'
 import EnhancedAgeGate from '@/components/EnhancedAgeGate'
 import Navbar from './components/Navbar'
@@ -23,6 +23,10 @@ const Login = lazy(() => import('./pages/Login'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
 const Admin = lazy(() => import('./pages/Admin'))
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const CreateListing = lazy(() => import('./pages/CreateListing'))
+const ListingDetail = lazy(() => import('./pages/ListingDetail'))
+const Messages = lazy(() => import('./pages/Messages'))
 
 function PageLoader() {
   return (
@@ -42,22 +46,51 @@ export default function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
+                
+                {/* Marketplace routes */}
                 <Route path="/marketplace" element={<Marketplace />} />
+                <Route path="/marketplace/new" element={<CreateListing />} />
+                <Route path="/marketplace/:id" element={<ListingDetail />} />
+                
+                {/* Legacy redirects */}
+                <Route path="/shop" element={<Navigate to="/marketplace" replace />} />
+                <Route path="/sell" element={<Navigate to="/marketplace/new" replace />} />
+                <Route path="/start-selling" element={<Navigate to="/marketplace/new" replace />} />
+                <Route path="/list-item" element={<Navigate to="/marketplace/new" replace />} />
+                <Route path="/auction" element={<Navigate to="/marketplace/new" replace />} />
+                <Route path="/start-an-auction" element={<Navigate to="/marketplace/new" replace />} />
+                
+                {/* Category pages */}
                 <Route path="/3d-prints" element={<Prints3D />} />
                 <Route path="/trading-cards" element={<TradingCards />} />
+                
+                {/* Info pages */}
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/donate" element={<Donations />} />
+                
+                {/* Social / Forum */}
                 <Route path="/social" element={<Social />} />
                 <Route path="/post/:id" element={<ForumPost />} />
+                
+                {/* User */}
                 <Route path="/profile/:id" element={<Profile />} />
                 <Route path="/friends" element={<Friends />} />
+                <Route path="/messages" element={<Messages />} />
+                <Route path="/mail" element={<Navigate to="/messages" replace />} />
+                
+                {/* Auth */}
                 <Route path="/login" element={<Login />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                
+                {/* Admin */}
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/analytics" element={<AdminDashboard />} />
+                
+                {/* 404 */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Suspense>
@@ -68,4 +101,3 @@ export default function App() {
     </GeoBlock>
   )
 }
-

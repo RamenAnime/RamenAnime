@@ -173,8 +173,22 @@ export default function ListingDetail() {
               <h3 className="font-semibold mb-3 flex items-center gap-2 text-sm"><Tag className="w-4 h-4" /> Description</h3>
               <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{listing.description}</p>
               <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                {[{ label: "Category", value: listing.category }, { label: "Condition", value: listing.condition }, { label: "Type", value: isAuction ? "Auction" : "Fixed Price" }, { label: "Listed", value: new Date(listing.createdAt).toLocaleDateString() }, { label: "Views", value: String(listing.viewCount || 0) }, { label: "Bids", value: String(listing.bidCount || 0) }, ...(listing.auctionEnd ? [{ label: "Ends", value: new Date(listing.auctionEnd).toLocaleDateString() }] : []), ...(listing.reservePrice ? [{ label: "Reserve", value: `$${listing.reservePrice}` }] : [])].map((item, i) => <div key={i} className="bg-muted/50 p-2 rounded"><span className="text-muted-foreground block">{item.label}</span><span className="font-medium">{item.value}</span></div>)}
-              </div>
+                    {isAuction ? (
+                      <>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{isEnded ? "Final Price" : "Current Bid"}</p>
+                        <p className="text-4xl font-black text-primary">${listing.currentBid || listing.startPrice}</p>
+                        <div className="flex items-center justify-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1"><Zap className="w-3 h-3" />{listing.bidCount || 0} bids</span>
+                          {listing.reservePrice && <span>Reserve: ${listing.reservePrice}</span>}
+                        </div>
+                        <PriceChart data={priceHistory} />
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Price</p>
+                        <p className="text-4xl font-black text-primary">{listing.price}</p>
+                      </>
+                    )}
             </CardContent></Card>
 
             <Card className="border-border/50"><CardContent className="p-4 space-y-4">

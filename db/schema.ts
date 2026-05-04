@@ -127,12 +127,37 @@ export const marketplaceListings = mysqlTable("marketplace_listings", {
   images: text("images"),
   contactMethod: varchar("contact_method", { length: 255 }),
   isActive: boolean("is_active").default(true).notNull(),
+  listingType: mysqlEnum("listing_type", ["fixed", "auction"]).default("fixed").notNull(),
+  startPrice: varchar("start_price", { length: 50 }),
+  reservePrice: varchar("reserve_price", { length: 50 }),
+  buyNowPrice: varchar("buy_now_price", { length: 50 }),
+  currentBid: varchar("current_bid", { length: 50 }),
+  bidCount: int("bid_count").default(0).notNull(),
+  auctionEnd: timestamp("auction_end"),
+  videos: text("videos"),
+  copyrightStatus: mysqlEnum("copyright_status", ["pending", "clear", "flagged", "rejected"]).default("pending").notNull(),
+  scanDetails: text("scan_details"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });
 
 export type MarketplaceListing = typeof marketplaceListings.$inferSelect;
 export type InsertMarketplaceListing = typeof marketplaceListings.$inferInsert;
+
+// --- Listing Media ---
+export const listingMedia = mysqlTable("listing_media", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  mediaType: mysqlEnum("media_type", ["image", "video", "audio"]).notNull(),
+  url: text("url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
+  fileSize: int("file_size"),
+  compressed: boolean("compressed").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ListingMedia = typeof listingMedia.$inferSelect;
+export type InsertListingMedia = typeof listingMedia.$inferInsert;
 
 export const geoVerifications = mysqlTable("geo_verifications", {
   id: serial("id").primaryKey(),
@@ -268,6 +293,14 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   listings: many(marketplaceListings),
   geoVerification: one(geoVerifications, { fields: [users.id], references: [geoVerifications.userId] }),
   idVerification: one(idVerifications, { fields: [users.id], references: [idVerifications.userId] }),
+  bids: many(auctionBids),
+  watchlist: many(watchlistItems),
+  ratingsGiven: many(sellerRatings, { relationName: "rater" }),
+  ratingsReceived: many(sellerRatings, { relationName: "seller" }),
+  sellerProfile: one(sellerProfiles, { fields: [users.id], references: [sellerProfiles.userId] }),
+  questionsAsked: many(listingQuestions),
+  deposits: many(auctionDeposits),
+  offersMade: many(priceOffers),
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -289,7 +322,20 @@ export const friendsRelations = relations(friends, ({ one }) => ({
   addressee: one(users, { fields: [friends.addresseeId], references: [users.id], relationName: "addressee" }),
 }));
 
-export const marketplaceListingsRelations = relations(marketplaceListings, ({ one }) => ({
+export const marketplaceListingsRelations = relations(marketplaceListings, ({ one, many }) => ({
+  seller: one(users, { fields: [marketplaceListings.sellerId], references: [users.id] }),
+  media: many(listingMedia),
+  bids: many(auctionBids),
+  questions: many(listingQuestions),
+  views: many(listingViews),
+  offers: many(priceOffers),
+}));
+
+export const listingMediaRelations = relations(listingMedia, ({ one }) => ({
+  listing: one(marketplaceListings, { fields: [listingMedia.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const marketplaceListingsRelations = relations(marketplaceListings, ({ one
   seller: one(users, { fields: [marketplaceListings.sellerId], references: [users.id] }),
 }));
 
@@ -542,6 +588,50 @@ export const prohibitedScans = mysqlTable("prohibited_scans", {
 });
 
 // Relations for new tables
+export const auctionBidsRelations = relations(auctionBids, ({ one }) => ({
+  bidder: one(users, { fields: [auctionBids.bidderId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [auctionBids.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const watchlistItemsRelations = relations(watchlistItems, ({ one }) => ({
+  user: one(users, { fields: [watchlistItems.userId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [watchlistItems.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const listingQuestionsRelations = relations(listingQuestions, ({ one }) => ({
+  asker: one(users, { fields: [listingQuestions.askerId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [listingQuestions.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const sellerRatingsRelations = relations(sellerRatings, ({ one }) => ({
+  rater: one(users, { fields: [sellerRatings.raterId], references: [users.id], relationName: "rater" }),
+  seller: one(users, { fields: [sellerRatings.sellerId], references: [users.id], relationName: "seller" }),
+  listing: one(marketplaceListings, { fields: [sellerRatings.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const listingViewsRelations = relations(listingViews, ({ one }) => ({
+  viewer: one(users, { fields: [listingViews.viewerId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [listingViews.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const priceOffersRelations = relations(priceOffers, ({ one }) => ({
+  buyer: one(users, { fields: [priceOffers.buyerId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [priceOffers.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const auctionDepositsRelations = relations(auctionDeposits, ({ one }) => ({
+  bidder: one(users, { fields: [auctionDeposits.bidderId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [auctionDeposits.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const sellerProfilesRelations = relations(sellerProfiles, ({ one }) => ({
+  user: one(users, { fields: [sellerProfiles.userId], references: [users.id] }),
+}));
+
+export const copyrightScansRelations = relations(copyrightScans, ({ one }) => ({
+  listing: one(marketplaceListings, { fields: [copyrightScans.listingId], references: [marketplaceListings.id] }),
+}));
+
 export const sniperBidsRelations = relations(sniperBids, ({ one }) => ({
   bidder: one(users, { fields: [sniperBids.bidderId], references: [users.id] }),
   listing: one(marketplaceListings, { fields: [sniperBids.listingId], references: [marketplaceListings.id] }),

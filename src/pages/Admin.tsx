@@ -105,7 +105,7 @@ export default function Admin() {
                   <table className="w-full text-sm">
                     <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">ID</th><th className="pb-2">Username</th><th className="pb-2">Role</th><th className="pb-2">Status</th><th className="pb-2">Actions</th></tr></thead>
                     <tbody>
-                      {userList?.map((u) => (
+                      {userList?.map((u: any) => (
                         <tr key={u.id} className={`border-b border-border/50 ${u.isBanned ? "opacity-50" : ""}`}>
                           <td className="py-2 text-muted-foreground">{u.id}</td>
                           <td className="py-2 font-medium">{u.username ?? "-"}</td>
@@ -182,7 +182,7 @@ export default function Admin() {
                   <table className="w-full text-sm">
                     <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">Donor</th><th className="pb-2">Amount</th><th className="pb-2">Status</th></tr></thead>
                     <tbody>
-                      {donationList?.map((d) => (
+                      {donationList?.map((d: any) => (
                         <tr key={d.id} className="border-b border-border/50">
                           <td className="py-2">{d.donorName ?? "Anonymous"}</td>
                           <td className="py-2 font-medium">{d.amount} {d.currency}</td>

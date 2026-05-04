@@ -75,7 +75,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
 
-  const { data: myProfile } = trpc.social.getMyProfile.useQuery(undefined, {
+  const { data: _myProfile } = trpc.social.getMyProfile.useQuery(undefined, {
     enabled: isAuthenticated,
     staleTime: 60000,
   });

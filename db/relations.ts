@@ -3,7 +3,6 @@ import {
   friendsRelations, marketplaceListingsRelations, geoVerificationsRelations, idVerificationsRelations,
   listingMediaRelations, auctionBidsRelations, watchlistItemsRelations, listingQuestionsRelations,
   sellerRatingsRelations, priceOffersRelations, copyrightScansRelations,
-  siteVisitsRelations, revenueRecordsRelations, fraudScoresRelations,
   forumReactionsRelations, userSignaturesRelations,
 } from "./schema";
 
@@ -12,6 +11,5 @@ export {
   friendsRelations, marketplaceListingsRelations, geoVerificationsRelations, idVerificationsRelations,
   listingMediaRelations, auctionBidsRelations, watchlistItemsRelations, listingQuestionsRelations,
   sellerRatingsRelations, priceOffersRelations, copyrightScansRelations,
-  siteVisitsRelations, revenueRecordsRelations, fraudScoresRelations,
   forumReactionsRelations, userSignaturesRelations,
 };

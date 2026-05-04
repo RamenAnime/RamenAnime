@@ -51,7 +51,7 @@ export const adminRouter = createRouter({
   listPosts: adminQuery.query(async () => {
     const db = getDb();
     const rows = await db.select().from(forumPosts).orderBy(desc(forumPosts.createdAt));
-    return Promise.all(rows.map(async (p) => {
+    return Promise.all(rows.map(async (p: any) => {
       const u = await db.select().from(users).where(eq(users.id, p.authorId)).limit(1);
       return { ...p, authorName: u[0]?.name ?? "Unknown", authorId: u[0]?.id ?? 0 };
     }));
@@ -69,7 +69,7 @@ export const adminRouter = createRouter({
   listListings: adminQuery.query(async () => {
     const db = getDb();
     const rows = await db.select().from(marketplaceListings).orderBy(desc(marketplaceListings.createdAt));
-    return Promise.all(rows.map(async (l) => {
+    return Promise.all(rows.map(async (l: any) => {
       const u = await db.select().from(users).where(eq(users.id, l.sellerId)).limit(1);
       return { ...l, sellerName: u[0]?.name ?? "Unknown", sellerId: u[0]?.id ?? 0 };
     }));

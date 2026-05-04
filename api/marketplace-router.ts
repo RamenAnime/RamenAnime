@@ -6,7 +6,7 @@ import {
   sellerRatings, listingViews, priceOffers, auctionDeposits, sellerProfiles,
   listingMedia, copyrightScans,
 } from "@db/schema";
-import { eq, and, desc, sql, count, avg, gte } from "drizzle-orm";
+import { eq, and, desc, sql, count, avg } from "drizzle-orm";
 import { runCopyrightScan } from "./lib/copyright-bot";
 
 function getMinBidIncrement(currentBid: number): number {

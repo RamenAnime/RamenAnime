@@ -1,4 +1,3 @@
-import { z } from "zod";
 import { createRouter, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { prohibitedScans } from "@db/schema";
@@ -8,7 +7,7 @@ export const antiScalpingRouter = createRouter({
   getUserScan: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     const scans = await db.query.prohibitedScans.findMany({ where: eq(prohibitedScans.userId, ctx.user.id), orderBy: desc(prohibitedScans.createdAt) });
-    return { scans, clean: scans.every(s => s.action === "clear") };
+    return { scans, clean: scans.every((s: any) => s.action === "clear") };
   }),
   getPending: adminQuery.query(async () => {
     const db = getDb();

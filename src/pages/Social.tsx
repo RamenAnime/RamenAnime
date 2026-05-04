@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, ThumbsUp, Eye, Pin, Plus, Search, Clock, ChevronDown, TrendingUp, Users, Flame, Lock, FolderOpen, MessageCircle, Award, ArrowRight } from "lucide-react";
+import { MessageSquare, ThumbsUp, Eye, Pin, Plus, Search, Clock, ChevronDown, TrendingUp, Users, Lock, FolderOpen, Award, ArrowRight } from "lucide-react";
 import TosGate from "@/components/TosGate";
 
 const SUBFORUMS = [
@@ -49,10 +49,10 @@ function ForumContent() {
   const [hasMore, setHasMore] = useState(true);
   const [sort, setSort] = useState<"latest" | "popular" | "pinned">("latest");
 
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
 
-  const { data: posts, isLoading } = trpc.social.listPosts.useQuery({
+  const { data: _postsData, isLoading } = trpc.social.listPosts.useQuery({
     category: activeCategory, limit: PAGE_SIZE, offset, sort,
   }, { onSuccess: (data) => { if (offset === 0) setAllPosts(data); else setAllPosts((prev) => [...prev, ...data]); setHasMore(data.length === PAGE_SIZE); } });
 

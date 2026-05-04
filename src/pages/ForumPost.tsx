@@ -52,7 +52,7 @@ function PostContent() {
   const { id } = useParams<{ id: string }>();
   const postId = parseInt(id ?? "0");
   const navigate = useNavigate();
-n  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const [commentContent, setCommentContent] = useState("");
   const [replyTo, setReplyTo] = useState<{ id: number; authorName: string; content: string } | null>(null);
   const utils = trpc.useUtils();

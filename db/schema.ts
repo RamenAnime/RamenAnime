@@ -335,9 +335,6 @@ export const listingMediaRelations = relations(listingMedia, ({ one }) => ({
   listing: one(marketplaceListings, { fields: [listingMedia.listingId], references: [marketplaceListings.id] }),
 }));
 
-export const marketplaceListingsRelations = relations(marketplaceListings, ({ one
-  seller: one(users, { fields: [marketplaceListings.sellerId], references: [users.id] }),
-}));
 
 export const geoVerificationsRelations = relations(geoVerifications, ({ one }) => ({
   user: one(users, { fields: [geoVerifications.userId], references: [users.id] }),

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Link, useLocation } from "react-router";
-import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
@@ -30,8 +29,46 @@ import {
   Mail,
 } from "lucide-react";
 
+const languages = [
+  { code: "en", label: "English" },
+  { code: "ja", label: "日本語" },
+  { code: "ko", label: "한국어" },
+  { code: "zh-CN", label: "中文 (简体)" },
+  { code: "zh-TW", label: "中文 (繁體)" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "id", label: "Bahasa Indonesia" },
+  { code: "ms", label: "Bahasa Melayu" },
+  { code: "tl", label: "Filipino" },
+  { code: "vi", label: "Tiếng Việt" },
+  { code: "th", label: "ไทย" },
+  { code: "ar", label: "العربية" },
+  { code: "he", label: "עברית" },
+  { code: "tr", label: "Türkçe" },
+  { code: "de", label: "Deutsch" },
+  { code: "es", label: "Español" },
+  { code: "fr", label: "Français" },
+  { code: "it", label: "Italiano" },
+  { code: "nl", label: "Nederlands" },
+  { code: "pt", label: "Português" },
+  { code: "pl", label: "Polski" },
+  { code: "ro", label: "Română" },
+  { code: "el", label: "Ελληνικά" },
+  { code: "sv", label: "Svenska" },
+  { code: "cs", label: "Čeština" },
+  { code: "hu", label: "Magyar" },
+  { code: "bg", label: "Български" },
+  { code: "da", label: "Dansk" },
+  { code: "fi", label: "Suomi" },
+  { code: "sk", label: "Slovenčina" },
+  { code: "hr", label: "Hrvatski" },
+  { code: "lt", label: "Lietuvių" },
+  { code: "lv", label: "Latviešu" },
+  { code: "sl", label: "Slovenščina" },
+  { code: "et", label: "Eesti" },
+];
+
 export default function Navbar() {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const location = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const [open, setOpen] = useState(false);
@@ -50,51 +87,10 @@ export default function Navbar() {
     setOpen(false);
   };
 
-  const languages = [
-    { code: "en", label: "English" },
-    { code: "ja", label: "日本語" },
-    { code: "ko", label: "한국어" },
-    { code: "zh-CN", label: "中文 (简体)" },
-    { code: "zh-TW", label: "中文 (繁體)" },
-    { code: "hi", label: "हिन्दी" },
-    { code: "id", label: "Bahasa Indonesia" },
-    { code: "ms", label: "Bahasa Melayu" },
-    { code: "tl", label: "Filipino" },
-    { code: "vi", label: "Tiếng Việt" },
-    { code: "th", label: "ไทย" },
-    { code: "ar", label: "العربية" },
-    { code: "he", label: "עברית" },
-    { code: "tr", label: "Türkçe" },
-    { code: "de", label: "Deutsch" },
-    { code: "es", label: "Español" },
-    { code: "fr", label: "Français" },
-    { code: "it", label: "Italiano" },
-    { code: "nl", label: "Nederlands" },
-    { code: "pt", label: "Português" },
-    { code: "pl", label: "Polski" },
-    { code: "ro", label: "Română" },
-    { code: "el", label: "Ελληνικά" },
-    { code: "sv", label: "Svenska" },
-    { code: "cs", label: "Čeština" },
-    { code: "hu", label: "Magyar" },
-    { code: "bg", label: "Български" },
-    { code: "da", label: "Dansk" },
-    { code: "fi", label: "Suomi" },
-    { code: "sk", label: "Slovenčina" },
-    { code: "hr", label: "Hrvatski" },
-    { code: "lt", label: "Lietuvių" },
-    { code: "lv", label: "Latviešu" },
-    { code: "sl", label: "Slovenščina" },
-    { code: "et", label: "Eesti" },
-  ];
-
-  const currentLang = languages.find((l) => l.code === i18n.language) ?? languages[0];
-
   return (
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container px-4 md:px-6 mx-auto">
         <div className="flex items-center justify-between h-16">
-          {/* Brand */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-sm">
               ラ
@@ -104,20 +100,19 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
             <Link to="/marketplace" className={`text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t("nav.marketplace") || "Marketplace"}
+              Marketplace
             </Link>
             <Link to="/social" className={`text-sm font-medium transition-colors ${isActive("/social") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t("nav.community") || "Community"}
+              Forum
             </Link>
             <Link to="/donate" className={`text-sm font-medium transition-colors ${isActive("/donate") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t("nav.donate") || "Donate"}
+              Donate
             </Link>
-            {isAuthenticated ? null : (
+            {!isAuthenticated && (
               <Link to="/login" className={`text-sm font-medium transition-colors ${isActive("/login") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                {t("nav.login") || "Join / Login"}
+                Join / Login
               </Link>
             )}
             {isAuthenticated && (
@@ -127,7 +122,6 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Right side icons */}
           <div className="flex items-center gap-2">
             {isAuthenticated && (
               <>
@@ -145,7 +139,6 @@ export default function Navbar() {
               </Button>
             </Link>
 
-            {/* Language switcher */}
             <Sheet open={langOpen} onOpenChange={setLangOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
@@ -153,7 +146,7 @@ export default function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="bg-background border-border">
-                <SheetTitle className="text-foreground">{t("nav.language") || "Language"}</SheetTitle>
+                <SheetTitle className="text-foreground">Language</SheetTitle>
                 <div className="mt-4 space-y-2">
                   {languages.map((lang) => (
                     <button key={lang.code} onClick={() => changeLanguage(lang.code)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${i18n.language === lang.code ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
@@ -164,7 +157,6 @@ export default function Navbar() {
               </SheetContent>
             </Sheet>
 
-            {/* User dropdown */}
             {isAuthenticated && user && (
               <div className="hidden md:flex items-center gap-2">
                 <DropdownMenu>
@@ -183,26 +175,25 @@ export default function Navbar() {
                     </div>
                     <DropdownMenuItem asChild className="cursor-pointer">
                       <Link to={`/profile/${user.id}`} className="flex items-center gap-2 text-foreground">
-                        <User className="h-4 w-4" /> {t("nav.myProfile") || "My Profile"}
+                        <User className="h-4 w-4" /> My Profile
                       </Link>
                     </DropdownMenuItem>
                     {user.role === "admin" && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link to="/admin" className="flex items-center gap-2 text-primary">
-                          <Shield className="h-4 w-4" /> {t("nav.admin") || "Admin Dashboard"}
+                          <Shield className="h-4 w-4" /> Admin
                         </Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator className="bg-border" />
                     <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
-                      <LogOut className="h-4 w-4 mr-2" /> {t("nav.logout") || "Logout"}
+                      <LogOut className="h-4 w-4 mr-2" /> Logout
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             )}
 
-            {/* Mobile menu */}
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden text-foreground">
@@ -210,45 +201,45 @@ export default function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="bg-background border-border w-[280px]">
-                <SheetTitle className="text-foreground mb-4">{t("nav.menu") || "Menu"}</SheetTitle>
+                <SheetTitle className="text-foreground mb-4">Menu</SheetTitle>
                 <div className="flex flex-col gap-1 mt-4">
                   <Link to="/" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.home") || "Home"}
+                    Home
                   </Link>
                   <Link to="/marketplace" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.marketplace") || "Marketplace"}
+                    Marketplace
                   </Link>
                   <Link to="/social" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/social") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.community") || "Community"}
+                    Forum
                   </Link>
                   <Link to="/donate" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/donate") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.donate") || "Donate"}
+                    Donate
                   </Link>
                   <Link to="/friends" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/friends") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    <Package className="h-4 w-4" />{t("nav.friends") || "Friends"}
+                    <Package className="h-4 w-4" /> Friends
                   </Link>
 
                   {isAuthenticated && (
                     <Link to={`/profile/${user?.id}`} onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive(`/profile/${user?.id}`) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                      <User className="h-4 w-4" /> {t("nav.myProfile") || "My Profile"}
+                      <User className="h-4 w-4" /> My Profile
                     </Link>
                   )}
 
                   {isAuthenticated && user?.role === "admin" && (
                     <Link to="/admin" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/admin") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                      <Shield className="h-4 w-4" />{t("nav.admin") || "Admin Dashboard"}
+                      <Shield className="h-4 w-4" /> Admin
                     </Link>
                   )}
 
-                  {isAuthenticated ? null : (
+                  {!isAuthenticated && (
                     <Link to="/login" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-primary bg-primary/10">
-                      {t("nav.login") || "Join / Login"}
+                      Join / Login
                     </Link>
                   )}
 
                   {isAuthenticated && (
                     <button onClick={() => { logout(); setOpen(false); }} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors mt-2">
-                      <LogOut className="h-4 w-4" />{t("nav.logout") || "Logout"}
+                      <LogOut className="h-4 w-4" /> Logout
                     </button>
                   )}
                 </div>

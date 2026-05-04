@@ -132,7 +132,6 @@ export default function Login() {
                 </p>
               )}
             </div>
-            </div>
           </CardContent>
         </Card>
       </div>

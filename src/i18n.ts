@@ -15,7 +15,7 @@ function setDocumentDirection(lng: string) {
 const resources = {
   en: {
     translation: {
-      nav: { home: 'Home', shop: 'Shop', prints3d: '3D Prints', cards: 'Trading Cards', contact: 'Contact', social: 'Social Forum', login: 'Join / Login', terms: 'Terms', friends: 'Friends', profile: 'Profile', marketplace: 'Marketplace', myProfile: 'My Profile', admin: 'Admin Dashboard', logout: 'Logout', menu: 'Menu', language: 'Language', donate: 'Donate' },
+      nav: { home: 'Home', brand: 'Ramen Anime', shop: 'Shop', prints3d: '3D Prints', cards: 'Trading Cards', contact: 'Contact', social: 'Social Forum', login: 'Join / Login', terms: 'Terms', friends: 'Friends', profile: 'Profile', marketplace: 'Marketplace', myProfile: 'My Profile', admin: 'Admin Dashboard', logout: 'Logout', menu: 'Menu', language: 'Language', donate: 'Donate' },
       hero: { title: 'ラーメンアニメ', subtitle: 'Your one-stop shop for custom 3D printed anime goods and trading cards. Handcrafted with passion. Shipped with care.', shopNow: 'Shop Now', joinCommunity: 'Join Community' },
       features: { prints: 'Custom 3D Prints', printsDesc: 'Made to order anime-themed prints with premium PLA and resin', cards: 'Trading Cards', cardsDesc: 'Pokemon, One Piece, Naruto, Dragon Ball, Yu-Gi-Oh & more', shipping: 'Fast Shipping', shippingDesc: 'Quick dispatch on all orders with tracking', verified: 'the marketplace Verified', verifiedDesc: 'Trusted seller with 100+ positive reviews' },
       products: { title: 'Our Products', subtitle: 'Shop Collection', viewAll: 'View All Products', orderNow: 'Order Now', viewListing: 'View on the marketplace' },
@@ -35,7 +35,7 @@ const resources = {
   },
   ja: {
     translation: {
-      nav: { home: 'ホーム', shop: 'ショップ', prints3d: '3Dプリント', cards: 'トレカ', contact: 'お問い合わせ', social: '掲示板', login: 'ログイン', terms: '規約', friends: '友達', profile: 'プロフィール', marketplace: 'マーケット', myProfile: 'マイプロフィール', admin: '管理ダッシュボード', logout: 'ログアウト', menu: 'メニュー', language: '言語', donate: '寄付' },
+      nav: { home: 'ホーム', brand: 'Ramen Anime', shop: 'ショップ', prints3d: '3Dプリント', cards: 'トレカ', contact: 'お問い合わせ', social: '掲示板', login: 'ログイン', terms: '規約', friends: '友達', profile: 'プロフィール', marketplace: 'マーケット', myProfile: 'マイプロフィール', admin: '管理ダッシュボード', logout: 'ログアウト', menu: 'メニュー', language: '言語', donate: '寄付' },
       hero: { title: 'ラーメンアニメ', subtitle: 'カスタム3Dプリントのアニメグッズとトレーディングカードの専門店。情熱を込めて作り、丁寧に発送します。', shopNow: '今すぐ購入', joinCommunity: 'コミュニティに参加' },
       features: { prints: 'カスタム3Dプリント', printsDesc: '高品質PLAとレジンで作るアニメテーマのプリント', cards: 'トレーディングカード', cardsDesc: 'ポケモン、ワンピース、ナルト、ドラゴンボール、遊戯王など', shipping: '速達配送', shippingDesc: 'すべての注文を追跡付きで迅速発送', verified: 'the marketplace認証', verifiedDesc: '100件以上の好評価を持つ信頼できる出品者' },
       products: { title: '商品一覧', subtitle: 'ショップコレクション', viewAll: 'すべての商品を見る', orderNow: '注文する', viewListing: 'the marketplaceで見る' },
@@ -55,7 +55,7 @@ const resources = {
   },
   'zh-TW': {
     translation: {
-      nav: { home: '首頁', shop: '商店', prints3d: '3D列印', cards: '交易卡', contact: '聯繫我們', social: '社交論壇', login: '加入/登入', terms: '條款', friends: '好友', profile: '個人檔案', marketplace: '市集', myProfile: '我的個人檔案', admin: '管理儀表板', logout: '登出', menu: '選單', language: '語言', donate: '捐款' },
+      nav: { home: '首頁', brand: 'Ramen Anime', shop: '商店', prints3d: '3D列印', cards: '交易卡', contact: '聯繫我們', social: '社交論壇', login: '加入/登入', terms: '條款', friends: '好友', profile: '個人檔案', marketplace: '市集', myProfile: '我的個人檔案', admin: '管理儀表板', logout: '登出', menu: '選單', language: '語言', donate: '捐款' },
       hero: { title: '拉麵動漫', subtitle: '您的一站式客製化3D列印動漫商品與交易卡商店。用心製作，細心出貨。', shopNow: '立即購買', joinCommunity: '加入社群' },
       features: { prints: '客製化3D列印', printsDesc: '使用優質PLA和樹脂訂製動漫主題列印', cards: '交易卡', cardsDesc: '寶可夢、航海王、火影忍者、七龍珠、遊戲王等', shipping: '快速出貨', shippingDesc: '所有訂單快速出貨並附追蹤號碼', verified: 'the marketplace認證', verifiedDesc: '擁有100+正面評價的值得信賴賣家' },
       products: { title: '我們的商品', subtitle: '商店精選', viewAll: '查看所有商品', orderNow: '立即訂購', viewListing: '在the marketplace查看' },
@@ -75,7 +75,7 @@ const resources = {
   },
   'zh-CN': {
     translation: {
-      nav: { home: '首页', shop: '商店', prints3d: '3D打印', cards: '集换卡', contact: '联系我们', social: '社交论坛', login: '加入/登录', terms: '条款', friends: '好友', profile: '个人资料', marketplace: '集市', myProfile: '我的个人资料', admin: '管理面板', logout: '退出登录', menu: '菜单', language: '语言', donate: '捐赠' },
+      nav: { home: '首页', brand: 'Ramen Anime', shop: '商店', prints3d: '3D打印', cards: '集换卡', contact: '联系我们', social: '社交论坛', login: '加入/登录', terms: '条款', friends: '好友', profile: '个人资料', marketplace: '集市', myProfile: '我的个人资料', admin: '管理面板', logout: '退出登录', menu: '菜单', language: '语言', donate: '捐赠' },
       hero: { title: '拉面动漫', subtitle: '您的一站式定制3D打印动漫商品与集换卡商店。用心制作，细心发货。', shopNow: '立即购买', joinCommunity: '加入社区' },
       features: { prints: '定制3D打印', printsDesc: '使用优质PLA和树脂定制动漫主题打印', cards: '集换卡', cardsDesc: '宝可梦、海贼王、火影忍者、七龙珠、游戏王等', shipping: '快速发货', shippingDesc: '所有订单快速发货并附追踪号码', verified: 'the marketplace认证', verifiedDesc: '拥有100+正面评价的值得信赖卖家' },
       products: { title: '我们的商品', subtitle: '商店精选', viewAll: '查看所有商品', orderNow: '立即订购', viewListing: '在the marketplace查看' },
@@ -95,7 +95,7 @@ const resources = {
   },
   ko: {
     translation: {
-      nav: { home: '홈', shop: '상점', prints3d: '3D프린트', cards: '트레이딩카드', contact: '문의', social: '소셜 포럼', login: '가입/로그인', terms: '약관', friends: '친구', profile: '프로필', marketplace: '마켓', myProfile: '내 프로필', admin: '관리 대시보드', logout: '로그아웃', menu: '메뉴', language: '언어', donate: '기부' },
+      nav: { home: '홈', brand: 'Ramen Anime', shop: '상점', prints3d: '3D프린트', cards: '트레이딩카드', contact: '문의', social: '소셜 포럼', login: '가입/로그인', terms: '약관', friends: '친구', profile: '프로필', marketplace: '마켓', myProfile: '내 프로필', admin: '관리 대시보드', logout: '로그아웃', menu: '메뉴', language: '언어', donate: '기부' },
       hero: { title: '라멘 애니메', subtitle: '맞춤형 3D 프린팅 애니메이션 굿즈와 트레이딩 카드 원스톱 샵. 열정으로 제작하고 정성껏 배송합니다.', shopNow: '지금 쇼핑', joinCommunity: '커뮤니티 참여' },
       features: { prints: '맞춤 3D 프린트', printsDesc: '프리미엄 PLA와 레진으로 제작하는 애니메이션 테마 프린트', cards: '트레이딩 카드', cardsDesc: '포켓몬, 원피스, 나루토, 드래곤볼, 유희왕 등', shipping: '빠른 배송', shippingDesc: '모든 주문 추적 가능한 빠른 발송', verified: 'the marketplace 인증', verifiedDesc: '100개 이상 긍정적 리뷰의 신뢰할 수 있는 판매자' },
       products: { title: '상품 목록', subtitle: '샵 컬렉션', viewAll: '모든 상품 보기', orderNow: '주문하기', viewListing: 'the marketplace에서 보기' },
@@ -115,7 +115,7 @@ const resources = {
   },
   fr: {
     translation: {
-      nav: { home: 'Accueil', shop: 'Boutique', prints3d: 'Impressions 3D', cards: 'Cartes', contact: 'Contact', social: 'Forum Social', login: 'Rejoindre / Connexion', terms: 'CGU', friends: 'Amis', profile: 'Profil', marketplace: 'Marché', myProfile: 'Mon Profil', admin: 'Tableau de Bord', logout: 'Déconnexion', menu: 'Menu', language: 'Langue', donate: 'Faire un don' },
+      nav: { home: 'Accueil', brand: 'Ramen Anime', shop: 'Boutique', prints3d: 'Impressions 3D', cards: 'Cartes', contact: 'Contact', social: 'Forum Social', login: 'Rejoindre / Connexion', terms: 'CGU', friends: 'Amis', profile: 'Profil', marketplace: 'Marché', myProfile: 'Mon Profil', admin: 'Tableau de Bord', logout: 'Déconnexion', menu: 'Menu', language: 'Langue', donate: 'Faire un don' },
       hero: { title: 'ラーメンアニメ', subtitle: 'Votre boutique unique pour les articles anime imprimés en 3D et les cartes à collectionner. Fabriqués avec passion. Expédiés avec soin.', shopNow: 'Acheter', joinCommunity: 'Rejoindre' },
       features: { prints: 'Impressions 3D', printsDesc: 'Impressions sur thème anime en PLA et résine premium', cards: 'Cartes à Collectionner', cardsDesc: 'Pokemon, One Piece, Naruto, Dragon Ball, Yu-Gi-Oh et plus', shipping: 'Expédition Rapide', shippingDesc: 'Expédition rapide avec suivi pour toutes les commandes', verified: 'the marketplace Vérifié', verifiedDesc: 'Vendeur de confiance avec 100+ avis positifs' },
       products: { title: 'Nos Produits', subtitle: 'Collection Boutique', viewAll: 'Voir Tout', orderNow: 'Commander', viewListing: 'Voir sur the marketplace' },
@@ -135,7 +135,7 @@ const resources = {
   },
   es: {
     translation: {
-      nav: { home: 'Inicio', shop: 'Tienda', prints3d: 'Impresiones 3D', cards: 'Cartas Coleccionables', contact: 'Contacto', social: 'Foro Social', login: 'Unirse / Iniciar sesion', terms: 'Terminos', friends: 'Amigos', profile: 'Perfil', marketplace: 'Mercado', myProfile: 'Mi Perfil', admin: 'Panel Admin', logout: 'Cerrar sesion', menu: 'Menu', language: 'Idioma', donate: 'Donar' },
+      nav: { home: 'Inicio', brand: 'Ramen Anime', shop: 'Tienda', prints3d: 'Impresiones 3D', cards: 'Cartas Coleccionables', contact: 'Contacto', social: 'Foro Social', login: 'Unirse / Iniciar sesion', terms: 'Terminos', friends: 'Amigos', profile: 'Perfil', marketplace: 'Mercado', myProfile: 'Mi Perfil', admin: 'Panel Admin', logout: 'Cerrar sesion', menu: 'Menu', language: 'Idioma', donate: 'Donar' },
       hero: { title: 'Ramen Anime', subtitle: 'Tu tienda de productos anime impresos en 3D y cartas coleccionables. Hechos con pasion.', shopNow: 'Comprar', joinCommunity: 'Unirse' },
       features: { prints: 'Impresiones 3D Personalizadas', printsDesc: 'Impresiones anime bajo pedido con PLA y resina premium', cards: 'Cartas Coleccionables', cardsDesc: 'Pokemon, One Piece, Naruto, Dragon Ball, Yu-Gi-Oh y mas', shipping: 'Envio Rapido', shippingDesc: 'Despacho rapido con seguimiento', verified: 'the marketplace Verificado', verifiedDesc: 'Vendedor de confianza con 100+ opiniones' },
       products: { title: 'Nuestros Productos', subtitle: 'Coleccion de Tienda', viewAll: 'Ver Todo', orderNow: 'Ordenar', viewListing: 'Ver en the marketplace' },
@@ -155,7 +155,7 @@ const resources = {
   },
   de: {
     translation: {
-      nav: { home: 'Startseite', shop: 'Shop', prints3d: '3D-Drucke', cards: 'Sammelkarten', contact: 'Kontakt', social: 'Soziales Forum', login: 'Beitreten / Login', terms: 'AGB', friends: 'Freunde', profile: 'Profil', marketplace: 'Marktplatz', myProfile: 'Mein Profil', admin: 'Admin Dashboard', logout: 'Abmelden', menu: 'Menu', language: 'Sprache', donate: 'Spenden' },
+      nav: { home: 'Startseite', brand: 'Ramen Anime', shop: 'Shop', prints3d: '3D-Drucke', cards: 'Sammelkarten', contact: 'Kontakt', social: 'Soziales Forum', login: 'Beitreten / Login', terms: 'AGB', friends: 'Freunde', profile: 'Profil', marketplace: 'Marktplatz', myProfile: 'Mein Profil', admin: 'Admin Dashboard', logout: 'Abmelden', menu: 'Menu', language: 'Sprache', donate: 'Spenden' },
       hero: { title: 'Ramen Anime', subtitle: 'Dein Shop fur 3D-gedruckte Anime-Artikel und Sammelkarten. Mit Leidenschaft gemacht.', shopNow: 'Shop', joinCommunity: 'Beitreten' },
       features: { prints: '3D-Drucke', printsDesc: 'Anime-3D-Drucke aus Premium-PLA und Harz', cards: 'Sammelkarten', cardsDesc: 'Pokemon, One Piece, Naruto, Dragon Ball, Yu-Gi-Oh & mehr', shipping: 'Schneller Versand', shippingDesc: 'Schneller Versand mit Tracking', verified: 'the marketplace Verifiziert', verifiedDesc: 'Vertrauenswurdiger Verkaufer mit 100+ Bewertungen' },
       products: { title: 'Unsere Produkte', subtitle: 'Shop Kollektion', viewAll: 'Alle Ansehen', orderNow: 'Bestellen', viewListing: 'Auf the marketplace Ansehen' },
@@ -176,7 +176,7 @@ const resources = {
 
   pt: {
     translation: {
-      nav: { home: 'Inicio', shop: 'Loja', prints3d: 'Impressoes 3D', cards: 'Cartas Colecionaveis', contact: 'Contato', social: 'Forum Social', login: 'Entrar', terms: 'Termos', friends: 'Amigos', profile: 'Perfil', marketplace: 'Mercado', myProfile: 'Meu Perfil', admin: 'Painel Admin', logout: 'Sair', menu: 'Menu', language: 'Idioma', donate: 'Doar' },
+      nav: { home: 'Inicio', brand: 'Ramen Anime', shop: 'Loja', prints3d: 'Impressoes 3D', cards: 'Cartas Colecionaveis', contact: 'Contato', social: 'Forum Social', login: 'Entrar', terms: 'Termos', friends: 'Amigos', profile: 'Perfil', marketplace: 'Mercado', myProfile: 'Meu Perfil', admin: 'Painel Admin', logout: 'Sair', menu: 'Menu', language: 'Idioma', donate: 'Doar' },
       hero: { title: 'Ramen Anime', subtitle: 'Sua loja de produtos anime impressos em 3D e cartas colecionaveis.', shopNow: 'Comprar', joinCommunity: 'Participar' },
       features: { prints: 'Impressoes 3D', printsDesc: 'Impressoes anime com PLA e resina premium', cards: 'Cartas Colecionaveis', cardsDesc: 'Pokemon, One Piece, Naruto e mais', shipping: 'Envio Rapido', shippingDesc: 'Despacho rapido com rastreamento', verified: 'the marketplace Verificado', verifiedDesc: 'Vendedor confiavel' },
       products: { title: 'Nossos Produtos', subtitle: 'Colecao da Loja', viewAll: 'Ver Tudo', orderNow: 'Encomendar', viewListing: 'Ver no the marketplace' },
@@ -216,7 +216,7 @@ const resources = {
   },
   it: {
     translation: {
-      nav: { home: 'Home', shop: 'Negozio', prints3d: 'Stampe 3D', cards: 'Carte Collezionabili', contact: 'Contatto', social: 'Forum Sociale', login: 'Accedi / Unisciti', terms: 'Termini', friends: 'Amici', profile: 'Profilo', marketplace: 'Mercatino', myProfile: 'Mio Profilo', admin: 'Pannello Admin', logout: 'Esci', menu: 'Menu', language: 'Lingua', donate: 'Dona' },
+      nav: { home: 'Home', brand: 'Ramen Anime', shop: 'Negozio', prints3d: 'Stampe 3D', cards: 'Carte Collezionabili', contact: 'Contatto', social: 'Forum Sociale', login: 'Accedi / Unisciti', terms: 'Termini', friends: 'Amici', profile: 'Profilo', marketplace: 'Mercatino', myProfile: 'Mio Profilo', admin: 'Pannello Admin', logout: 'Esci', menu: 'Menu', language: 'Lingua', donate: 'Dona' },
       hero: { title: 'Ramen Anime', subtitle: 'Il tuo negozio di merchandise anime stampato in 3D e carte collezionabili. Fatto con passione.', shopNow: 'Acquista', joinCommunity: 'Unisciti' },
       features: { prints: 'Stampe 3D Personalizzate', printsDesc: 'Stampe a tema anime in PLA e resina premium', cards: 'Carte Collezionabili', cardsDesc: 'Pokemon, One Piece, Naruto, Dragon Ball, Yu-Gi-Oh e altro', shipping: 'Spedizione Veloce', shippingDesc: 'Spedizione rapida con tracciamento', verified: 'the marketplace Verificato', verifiedDesc: 'Venditore affidabile con 100+ recensioni' },
       products: { title: 'I Nostri Prodotti', subtitle: 'Collezione Negozio', viewAll: 'Vedi Tutto', orderNow: 'Ordina', viewListing: 'Vedi su the marketplace' },
@@ -236,7 +236,7 @@ const resources = {
   },
   nl: {
     translation: {
-      nav: { home: 'Home', shop: 'Winkel', prints3d: '3D Prints', cards: 'Verzamelkaarten', contact: 'Contact', social: 'Social Forum', login: 'Lid Worden / Inloggen', terms: 'Voorwaarden', friends: 'Vrienden', profile: 'Profiel', marketplace: 'Marktplaats', myProfile: 'Mijn Profiel', admin: 'Admin Dashboard', logout: 'Uitloggen', menu: 'Menu', language: 'Taal', donate: 'Doneren' },
+      nav: { home: 'Home', brand: 'Ramen Anime', shop: 'Winkel', prints3d: '3D Prints', cards: 'Verzamelkaarten', contact: 'Contact', social: 'Social Forum', login: 'Lid Worden / Inloggen', terms: 'Voorwaarden', friends: 'Vrienden', profile: 'Profiel', marketplace: 'Marktplaats', myProfile: 'Mijn Profiel', admin: 'Admin Dashboard', logout: 'Uitloggen', menu: 'Menu', language: 'Taal', donate: 'Doneren' },
       hero: { title: 'Ramen Anime', subtitle: 'Jouw shop voor 3D-geprinte anime merchandise en verzamelkaarten. Gemaakt met passie.', shopNow: 'Winkel', joinCommunity: 'Deelnemen' },
       features: { prints: 'Aangepaste 3D Prints', printsDesc: 'Anime 3D-prints in premium PLA en hars', cards: 'Verzamelkaarten', cardsDesc: 'Pokemon, One Piece, Naruto, Dragon Ball, Yu-Gi-Oh en meer', shipping: 'Snelle Verzending', shippingDesc: 'Snelle verzending met tracking', verified: 'the marketplace Geverifieerd', verifiedDesc: 'Betrouwbare verkoper met 100+ beoordelingen' },
       products: { title: 'Onze Producten', subtitle: 'Shop Collectie', viewAll: 'Alles Bekijken', orderNow: 'Bestel', viewListing: 'Bekijk op the marketplace' },

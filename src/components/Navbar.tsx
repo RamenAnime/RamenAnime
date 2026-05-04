@@ -105,11 +105,9 @@ export default function Navbar() {
           </Link>
 
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/shop" className={`text-sm font-medium transition-colors ${isActive("/shop") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t("nav.shop")}
             </Link>
             <Link to="/social" className={`text-sm font-medium transition-colors ${isActive("/social") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t("nav.forum")}
+              {t("nav.community")}
             </Link>
             <Link to="/marketplace" className={`text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
               {t("nav.marketplace")}
@@ -140,7 +138,6 @@ export default function Navbar() {
                 <NotificationBell />
               </>
             )}
-            <Link to="/shop" className="relative">
               <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
                 <ShoppingCart className="h-5 w-5" />
               </Button>
@@ -213,11 +210,9 @@ export default function Navbar() {
                   <Link to="/" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
                     {t("nav.home")}
                   </Link>
-                  <Link to="/shop" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/shop") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.shop")}
                   </Link>
                   <Link to="/social" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/social") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.forum")}
+                    {t("nav.community")}
                   </Link>
                   <Link to="/marketplace" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
                     {t("nav.marketplace")}

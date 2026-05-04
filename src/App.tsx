@@ -7,7 +7,6 @@ import Footer from './components/Footer'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
 
-const Shop = lazy(() => import('./pages/Shop'))
 const Prints3D = lazy(() => import('./pages/Prints3D'))
 const TradingCards = lazy(() => import('./pages/TradingCards'))
 const Contact = lazy(() => import('./pages/Contact'))
@@ -43,7 +42,6 @@ export default function App() {
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/shop" element={<Shop />} />
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/3d-prints" element={<Prints3D />} />
                 <Route path="/trading-cards" element={<TradingCards />} />

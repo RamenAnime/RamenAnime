@@ -1,20 +1,19 @@
-import {
-  generateRegistrationOptions,
-  verifyRegistrationResponse,
-  generateAuthenticationOptions,
-  verifyAuthenticationResponse,
-} from "@simplewebauthn/server";
-import type {
-  RegistrationResponseJSON,
-  AuthenticationResponseJSON,
-} from "@simplewebauthn/types";
+// WebAuthn / Passkeys (ECDSA P-256) - falls back to placeholder if not installed
+let swa: any;
+
+try {
+  swa = require("@simplewebauthn/server");
+} catch {
+  console.warn("[webauthn] Package not installed. Passkeys disabled.");
+}
 
 const RP_NAME = "Ramen Anime";
 const RP_ID = process.env.WEBAUTHN_RP_ID || "ramen-anime-denj.onrender.com";
 const ORIGIN = process.env.WEBAUTHN_ORIGIN || "https://ramen-anime-denj.onrender.com";
 
 export async function generateRegistrationOpts(userId: number, username: string) {
-  return generateRegistrationOptions({
+  if (!swa) throw new Error("WebAuthn not installed. Run: npm install @simplewebauthn/server");
+  return swa.generateRegistrationOptions({
     rpName: RP_NAME,
     rpID: RP_ID,
     userID: new TextEncoder().encode(String(userId)),
@@ -30,22 +29,30 @@ export async function generateRegistrationOpts(userId: number, username: string)
   });
 }
 
-export async function verifyReg(response: RegistrationResponseJSON, challenge: string) {
-  return verifyRegistrationResponse({
-    response, expectedChallenge: challenge,
-    expectedOrigin: ORIGIN, expectedRPID: RP_ID,
+export async function verifyReg(response: any, challenge: string) {
+  if (!swa) throw new Error("WebAuthn not installed");
+  return swa.verifyRegistrationResponse({
+    response,
+    expectedChallenge: challenge,
+    expectedOrigin: ORIGIN,
+    expectedRPID: RP_ID,
     requireUserVerification: true,
   });
 }
 
 export async function generateAuthOpts() {
-  return generateAuthenticationOptions({ rpID: RP_ID, userVerification: "preferred" });
+  if (!swa) throw new Error("WebAuthn not installed");
+  return swa.generateAuthenticationOptions({ rpID: RP_ID, userVerification: "preferred" });
 }
 
-export async function verifyAuth(response: AuthenticationResponseJSON, challenge: string, authenticator: any) {
-  return verifyAuthenticationResponse({
-    response, expectedChallenge: challenge,
-    expectedOrigin: ORIGIN, expectedRPID: RP_ID,
-    authenticator, requireUserVerification: true,
+export async function verifyAuth(response: any, challenge: string, authenticator: any) {
+  if (!swa) throw new Error("WebAuthn not installed");
+  return swa.verifyAuthenticationResponse({
+    response,
+    expectedChallenge: challenge,
+    expectedOrigin: ORIGIN,
+    expectedRPID: RP_ID,
+    authenticator,
+    requireUserVerification: true,
   });
 }

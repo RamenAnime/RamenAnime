@@ -1,16 +1,14 @@
 import path from "path"
 import { defineConfig } from "vite"
 import react from "@vitejs/plugin-react"
-import { nodePolyfills } from "vite-plugin-node-polyfills"
 
 export default defineConfig({
-  plugins: [react(), nodePolyfills()],
+  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       "@db": path.resolve(__dirname, "./db"),
       "@contracts": path.resolve(__dirname, "./contracts"),
-      "@server": path.resolve(__dirname, "./api"),
     },
   },
   server: {
@@ -24,19 +22,5 @@ export default defineConfig({
   },
   build: {
     outDir: "dist/public",
-    rollupOptions: {
-      external: [
-        "@simplewebauthn/server",
-        "argon2",
-        "crypto",
-      ],
-    },
-  },
-  ssr: {
-    noExternal: ["@trpc/server"],
-    external: ["@simplewebauthn/server", "argon2"],
-  },
-  optimizeDeps: {
-    exclude: ["@simplewebauthn/server", "argon2"],
   },
 })

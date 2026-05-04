@@ -224,8 +224,22 @@ export default function ListingDetail() {
             <Card className="border-2 border-primary/20 overflow-hidden">
               <CardContent className="p-0">
                 <div className="bg-primary/5 p-4 text-center border-b border-primary/10">
-                  {isAuction ? (<><p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{isEnded ? "Final Price" : "Current Bid"}</p><p className="text-4xl font-black text-primary">${listing.currentBid || listing.startPrice}</p><div className="flex items-center justify-center gap-4 mt-2 text-sm text-muted-foreground"><span className="flex items-center gap-1"><Zap className="w-3 h-3" />{listing.bidCount || 0} bids</span>{listing.reservePrice && <span>Reserve: ${listing.reservePrice}</span></div><PriceChart data={priceHistory} /></>) : (<><p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Price</p><p className="text-4xl font-black text-primary">{listing.price}</p></>)}
-                </div>
+                    {isAuction ? (
+                      <>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{isEnded ? "Final Price" : "Current Bid"}</p>
+                        <p className="text-4xl font-black text-primary">${listing.currentBid || listing.startPrice}</p>
+                        <div className="flex items-center justify-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1"><Zap className="w-3 h-3" />{listing.bidCount || 0} bids</span>
+                          {listing.reservePrice && <span>Reserve: ${listing.reservePrice}</span>}
+                        </div>
+                        <PriceChart data={priceHistory} />
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Price</p>
+                        <p className="text-4xl font-black text-primary">{listing.price}</p>
+                      </>
+                    )}
 
                 {isAuction && (<div className={`p-3 text-center ${isEnded ? "bg-gray-100" : "bg-orange-50 dark:bg-orange-950/20"}`}>{isEnded ? <p className="font-medium text-gray-600 flex items-center justify-center gap-1"><Clock className="w-4 h-4" />Auction Ended</p> : <><p className="text-xs text-orange-600 mb-1">Time Remaining</p><div className="flex items-center justify-center gap-1 font-mono text-xl font-bold">{countdown.days > 0 && <><span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 px-2 py-1 rounded">{String(countdown.days).padStart(2, "0")}</span><span className="text-orange-400">:</span></>}<span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 px-2 py-1 rounded">{String(countdown.hours).padStart(2, "0")}</span><span className="text-orange-400">:</span><span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 px-2 py-1 rounded">{String(countdown.mins).padStart(2, "0")}</span><span className="text-orange-400">:</span><span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 px-2 py-1 rounded">{String(countdown.secs).padStart(2, "0")}</span></div><p className="text-[10px] text-muted-foreground mt-1">{listing.auctionEnd ? new Date(listing.auctionEnd).toLocaleString() : ""}</p>{!isEnded && countdown.days === 0 && countdown.hours === 0 && countdown.mins < 5 && <p className="text-[10px] text-orange-500 mt-1 flex items-center justify-center gap-1"><AlertTriangle className="w-3 h-3" />Bidding extends +5 min in final minutes</p>}</>}</div>)}
 

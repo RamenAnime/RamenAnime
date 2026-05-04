@@ -292,8 +292,6 @@ export default function Home() {
       <section className="py-12 border-t border-border/40 bg-muted/30">
         <div className="container px-4 md:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div><p className="text-3xl md:text-4xl font-black text-primary">100+</p><p className="text-sm text-muted-foreground mt-1">Global Community</p></div>
-            <div><p className="text-3xl md:text-4xl font-black text-primary">50+</p><p className="text-sm text-muted-foreground mt-1">Active Listings</p></div>
             <div><p className="text-3xl md:text-4xl font-black text-primary">35</p><p className="text-sm text-muted-foreground mt-1">Languages</p></div>
             <div><p className="text-3xl md:text-4xl font-black text-primary">24/7</p><p className="text-sm text-muted-foreground mt-1">Copyright Bot</p></div>
           </div>

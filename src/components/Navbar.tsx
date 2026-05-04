@@ -27,7 +27,6 @@ import {
   Shield,
   Package,
   User,
-  Settings,
   Mail,
 } from "lucide-react";
 
@@ -95,29 +94,30 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="container px-4 md:px-6 mx-auto">
         <div className="flex items-center justify-between h-16">
+          {/* Brand */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-sm">
               ラ
             </div>
             <span className="font-bold text-lg hidden sm:block text-foreground">
-              {t("nav.brand")}
+              Ramen Anime
             </span>
           </Link>
 
+          {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
+            <Link to="/marketplace" className={`text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+              {t("nav.marketplace") || "Marketplace"}
             </Link>
             <Link to="/social" className={`text-sm font-medium transition-colors ${isActive("/social") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t("nav.community")}
-            </Link>
-            <Link to="/marketplace" className={`text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t("nav.marketplace")}
+              {t("nav.community") || "Community"}
             </Link>
             <Link to="/donate" className={`text-sm font-medium transition-colors ${isActive("/donate") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-              {t("nav.donate")}
+              {t("nav.donate") || "Donate"}
             </Link>
             {isAuthenticated ? null : (
               <Link to="/login" className={`text-sm font-medium transition-colors ${isActive("/login") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-                {t("nav.login")}
+                {t("nav.login") || "Join / Login"}
               </Link>
             )}
             {isAuthenticated && (
@@ -127,6 +127,7 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* Right side icons */}
           <div className="flex items-center gap-2">
             {isAuthenticated && (
               <>
@@ -138,11 +139,13 @@ export default function Navbar() {
                 <NotificationBell />
               </>
             )}
+            <Link to="/marketplace" className="relative">
               <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
                 <ShoppingCart className="h-5 w-5" />
               </Button>
             </Link>
 
+            {/* Language switcher */}
             <Sheet open={langOpen} onOpenChange={setLangOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
@@ -150,7 +153,7 @@ export default function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="bg-background border-border">
-                <SheetTitle className="text-foreground">{t("nav.language")}</SheetTitle>
+                <SheetTitle className="text-foreground">{t("nav.language") || "Language"}</SheetTitle>
                 <div className="mt-4 space-y-2">
                   {languages.map((lang) => (
                     <button key={lang.code} onClick={() => changeLanguage(lang.code)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${i18n.language === lang.code ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
@@ -161,6 +164,7 @@ export default function Navbar() {
               </SheetContent>
             </Sheet>
 
+            {/* User dropdown */}
             {isAuthenticated && user && (
               <div className="hidden md:flex items-center gap-2">
                 <DropdownMenu>
@@ -179,25 +183,26 @@ export default function Navbar() {
                     </div>
                     <DropdownMenuItem asChild className="cursor-pointer">
                       <Link to={`/profile/${user.id}`} className="flex items-center gap-2 text-foreground">
-                        <User className="h-4 w-4" /> {t("nav.myProfile")}
+                        <User className="h-4 w-4" /> {t("nav.myProfile") || "My Profile"}
                       </Link>
                     </DropdownMenuItem>
                     {user.role === "admin" && (
                       <DropdownMenuItem asChild className="cursor-pointer">
                         <Link to="/admin" className="flex items-center gap-2 text-primary">
-                          <Shield className="h-4 w-4" /> {t("nav.admin")}
+                          <Shield className="h-4 w-4" /> {t("nav.admin") || "Admin Dashboard"}
                         </Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator className="bg-border" />
                     <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
-                      <LogOut className="h-4 w-4 mr-2" /> {t("nav.logout")}
+                      <LogOut className="h-4 w-4 mr-2" /> {t("nav.logout") || "Logout"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             )}
 
+            {/* Mobile menu */}
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden text-foreground">
@@ -205,46 +210,45 @@ export default function Navbar() {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="bg-background border-border w-[280px]">
-                <SheetTitle className="text-foreground mb-4">{t("nav.menu")}</SheetTitle>
+                <SheetTitle className="text-foreground mb-4">{t("nav.menu") || "Menu"}</SheetTitle>
                 <div className="flex flex-col gap-1 mt-4">
                   <Link to="/" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.home")}
-                  </Link>
-                  </Link>
-                  <Link to="/social" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/social") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.community")}
+                    {t("nav.home") || "Home"}
                   </Link>
                   <Link to="/marketplace" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.marketplace")}
+                    {t("nav.marketplace") || "Marketplace"}
+                  </Link>
+                  <Link to="/social" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/social") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
+                    {t("nav.community") || "Community"}
                   </Link>
                   <Link to="/donate" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/donate") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    {t("nav.donate")}
+                    {t("nav.donate") || "Donate"}
                   </Link>
                   <Link to="/friends" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/friends") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                    <Package className="h-4 w-4" />{t("nav.friends")}
+                    <Package className="h-4 w-4" />{t("nav.friends") || "Friends"}
                   </Link>
 
                   {isAuthenticated && (
                     <Link to={`/profile/${user?.id}`} onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive(`/profile/${user?.id}`) ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                      <User className="h-4 w-4" /> {t("nav.myProfile")}
+                      <User className="h-4 w-4" /> {t("nav.myProfile") || "My Profile"}
                     </Link>
                   )}
 
                   {isAuthenticated && user?.role === "admin" && (
                     <Link to="/admin" onClick={() => setOpen(false)} className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${isActive("/admin") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
-                      <Shield className="h-4 w-4" />Admin
+                      <Shield className="h-4 w-4" />{t("nav.admin") || "Admin Dashboard"}
                     </Link>
                   )}
 
                   {isAuthenticated ? null : (
                     <Link to="/login" onClick={() => setOpen(false)} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-primary bg-primary/10">
-                      {t("nav.login")}
+                      {t("nav.login") || "Join / Login"}
                     </Link>
                   )}
 
                   {isAuthenticated && (
                     <button onClick={() => { logout(); setOpen(false); }} className="flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors mt-2">
-                      <LogOut className="h-4 w-4" />{t("nav.logout")}
+                      <LogOut className="h-4 w-4" />{t("nav.logout") || "Logout"}
                     </button>
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
@@ -15,18 +15,23 @@ import {
 
 function CountdownTimer({ endTime }: { endTime: string }) {
   const [timeLeft, setTimeLeft] = useState("");
-  const end = new Date(endTime).getTime();
 
-  setInterval(() => {
-    const now = Date.now();
-    const diff = end - now;
-    if (diff <= 0) { setTimeLeft("Ended"); return; }
-    const days = Math.floor(diff / 86400000);
-    const hours = Math.floor((diff % 86400000) / 3600000);
-    const mins = Math.floor((diff % 3600000) / 60000);
-    const secs = Math.floor((diff % 60000) / 1000);
-    setTimeLeft(`${days}d ${hours}h ${mins}m ${secs}s`);
-  }, 1000);
+  useEffect(() => {
+    const end = new Date(endTime).getTime();
+    const update = () => {
+      const now = Date.now();
+      const diff = end - now;
+      if (diff <= 0) { setTimeLeft("Ended"); return; }
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${days}d ${hours}h ${mins}m ${secs}s`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [endTime]);
 
   return <span className="font-mono text-lg">{timeLeft}</span>;
 }
@@ -186,8 +191,8 @@ export default function ListingDetail() {
                       {parseFloat(listing.startPrice || "0") >= 5000 && !depositPaid && (
                         <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 mb-2">
                           <p className="text-xs text-yellow-600 mb-1">Deposit Required (5%)</p>
-                          <Button className="w-full" size="sm" onClick={() => payDeposit.mutate({ listingId })}>
-                            Pay ${(parseFloat(listing.startPrice || "0") * 0.05).toFixed(2)} Deposit
+                          <Button className="w-full" size="sm" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ listingId })}>
+                            {payDeposit.isPending ? "Processing..." : `Pay $${(parseFloat(listing.startPrice || "0") * 0.05).toFixed(2)} Deposit`}
                           </Button>
                         </div>
                       )}
@@ -199,8 +204,8 @@ export default function ListingDetail() {
                           placeholder="Enter bid"
                           className="flex-1"
                         />
-                        <Button onClick={() => placeBid.mutate({ listingId, amount: bidAmount })} disabled={!bidAmount}>
-                          <Gavel className="w-4 h-4 mr-1" />Bid
+                        <Button onClick={() => placeBid.mutate({ listingId, amount: bidAmount })} disabled={!bidAmount || placeBid.isPending}>
+                          {placeBid.isPending ? "Bidding..." : <><Gavel className="w-4 h-4 mr-1" />Bid</>}
                         </Button>
                       </div>
                       <div className="flex gap-1">

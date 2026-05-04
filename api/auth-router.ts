@@ -1,4 +1,4 @@
-import { randomBytes, scrypt, createHash } from "crypto";
+import { randomBytes, scrypt, createHash } from "crypto";`nimport { createTransport } from "nodemailer";
 import { promisify } from "util";
 import * as cookie from "cookie";
 import { z } from "zod";

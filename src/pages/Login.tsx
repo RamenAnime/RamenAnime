@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState } from "react";`nimport { useTranslation } from "react-i18next";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,13 +131,6 @@ export default function Login() {
                   <button onClick={() => { setMode("login"); setError(""); }} className="text-primary hover:underline font-medium">Sign in</button>
                 </p>
               )}
-            </div>
-            <div className="mt-6 pt-4 border-t border-border/50 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <Shield className="h-3 w-3" />
-              <span>512-bit scrypt password hashing</span>
-              <span>|</span>
-              <MessageCircle className="h-3 w-3" />
-              <span>Secure session cookies</span>
             </div>
           </CardContent>
         </Card>

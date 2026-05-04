@@ -189,7 +189,7 @@ export const socialRouter = createRouter({
     const db = getDb();
     const posts = await db.select().from(forumPosts).where(eq(forumPosts.id, input.id)).limit(1);
     if (posts[0]) await db.update(forumPosts).set({ likes: posts[0].likes + 1 }).where(eq(forumPosts.id, input.id));
-n    return { success: true };
+    return { success: true };
   }),
 
   likeComment: authedQuery.input(z.object({ id: z.number() })).mutation(async ({ ctx, input }) => {

@@ -27,7 +27,7 @@ async function main() {
     await conn.execute('ALTER TABLE users ADD UNIQUE KEY users_username_unique (username)');
     console.log('Added username, password_hash, auth_type');
   } else {
-    console.log('Columns already exist — skipping ALTER');
+    console.log('Columns already exist - skipping ALTER');
   }
 
   await conn.execute(`

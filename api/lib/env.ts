@@ -13,4 +13,7 @@ export const env = {
   appSecret: required("APP_SECRET"),
   isProduction: process.env.NODE_ENV === "production",
   databaseUrl: required("DATABASE_URL"),
+  googleApiKey: process.env["GOOGLE_API_KEY"] ?? "",
+  googleCx: process.env["GOOGLE_CX"] ?? "",
+  ownerUnionId: process.env["OWNER_UNION_ID"] ?? "",
 };

@@ -192,7 +192,7 @@ export default function ListingDetail() {
                         <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 mb-2">
                           <p className="text-xs text-yellow-600 mb-1">Deposit Required (5%)</p>
                           <Button className="w-full" size="sm" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ listingId })}>
-                            {payDeposit.isPending ? "Processing..." : `Pay $${(parseFloat(listing.startPrice || "0") * 0.05).toFixed(2)} Deposit`}
+                            {payDeposit.isPending ? "Processing..." : `Pay ${(parseFloat(listing.startPrice || "0") * 0.05).toFixed(2)} Deposit`}
                           </Button>
                         </div>
                       )}

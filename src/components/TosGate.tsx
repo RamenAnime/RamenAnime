@@ -37,6 +37,7 @@ export default function TosGate({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center">

@@ -1,8 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useTranslation } from "react-i18next";
-import { useTranslation } from "react-i18next";`nimport { useTranslation } from "react-i18next";
-import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,6 +131,7 @@ export default function Login() {
                   <button onClick={() => { setMode("login"); setError(""); }} className="text-primary hover:underline font-medium">Sign in</button>
                 </p>
               )}
+            </div>
             </div>
           </CardContent>
         </Card>

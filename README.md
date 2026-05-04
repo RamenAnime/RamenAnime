@@ -1,126 +1,118 @@
-# ラーメンアニメ (Ramen Anime)
+# 🍜 ラーメンアニメ (Ramen Anime)
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react" alt="React 19" />
-  <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Tailwind-3-06B6D4?logo=tailwindcss" alt="Tailwind CSS" />
-  <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite" alt="Vite" />
-  <img src="https://img.shields.io/badge/tRPC-11-2596BE?logo=trpc" alt="tRPC" />
-  <img src="https://img.shields.io/badge/Hono-4-E36002?logo=hono" alt="Hono" />
-  <img src="https://img.shields.io/badge/MySQL-TiDB-4479A1?logo=mysql" alt="TiDB" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react" />
+  <img src="https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript" />
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite" />
+  <img src="https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss" />
+  <img src="https://img.shields.io/badge/tRPC-11-2596BE?logo=trpc" />
+  <img src="https://img.shields.io/badge/Drizzle-ORM-CA5B8D?logo=drizzle" />
+  <img src="https://img.shields.io/badge/MySQL-TiDB-4479A1?logo=mysql" />
+  <img src="https://img.shields.io/badge/License-MIT-green.svg" />
+  <img src="https://img.shields.io/badge/Render-Deployed-46E3B7?logo=render" />
 </p>
 
-A fullstack anime merchandise and community platform built with React 19, TypeScript, tRPC 11, Hono, Drizzle ORM, and TiDB Cloud. Features an e-commerce storefront, customizable social forum, user marketplace, admin dashboard, real-time notifications, internal messaging, auto-moderation bot, multi-language support, and enterprise-grade security.
+<p align="center"><b>The ultimate anime merchandise marketplace with live auctions, escrow protection, and multi-currency support.</b></p>
 
-**Production URL:** [https://ramen-anime-denj.onrender.com](https://ramen-anime-denj.onrender.com)
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [Database Schema](#database-schema)
-- [Security](#security)
-- [Deployment](#deployment)
-- [Project Structure](#project-structure)
-- [Scripts](#scripts)
-- [Troubleshooting](#troubleshooting)
-- [License](#license)
+<p align="center">
+  <a href="https://ramen-anime-denj.onrender.com">🌐 Live Site</a> •
+  <a href="https://ramen-anime-denj.onrender.com/marketplace">🛒 Marketplace</a> •
+  <a href="https://ramen-anime-denj.onrender.com/shop">🛍️ Shop</a> •
+  <a href="https://ramen-anime-denj.onrender.com/social">💬 Community</a>
+</p>
 
 ---
 
-## Features
+## 📸 Screenshots
 
-### E-Commerce
-- Product catalog with 3D prints and trading cards
-- Shopping cart system
-- Tax calculation with live VAT/GST rates for 46 countries
+| Home | Marketplace | Auction |
+|------|-------------|---------|
+| ![Home](docs/screenshots/home.png) | ![Marketplace](docs/screenshots/marketplace.png) | ![Auction](docs/screenshots/auction.png) |
 
-### Social Forum
-- customizable customizable user profiles
-- Forum posts with categories, likes, and views
-- Comment threads with author attribution
-- Friends system with friend requests
-- Pagination with "Load More" pattern
-
-### User Marketplace
-- Buy and sell anime merchandise between users
-- Listing creation with images, price, condition
-- Category filtering
-
-### Authentication & Identity
-- Username/password registration with scrypt hashing
-- JWT session management with httpOnly cookies
-- Email verification with token-based flow
-- Password reset with SHA-256 hashed tokens
-- Role-based access control (user/admin)
-- Account banning system
-
-### Notifications & Messaging
-- Real-time notification bell with unread badges
-- Internal PM system (replaces external email dependency)
-- Inbox, Sent, and Compose with soft delete
-
-### Content Moderation
-- Auto-moderator bot scans all posts, comments, and listings
-- Profanity filter, spam detection, excessive caps detection
-- Auto-ban after 3 violations in 24 hours
-- Full moderation log audit trail
-- **Admin shield**: Admin content is exempt from auto-moderation
-
-### Security & Compliance
-- IP-based geoblocking with Cloudflare header cross-reference
-- Age verification gate (18+) on every new IP/fingerprint
-- Terms of Service acceptance tracking
-- Rate limiting (sliding window: 15 min / 5 attempts)
-- CSRF protection with Origin + Referer validation
-- Security headers: HSTS, CSP, X-Frame-Options, X-XSS-Protection
-- Multi-jurisdiction legal compliance
-
-### Internationalization
-- 7 languages: English, Japanese, Traditional Chinese, Simplified Chinese, Korean, French, German
-
-### Admin Dashboard
-- User analytics, user management (ban/unban), donation tracking
-- Content moderation logs with filtering
-- Tax rate management, moderation review panel
+| Orders | Create Listing | Profile |
+|--------|----------------|---------|
+| ![Orders](docs/screenshots/orders.png) | ![Create](docs/screenshots/create.png) | ![Profile](docs/screenshots/profile.png) |
 
 ---
 
-## Tech Stack
+## ✨ Features
 
-### Frontend
-- React 19 + TypeScript + Vite 6
-- Tailwind CSS 3 + shadcn/ui
-- react-i18next for translations
-- tRPC React Query for type-safe APIs
+### 🛒 Marketplace & Auctions
+- **Buy Now** - Instant purchase with escrow protection
+- **Make an Offer** - Price negotiation
+- **Live Auctions** - Real-time bidding with anti-snipe
+- **Proxy/Sniper Bidding** - Auto-bid up to your max
+- **Reserve Prices** - Hidden minimum prices
+- **Deposit System** - Required for $5,000+ auctions
 
-### Backend
-- tRPC 11 + Hono HTTP framework
-- Drizzle ORM with MySQL/TiDB Cloud
-- jose (HS512 JWT), nodemailer (SMTP)
-- zod validation, superjson serialization
+### 💰 Payments (6 Methods)
+| Method | Region | Fee |
+|--------|--------|-----|
+| Credit/Debit Card | Global | 2.9% + $0.30 |
+| PayPay | Japan | 1.5% |
+| Konbini | Japan | 2.0% |
+| Bank Transfer | Japan | 0% |
+| Escrow Protection | Global | 3.5% |
 
-### Database
-- TiDB Cloud (MySQL-compatible distributed SQL)
-- 15 tables with Drizzle ORM relations
+### 📦 Shipping & Tracking
+- **8 carriers**: Japan Post, Yamato, Sagawa, DHL, FedEx, UPS, USPS, SF Express
+- **Live tracking** with status updates
+- **Warehouse consolidation** - Combine shipments
+- **Order #** (RA-XXXXXXXX-XXXX) and **Transaction #** (TX-XXXXXXXX-XXXXX)
 
-### Deployment
-- Render.com (Node.js native)
-- Cloudflare CDN + Geo IP
+### 🔐 Multi-Layer Security
+| Layer | Technology | Standard |
+|-------|-----------|----------|
+| **Transit** | TLS 1.3 (PQC-hybrid ready) | RFC 8446 |
+| **App Encryption** | ChaCha20-Poly1305 | RFC 8439 |
+| **Passwords** | Argon2id (64MB, 3 iterations) | PHC Winner |
+| **Authentication** | ECDSA Passkeys (WebAuthn/FIDO2) | FIDO Alliance |
+| **Disk** | AES-XTS-256 | FIPS 197 |
+| **Key Storage** | FIPS 140-3 Level 3 HSM Ready | NIST |
+
+### 🌍 Global Support
+- **35 languages** with RTL support
+- **Multi-currency** with live ECB exchange rates
+- **Auto-detected** by country
+
+### 🤖 AI-Powered
+- AI title & description generation
+- Price trend analysis
+- Copyright scanning (image + text)
+- Anti-scalping bot
+
+### 👥 Social
+- Profiles with themes & profile songs
+- Friends system
+- Forum with categories
+- Direct messaging
+- Seller ratings (Bronze to Diamond)
+
+### 🛡️ Compliance
+- GDPR / CCPA / PIPEDA / LGPD
+- Tax calculation per country
+- Age & ID verification
+- Export control compliance
 
 ---
 
-## Getting Started
+## 🚀 Tech Stack
 
-### Prerequisites
-- Node.js 20+
-- TiDB Cloud account (free tier available)
+**Frontend:** React 19 + TypeScript + Vite 6 + Tailwind CSS + shadcn/ui + i18next (35 languages) + WebAuthn
 
-### 1. Clone
+**Backend:** tRPC 11.x + Hono + Drizzle ORM + MySQL (TiDB Cloud) + Zod validation
+
+**Security:** Argon2id + ChaCha20-Poly1305 + WebAuthn/Passkeys + JWT + Rate limiting
+
+---
+
+## 📋 Quick Start
+
 ```bash
-git clone https://github.com/RamenAnime/RamenAnime.git
-cd RamenAnime
+git clone https://github.com/ramenanime/ramenanime.git
+cd ramenanime
+npm install
+cp .env.example .env
+# Edit .env with your database URL and credentials
+npm run db:push
+npm run dev

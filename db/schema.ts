@@ -402,3 +402,170 @@ export const copyrightScans = mysqlTable("copyright_scans", {
   reason: text("reason"),
   scannedAt: timestamp("scannedAt").defaultNow().notNull(),
 });
+// ── NEW: Sniper/Auto-bid ──
+export const sniperBids = mysqlTable("sniper_bids", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  bidderId: bigint("bidder_id", { mode: "number", unsigned: true }).notNull(),
+  maxAmount: decimal("max_amount", { precision: 10, scale: 2 }).notNull(),
+  incrementLimit: decimal("increment_limit", { precision: 10, scale: 2 }),
+  active: boolean("active").default(true).notNull(),
+  totalBidsPlaced: int("total_bids_placed").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+// ── NEW: Category Rules ──
+export const categoryRules = mysqlTable("category_rules", {
+  id: serial("id").primaryKey(),
+  category: varchar("category", { length: 50 }).notNull().unique(),
+  listingFee: decimal("listing_fee", { precision: 10, scale: 2 }).default("0").notNull(),
+  sellingFeePercent: decimal("selling_fee_percent", { precision: 5, scale: 2 }).default("5").notNull(),
+  auctionFeePercent: decimal("auction_fee_percent", { precision: 5, scale: 2 }).default("3").notNull(),
+  requiresDeposit: boolean("requires_deposit").default(false).notNull(),
+  minDepositAmount: decimal("min_deposit_amount", { precision: 10, scale: 2 }).default("0"),
+  taxCategory: varchar("tax_category", { length: 50 }).default("standard"),
+  allowedTypes: mysqlEnum("allowed_types", ["fixed", "auction", "both"]).default("both").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+// ── NEW: Price History ──
+export const priceHistory = mysqlTable("price_history", {
+  id: serial("id").primaryKey(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  category: varchar("category", { length: 50 }).notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
+  condition: mysqlEnum("condition", ["new", "used", "like_new"]).default("new").notNull(),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+});
+
+// ── NEW: SMS Verifications ──
+export const smsVerifications = mysqlTable("sms_verifications", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull().unique(),
+  phoneNumber: varchar("phone_number", { length: 20 }).notNull(),
+  countryCode: varchar("country_code", { length: 5 }).default("+81").notNull(),
+  codeHash: varchar("code_hash", { length: 255 }),
+  verified: boolean("verified").default(false).notNull(),
+  attempts: int("attempts").default(0).notNull(),
+  expiresAt: timestamp("expiresAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ── NEW: Orders ──
+export const orders = mysqlTable("orders", {
+  id: serial("id").primaryKey(),
+  orderNumber: varchar("order_number", { length: 50 }).notNull().unique(),
+  buyerId: bigint("buyer_id", { mode: "number", unsigned: true }).notNull(),
+  sellerId: bigint("seller_id", { mode: "number", unsigned: true }).notNull(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
+  taxAmount: decimal("tax_amount", { precision: 10, scale: 2 }).default("0").notNull(),
+  feeAmount: decimal("fee_amount", { precision: 10, scale: 2 }).default("0").notNull(),
+  shippingCost: decimal("shipping_cost", { precision: 10, scale: 2 }).default("0").notNull(),
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+  status: mysqlEnum("status", ["pending", "paid", "shipped", "delivered", "cancelled", "disputed", "refunded"]).default("pending").notNull(),
+  escrowStatus: mysqlEnum("escrow_status", ["pending", "held", "released", "refunded"]).default("pending").notNull(),
+  shippingCarrier: varchar("shipping_carrier", { length: 50 }),
+  trackingNumber: varchar("tracking_number", { length: 100 }),
+  shippingAddress: text("shipping_address"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+// ── NEW: Transactions ──
+export const transactions = mysqlTable("transactions", {
+  id: serial("id").primaryKey(),
+  transactionNumber: varchar("transaction_number", { length: 50 }).notNull().unique(),
+  orderId: bigint("order_id", { mode: "number", unsigned: true }).notNull(),
+  payerId: bigint("payer_id", { mode: "number", unsigned: true }).notNull(),
+  payeeId: bigint("payee_id", { mode: "number", unsigned: true }).notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  fee: decimal("fee", { precision: 10, scale: 2 }).default("0").notNull(),
+  currency: varchar("currency", { length: 10 }).default("USD").notNull(),
+  paymentMethod: mysqlEnum("payment_method", ["stripe", "paypay", "konbini", "bank_transfer", "credit_card", "escrow", "deposit"]).default("stripe").notNull(),
+  status: mysqlEnum("status", ["pending", "completed", "failed", "refunded", "disputed"]).default("pending").notNull(),
+  gatewayTransactionId: varchar("gateway_transaction_id", { length: 255 }),
+  metadata: text("metadata"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+// ── NEW: Package Tracking ──
+export const packageTracking = mysqlTable("package_tracking", {
+  id: serial("id").primaryKey(),
+  orderId: bigint("order_id", { mode: "number", unsigned: true }).notNull(),
+  trackingNumber: varchar("tracking_number", { length: 100 }).notNull(),
+  carrier: varchar("carrier", { length: 50 }).notNull(),
+  carrierCode: varchar("carrier_code", { length: 20 }),
+  status: mysqlEnum("status", ["pre_transit", "in_transit", "out_for_delivery", "delivered", "exception", "returned"]).default("pre_transit").notNull(),
+  estimatedDelivery: timestamp("estimated_delivery"),
+  lastEvent: text("last_event"),
+  lastLocation: varchar("last_location", { length: 255 }),
+  lastCheckedAt: timestamp("last_checked_at"),
+  eventsJson: text("events_json"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+// ── NEW: Warehouse Items ──
+export const warehouseItems = mysqlTable("warehouse_items", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull(),
+  orderId: bigint("order_id", { mode: "number", unsigned: true }).notNull(),
+  itemDescription: varchar("item_description", { length: 255 }).notNull(),
+  weightGrams: int("weight_grams"),
+  dimensions: varchar("dimensions", { length: 50 }),
+  receivedAt: timestamp("receivedAt"),
+  status: mysqlEnum("status", ["inbound", "stored", "consolidating", "shipped", "returned"]).default("inbound").notNull(),
+  consolidationGroupId: bigint("consolidation_group_id", { mode: "number", unsigned: true }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
+});
+
+// ── NEW: Prohibited Scans (Anti-Scalping) ──
+export const prohibitedScans = mysqlTable("prohibited_scans", {
+  id: serial("id").primaryKey(),
+  userId: bigint("user_id", { mode: "number", unsigned: true }).notNull(),
+  listingId: bigint("listing_id", { mode: "number", unsigned: true }),
+  scanType: mysqlEnum("scan_type", ["scalper", "bot", "reseller", "suspicious"]).notNull(),
+  confidence: decimal("confidence", { precision: 5, scale: 2 }),
+  triggers: text("triggers"),
+  action: mysqlEnum("action", ["flag", "block", "review", "clear"]).default("review").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// Relations for new tables
+export const sniperBidsRelations = relations(sniperBids, ({ one }) => ({
+  bidder: one(users, { fields: [sniperBids.bidderId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [sniperBids.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const priceHistoryRelations = relations(priceHistory, ({ one }) => ({
+  listing: one(marketplaceListings, { fields: [priceHistory.listingId], references: [marketplaceListings.id] }),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  buyer: one(users, { fields: [orders.buyerId], references: [users.id] }),
+  seller: one(users, { fields: [orders.sellerId], references: [users.id] }),
+  listing: one(marketplaceListings, { fields: [orders.listingId], references: [marketplaceListings.id] }),
+  tracking: many(packageTracking),
+  transactions: many(transactions),
+  warehouseItems: many(warehouseItems),
+}));
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  order: one(orders, { fields: [transactions.orderId], references: [orders.id] }),
+}));
+
+export const packageTrackingRelations = relations(packageTracking, ({ one }) => ({
+  order: one(orders, { fields: [packageTracking.orderId], references: [orders.id] }),
+}));
+
+export const warehouseItemsRelations = relations(warehouseItems, ({ one }) => ({
+  user: one(users, { fields: [warehouseItems.userId], references: [users.id] }),
+  order: one(orders, { fields: [warehouseItems.orderId], references: [orders.id] }),
+}));

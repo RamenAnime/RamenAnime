@@ -177,7 +177,7 @@ export default function CreateListing() {
             <CardTitle className="text-base flex items-center gap-2">
               <Camera className="h-5 w-5" />
               Photos
-              <span className="text-red-500 text-sm">*Required — max 10</span>
+              <span className="text-red-500 text-sm">*Required - max 10</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -239,7 +239,7 @@ export default function CreateListing() {
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., One Piece Luffy Gear 5 Figure — Banpresto Ichiban Kuji"
+                placeholder="e.g., One Piece Luffy Gear 5 Figure - Banpresto Ichiban Kuji"
                 className="h-11"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
@@ -253,7 +253,7 @@ export default function CreateListing() {
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your item — include details about condition, packaging, any defects, and shipping preferences..."
+                placeholder="Describe your item - include details about condition, packaging, any defects, and shipping preferences..."
                 className="min-h-[120px] resize-none"
               />
               <p className="text-xs text-muted-foreground">{description.length}/5000 characters</p>

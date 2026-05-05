@@ -47,24 +47,27 @@ function hashResetToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
+const transporter = process.env.SMTP_HOST
+  ? createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT || 587),
+      secure: Number(process.env.SMTP_PORT || 587) === 465,
+      auth: {
+        user: process.env.SMTP_USER || "",
+        pass: process.env.SMTP_PASS || "",
+      },
+    })
+  : null;
+
 async function sendEmail(to: string, subject: string, html: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    logger.info("No RESEND_API_KEY set, skipping email", { to, subject });
+  if (!transporter) {
+    logger.info("No SMTP configured, skipping email", { to, subject });
     return;
   }
   try {
-    const resp = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: "ラーメンアニメ <noreply@ramenanime.com>", to, subject, html }),
-    });
-    if (!resp.ok) {
-      const text = await resp.text();
-      logger.error("Resend email error", { status: resp.status, text, to });
-    } else {
-      logger.info("Email sent", { to, subject });
-    }
+    const from = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@ramenanime.com";
+    await transporter.sendMail({ from, to, subject, html });
+    logger.info("Email sent via SMTP", { to, subject });
   } catch (err) {
     logger.error("Email send failed", { to, subject, error: (err as Error).message });
   }

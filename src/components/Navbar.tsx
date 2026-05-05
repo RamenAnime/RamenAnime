@@ -102,26 +102,21 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Desktop Nav - ALL use t() for translations */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link to="/marketplace" className={`text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+          {/* Desktop Nav - Center links */}
+          <div className="hidden md:flex items-center gap-1">
+            <Link to="/marketplace" className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive("/marketplace") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
               {t("nav.marketplace")}
             </Link>
-            <Link to="/social" className={`text-sm font-medium transition-colors ${isActive("/social") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+            <Link to="/social" className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive("/social") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
               {t("nav.social")}
             </Link>
-            <Link to="/donate" className={`text-sm font-medium transition-colors ${isActive("/donate") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+            <Link to="/donate" className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive("/donate") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
               {t("nav.donate")}
             </Link>
-            {isAuthenticated ? null : (
-              <Link to="/login" className={`text-sm font-medium transition-colors ${isActive("/login") ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
+            {!isAuthenticated && (
+              <Link to="/login" className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive("/login") ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}>
                 {t("nav.login")}
               </Link>
-            )}
-            {isAuthenticated && (
-              <span className="text-sm font-medium text-muted-foreground">
-                @{user?.username}
-              </span>
             )}
           </div>
 
@@ -162,17 +157,20 @@ export default function Navbar() {
               </SheetContent>
             </Sheet>
 
-            {/* User dropdown */}
+            {/* User dropdown with username */}
             {isAuthenticated && user && (
               <div className="hidden md:flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Avatar className="h-8 w-8 border border-primary/30 cursor-pointer hover:border-primary transition-colors">
-                      <AvatarImage src={user.avatar ?? undefined} />
-                      <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                        {user.name?.charAt(0) ?? "U"}
-                      </AvatarFallback>
-                    </Avatar>
+                    <button className="flex items-center gap-2 px-2 py-1 rounded-md hover:bg-muted transition-colors">
+                      <span className="text-sm font-medium text-muted-foreground hidden lg:block">@{user.username}</span>
+                      <Avatar className="h-8 w-8 border border-primary/30 cursor-pointer hover:border-primary transition-colors">
+                        <AvatarImage src={user.avatar ?? undefined} />
+                        <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                          {user.name?.charAt(0) ?? "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                    </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48 bg-background border-border">
                     <div className="px-3 py-2 border-b border-border">

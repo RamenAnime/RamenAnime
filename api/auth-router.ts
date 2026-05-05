@@ -93,12 +93,12 @@ function getClientIp(req: Request): string {
 }
 
 async function verifyRecaptcha(token: string | undefined): Promise<boolean> {
-  if (!token) return false;
   const secret = process.env.RECAPTCHA_SECRET_KEY;
   if (!secret) {
     logger.debug("No RECAPTCHA_SECRET_KEY set, skipping verification");
     return true;
   }
+  if (!token) return false;
   try {
     const resp = await fetch("https://www.google.com/recaptcha/api/siteverify", {
       method: "POST",

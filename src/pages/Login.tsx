@@ -1,14 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { MessageCircle, Shield, ArrowLeft, UserPlus, LogIn, Eye, EyeOff, AlertCircle, Check, X, KeyRound } from "lucide-react";
+import { ArrowLeft, UserPlus, LogIn, Eye, EyeOff, AlertCircle, Check, X, KeyRound } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
+
+declare global {
+  interface Window {
+    grecaptcha?: {
+      render: (id: string, options: any) => number;
+      reset: (id?: number) => void;
+      getResponse: (id?: number) => string;
+    };
+    onRecaptchaLoad?: () => void;
+  }
+}
+
+const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "";
 
 function PasswordRequirements({ password }: { password: string }) {
   const reqs = [
@@ -39,6 +52,8 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [recaptchaToken, setRecaptchaToken] = useState("");
+  const recaptchaWidgetId = useRef<number | null>(null);
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: () => { toast.success("Welcome back!"); navigate("/"); },
@@ -50,13 +65,44 @@ export default function Login() {
     onError: (err) => setError(err.message),
   });
 
+  useEffect(() => {
+    if (!RECAPTCHA_SITE_KEY) return;
+    if (document.getElementById("recaptcha-script")) return;
+
+    window.onRecaptchaLoad = () => {
+      if (window.grecaptcha && document.getElementById("recaptcha-widget")) {
+        recaptchaWidgetId.current = window.grecaptcha.render("recaptcha-widget", {
+          sitekey: RECAPTCHA_SITE_KEY,
+          callback: (token: string) => setRecaptchaToken(token),
+          "expired-callback": () => setRecaptchaToken(""),
+        });
+      }
+    };
+
+    const script = document.createElement("script");
+    script.id = "recaptcha-script";
+    script.src = "https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+
+    return () => {
+      const existing = document.getElementById("recaptcha-script");
+      if (existing) existing.remove();
+    };
+  }, [mode]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
+      setError("Please complete the CAPTCHA verification.");
+      return;
+    }
     if (mode === "login") {
-      loginMutation.mutate({ username, password });
+      loginMutation.mutate({ username, password, recaptchaToken: recaptchaToken || undefined });
     } else {
-      registerMutation.mutate({ username, password, email: email || undefined });
+      registerMutation.mutate({ username, password, email: email || undefined, recaptchaToken: recaptchaToken || undefined });
     }
   };
 
@@ -108,6 +154,11 @@ export default function Login() {
                 </div>
                 {mode === "register" && password && <PasswordRequirements password={password} />}
               </div>
+              {RECAPTCHA_SITE_KEY && (
+                <div className="flex justify-center">
+                  <div id="recaptcha-widget" />
+                </div>
+              )}
               <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
                 {isLoading ? (mode === "login" ? "Signing in..." : "Creating account...") : (
                   <>{mode === "login" ? <LogIn className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}{mode === "login" ? "Sign In" : "Create Account"}</>
@@ -119,7 +170,7 @@ export default function Login() {
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
                     No account?{" "}
-                    <button onClick={() => { setMode("register"); setError(""); }} className="text-primary hover:underline font-medium">Create one</button>
+                    <button onClick={() => { setMode("register"); setError(""); setRecaptchaToken(""); }} className="text-primary hover:underline font-medium">Create one</button>
                   </p>
                   <Link to="/forgot-password" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
                     <KeyRound className="mr-1 h-3 w-3" /> Forgot password?
@@ -128,7 +179,7 @@ export default function Login() {
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Already have an account?{" "}
-                  <button onClick={() => { setMode("login"); setError(""); }} className="text-primary hover:underline font-medium">Sign in</button>
+                  <button onClick={() => { setMode("login"); setError(""); setRecaptchaToken(""); }} className="text-primary hover:underline font-medium">Sign in</button>
                 </p>
               )}
             </div>

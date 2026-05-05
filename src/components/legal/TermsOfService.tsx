@@ -2,7 +2,7 @@ import { useComplianceFramework } from "./ComplianceRouter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export default function TermsOfService() {
-  const { framework, country } = useComplianceFramework();
+  const { framework, country: _country } = useComplianceFramework();
   const f = framework;
   const lastUpdated = "May 2, 2025";
 

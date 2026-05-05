@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { orders, transactions, notifications } from "@db/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 
 export const disputeRouter = createRouter({
   openDispute: authedQuery

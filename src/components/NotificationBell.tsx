@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+
 import { Bell, Check, X, MessageSquare, UserPlus, ShoppingBag, Info } from "lucide-react";
 
 const typeIcons: Record<string, any> = {
@@ -66,7 +66,7 @@ export function NotificationBell() {
                   No notifications yet
                 </div>
               ) : (
-                notifications.map((n) => {
+                notifications.map((n: any) => {
                   const Icon = typeIcons[n.type] ?? Info;
                   return (
                     <div

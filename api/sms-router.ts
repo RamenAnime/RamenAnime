@@ -28,7 +28,7 @@ export const smsRouter = createRouter({
     await db.update(smsVerifications).set({ attempts: record.attempts + 1 }).where(eq(smsVerifications.id, record.id));
     if (record.codeHash !== input.code) throw new Error(`Invalid code. ${5 - record.attempts - 1} attempts remaining.`);
     await db.update(smsVerifications).set({ verified: true }).where(eq(smsVerifications.id, record.id));
-    await db.update(users).set({ phoneVerified: true, phoneNumber: record.phoneNumber }).where(eq(users.id, ctx.user.id));
+    await db.update(users).set({ phoneNumber: record.phoneNumber }).where(eq(users.id, ctx.user.id));
     return { success: true };
   }),
   getStatus: authedQuery.query(async ({ ctx }) => {

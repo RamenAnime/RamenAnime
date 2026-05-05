@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, publicQuery, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { userProfiles, forumPosts, forumComments, forumReactions, userSignatures, friends, users } from "@db/schema";
-import { eq, desc, asc, sql, count, and, gte } from "drizzle-orm";
+import { eq, desc, asc, count, and, gte } from "drizzle-orm";
 import { createNotification } from "./queries/users";
 import { moderateContent } from "./lib/moderator";
 
@@ -129,7 +129,7 @@ export const socialRouter = createRouter({
       .orderBy(desc(forumPosts.isPinned), orderBy)
       .limit(input.limit).offset(input.offset);
 
-    return Promise.all(rows.map(async (p) => {
+    return Promise.all(rows.map(async (p: any) => {
       const u = await db.select().from(users).where(eq(users.id, p.authorId)).limit(1);
       const enriched = await enrichUser(u[0]);
       const commentCount = await db.select({ count: count() }).from(forumComments).where(eq(forumComments.postId, p.id));
@@ -147,7 +147,7 @@ export const socialRouter = createRouter({
     const u = await db.select().from(users).where(eq(users.id, post.authorId)).limit(1);
     const enriched = await enrichUser(u[0]);
     const comments = await db.select().from(forumComments).where(eq(forumComments.postId, input.postId)).orderBy(asc(forumComments.createdAt));
-    const commentsWithAuthors = await Promise.all(comments.map(async (c) => {
+    const commentsWithAuthors = await Promise.all(comments.map(async (c: any) => {
       const cu = await db.select().from(users).where(eq(users.id, c.authorId)).limit(1);
       return { ...c, author: await enrichUser(cu[0]) };
     }));
@@ -231,7 +231,7 @@ export const socialRouter = createRouter({
     const postCounts = await db.select({ authorId: forumPosts.authorId, count: count() }).from(forumPosts)
       .where(input.period !== "all" ? gte(forumPosts.createdAt, since) : undefined)
       .groupBy(forumPosts.authorId).orderBy(desc(count())).limit(input.limit);
-    return Promise.all(postCounts.map(async (pc) => {
+    return Promise.all(postCounts.map(async (pc: any) => {
       const u = await db.select().from(users).where(eq(users.id, pc.authorId)).limit(1);
       return { ...pc, author: await enrichUser(u[0]) };
     }));
@@ -240,7 +240,7 @@ export const socialRouter = createRouter({
   getRecentActivity: publicQuery.input(z.object({ limit: z.number().default(10) })).query(async ({ input }) => {
     const db = getDb();
     const posts = await db.select().from(forumPosts).orderBy(desc(forumPosts.createdAt)).limit(input.limit);
-    return Promise.all(posts.map(async (p) => {
+    return Promise.all(posts.map(async (p: any) => {
       const u = await db.select().from(users).where(eq(users.id, p.authorId)).limit(1);
       return { ...p, author: u[0] ?? null };
     }));
@@ -262,7 +262,7 @@ export const socialRouter = createRouter({
   listFriends: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     const rows = await db.select().from(friends).where(eq(friends.addresseeId, ctx.user.id));
-    return Promise.all(rows.map(async (f) => { const u = await db.select().from(users).where(eq(users.id, f.requesterId)).limit(1); return { ...f, requester: u[0] ?? null }; }));
+    return Promise.all(rows.map(async (f: any) => { const u = await db.select().from(users).where(eq(users.id, f.requesterId)).limit(1); return { ...f, requester: u[0] ?? null }; }));
   }),
 
   sendFriendRequest: authedQuery.input(z.object({ addresseeId: z.number() })).mutation(async ({ ctx, input }) => {

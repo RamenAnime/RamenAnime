@@ -1,13 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
-import { useAuth } from "@/hooks/useAuth";
 import { useCurrency } from "@/hooks/useCurrency";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Heart, Share2, MessageSquare, Gavel, Tag, Zap,
   Clock, Shield, ChevronDown, ChevronUp, TrendingUp,
@@ -16,18 +15,23 @@ import {
 
 function CountdownTimer({ endTime }: { endTime: string }) {
   const [timeLeft, setTimeLeft] = useState("");
-  const end = new Date(endTime).getTime();
 
-  setInterval(() => {
-    const now = Date.now();
-    const diff = end - now;
-    if (diff <= 0) { setTimeLeft("Ended"); return; }
-    const days = Math.floor(diff / 86400000);
-    const hours = Math.floor((diff % 86400000) / 3600000);
-    const mins = Math.floor((diff % 3600000) / 60000);
-    const secs = Math.floor((diff % 60000) / 1000);
-    setTimeLeft(`${days}d ${hours}h ${mins}m ${secs}s`);
-  }, 1000);
+  useEffect(() => {
+    const end = new Date(endTime).getTime();
+    const update = () => {
+      const now = Date.now();
+      const diff = end - now;
+      if (diff <= 0) { setTimeLeft("Ended"); return; }
+      const days = Math.floor(diff / 86400000);
+      const hours = Math.floor((diff % 86400000) / 3600000);
+      const mins = Math.floor((diff % 3600000) / 60000);
+      const secs = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${days}d ${hours}h ${mins}m ${secs}s`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [endTime]);
 
   return <span className="font-mono text-lg">{timeLeft}</span>;
 }
@@ -50,16 +54,14 @@ function PriceChart({ data }: { data: any[] }) {
 export default function ListingDetail() {
   const { id } = useParams<{ id: string }>();
   const listingId = parseInt(id ?? "0");
-  const { user } = useAuth();
   const { format } = useCurrency();
   const [bidAmount, setBidAmount] = useState("");
   const [showAllBids, setShowAllBids] = useState(false);
   const [isWatching, setIsWatching] = useState(false);
-  const [showDeposit, setShowDeposit] = useState(false);
   const [depositPaid, setDepositPaid] = useState(false);
 
   const { data: listing } = trpc.marketplace.getListing.useQuery(
-    { listingId },
+    { id: listingId },
     { enabled: listingId > 0 }
   );
   const { data: bids } = trpc.marketplace.getBidHistory.useQuery(
@@ -67,8 +69,8 @@ export default function ListingDetail() {
     { enabled: listingId > 0 }
   );
   const { data: related } = trpc.marketplace.relatedItems.useQuery(
-    { listingId, category: listing?.category },
-    { enabled: !!listing?.category }
+    { listingId },
+    { enabled: listingId > 0 }
   );
 
   const placeBid = trpc.marketplace.placeBid.useMutation({
@@ -84,6 +86,17 @@ export default function ListingDetail() {
     onSuccess: () => setDepositPaid(true),
   });
 
+  if (listingId <= 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg mb-2">Invalid listing ID</p>
+          <Button asChild><Link to="/marketplace">Back to Marketplace</Link></Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!listing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -94,7 +107,7 @@ export default function ListingDetail() {
 
   const isAuction = listing.listingType === "auction";
   const isEnded = listing.auctionEnd ? new Date(listing.auctionEnd) < new Date() : false;
-  const priceHistory = (bids || []).map((b: any, i: number) => ({ price: parseFloat(b.amount), time: i }));
+  const priceHistory = (bids?.bids || []).map((b: any, i: number) => ({ price: parseFloat(b.amount), time: i }));
 
   return (
     <div className="min-h-screen py-8">
@@ -140,8 +153,7 @@ export default function ListingDetail() {
               <h1 className="text-2xl md:text-3xl font-bold">{listing.title}</h1>
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                 <span>Listed {new Date(listing.createdAt).toLocaleDateString()}</span>
-                <span>{listing.views} views</span>
-                {isAuction && <span>{listing.bidCount} bids</span>}
+                <span>{listing.bidCount || 0} bids</span>
               </div>
               <p className="mt-4 text-foreground whitespace-pre-wrap">{listing.description}</p>
             </div>
@@ -190,8 +202,8 @@ export default function ListingDetail() {
                       {parseFloat(listing.startPrice || "0") >= 5000 && !depositPaid && (
                         <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 mb-2">
                           <p className="text-xs text-yellow-600 mb-1">Deposit Required (5%)</p>
-                          <Button className="w-full" size="sm" onClick={() => payDeposit.mutate({ listingId, amount: (parseFloat(listing.startPrice || "0") * 0.05).toString() })}>
-                            Pay ${(parseFloat(listing.startPrice || "0") * 0.05).toFixed(2)} Deposit
+                          <Button className="w-full" size="sm" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ listingId })}>
+                            {payDeposit.isPending ? "Processing..." : `Pay ${(parseFloat(listing.startPrice || "0") * 0.05).toFixed(2)} Deposit`}
                           </Button>
                         </div>
                       )}
@@ -199,12 +211,12 @@ export default function ListingDetail() {
                         <Input
                           type="number"
                           value={bidAmount}
-                          onChange={(e) => setBidAmount(e.target.value)}
+                          onChange={(e: any) => setBidAmount(e.target.value)}
                           placeholder="Enter bid"
                           className="flex-1"
                         />
-                        <Button onClick={() => placeBid.mutate({ listingId, amount: bidAmount })} disabled={!bidAmount}>
-                          <Gavel className="w-4 h-4 mr-1" />Bid
+                        <Button onClick={() => placeBid.mutate({ listingId, amount: bidAmount })} disabled={!bidAmount || placeBid.isPending}>
+                          {placeBid.isPending ? "Bidding..." : <><Gavel className="w-4 h-4 mr-1" />Bid</>}
                         </Button>
                       </div>
                       <div className="flex gap-1">
@@ -282,20 +294,20 @@ export default function ListingDetail() {
             </Card>
 
             {/* Bid History */}
-            {isAuction && bids && bids.length > 0 && (
+            {isAuction && bids?.bids && bids.bids.length > 0 && (
               <Card className="border-border/50 overflow-hidden">
                 <button
                   onClick={() => setShowAllBids(!showAllBids)}
                   className="w-full bg-muted px-4 py-3 font-semibold flex items-center justify-between text-sm"
                 >
                   <span className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />Bid History ({bids.length})
+                    <TrendingUp className="w-4 h-4" />Bid History ({bids.bids.length})
                   </span>
                   {showAllBids ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
                 {showAllBids && (
                   <div className="p-3 space-y-1 max-h-64 overflow-y-auto">
-                    {bids.map((bid: any, i: number) => (
+                    {bids.bids.map((bid: any, i: number) => (
                       <div key={bid.id} className={`flex items-center justify-between p-2 rounded ${i === 0 ? "bg-primary/5 border border-primary/20" : "hover:bg-muted/50"}`}>
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6">

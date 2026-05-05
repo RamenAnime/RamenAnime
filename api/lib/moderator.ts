@@ -48,7 +48,7 @@ interface ModerationResult {
   confidence: number;
 }
 
-export function scanContent(content: string, username?: string): ModerationResult {
+export function scanContent(content: string, _username?: string): ModerationResult {
   const lower = content.toLowerCase();
 
   for (const word of BLOCKED_WORDS) {
@@ -108,7 +108,7 @@ async function getUserRecentViolations(userId: number, hours: number = 24): Prom
   const db = getDb();
   const since = new Date(Date.now() - hours * 60 * 60 * 1000);
   const logs = await db.select().from(moderationLogs).where(eq(moderationLogs.userId, userId));
-  return logs.filter((l) => new Date(l.createdAt) > since && l.action !== "allow").length;
+  return logs.filter((l: any) => new Date(l.createdAt) > since && l.action !== "allow").length;
 }
 
 export async function moderateContent(

@@ -8,8 +8,8 @@ try {
 }
 
 const RP_NAME = "Ramen Anime";
-const RP_ID = process.env.WEBAUTHN_RP_ID || "ramen-anime-denj.onrender.com";
-const ORIGIN = process.env.WEBAUTHN_ORIGIN || "https://ramen-anime-denj.onrender.com";
+const RP_ID = process.env.WEBAUTHN_RP_ID || "ramenanime.com";
+const ORIGIN = process.env.WEBAUTHN_ORIGIN || "https://ramenanime.com";
 
 export async function generateRegistrationOpts(userId: number, username: string) {
   if (!swa) throw new Error("WebAuthn not installed. Run: npm install @simplewebauthn/server");

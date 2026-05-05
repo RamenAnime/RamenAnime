@@ -30,8 +30,8 @@ export const shippingRouter = createRouter({
     if (!order || (order.buyerId !== ctx.user.id && order.sellerId !== ctx.user.id)) throw new Error("Unauthorized");
     const tracking = await db.query.packageTracking.findFirst({ where: eq(packageTracking.orderId, input.orderId) });
     if (!tracking) return { success: false, error: "No tracking found" };
-    const statuses = ["pre_transit", "in_transit", "out_for_delivery", "delivered"];
-    const next = statuses[Math.min(statuses.indexOf(tracking.status) + 1, statuses.length - 1)];
+    const statuses: Array<"pre_transit" | "in_transit" | "out_for_delivery" | "delivered"> = ["pre_transit", "in_transit", "out_for_delivery", "delivered"];
+    const next = statuses[Math.min(statuses.indexOf(tracking.status as any) + 1, statuses.length - 1)];
     await db.update(packageTracking).set({ status: next, lastCheckedAt: new Date(), lastEvent: `Package ${next.replace("_", " ")}` }).where(eq(packageTracking.id, tracking.id));
     if (next === "delivered") await db.update(orders).set({ status: "delivered" }).where(eq(orders.id, input.orderId));
     return { success: true, status: next };

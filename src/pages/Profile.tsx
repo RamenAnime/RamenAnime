@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router";
-import { useTranslation } from "react-i18next";
+
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -20,7 +20,7 @@ import { toast } from "sonner";
 function ProfileContent() {
   const { id } = useParams<{ id: string }>();
   const profileUserId = parseInt(id ?? "0");
-  const { t } = useTranslation();
+  
   const { user: me, isAuthenticated } = useAuth();
   const isMyProfile = isAuthenticated && me?.id === profileUserId;
   const [editOpen, setEditOpen] = useState(false);
@@ -69,7 +69,7 @@ function ProfileContent() {
   }, [updateProfile]);
 
   const sendFriendRequest = trpc.social.sendFriendRequest.useMutation({
-    onSuccess: (data) => { utils.social.listFriends.invalidate(); toast.success("Friend request sent!"); },
+    onSuccess: () => { utils.social.listFriends.invalidate(); toast.success("Friend request sent!"); },
     onError: (err) => toast.error(err.message),
   });
 
@@ -227,7 +227,7 @@ function ProfileContent() {
 }
 
 function ProfileEditForm({ profile, onSave, isPending }: { profile?: any; onSave: (data: any) => void; isPending: boolean }) {
-  const { t } = useTranslation();
+  
   const defaults = profile ?? {};
   const [form, setForm] = useState({
     displayName: defaults.displayName ?? "",

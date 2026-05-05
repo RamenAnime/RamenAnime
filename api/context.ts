@@ -20,7 +20,7 @@ function isValidOrigin(req: Request): boolean {
   }
   const allowed = [
     process.env.SITE_URL ?? "",
-    "https://ramen-anime-denj.onrender.com",
+    "https://ramenanime.com",
     "http://localhost:5173",
     "http://localhost:3000",
   ].filter(Boolean);

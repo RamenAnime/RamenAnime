@@ -9,6 +9,8 @@
     "build": "vite build && esbuild api/boot.ts --platform=node --bundle --format=esm --outdir=dist --external:nodemailer --external:@simplewebauthn/server --external:argon2 --banner:js=\"import { createRequire } from 'module';const require = createRequire(import.meta.url);\"",
     "preview": "vite preview",
     "start": "node dist/boot.js",
+    "lint": "eslint . --ext .ts,.tsx",
+    "typecheck": "tsc -b tsconfig.app.json tsconfig.server.json",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

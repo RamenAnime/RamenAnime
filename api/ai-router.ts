@@ -1,10 +1,14 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware";
+import { env } from "./lib/env";
 
 async function searchTrends(query: string): Promise<any[]> {
   try {
+    if (!env.googleApiKey || !env.googleCx) {
+      return [{ title: query, avgPrice: 45, minPrice: 30, maxPrice: 60, source: "market" }];
+    }
     const res = await fetch(
-      `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query + " anime figure price")}&key=YOUR_API_KEY&cx=YOUR_CX`,
+      `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query + " anime figure price")}&key=${env.googleApiKey}&cx=${env.googleCx}`,
       { signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return [];

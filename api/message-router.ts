@@ -4,7 +4,7 @@ import { db } from "./db";
 import { createRouter, publicQuery, authedQuery } from "./middleware";
 
 const typingStore = new Map();
-function notifyTyping(cid: string, uid: string, typing: boolean) {
+function notifyTyping(cid: string, uid: number, typing: boolean) {
   const s = typingStore.get(cid) ?? new Set<string>();
   typing ? s.add(uid) : s.delete(uid);
   typingStore.set(cid, s);

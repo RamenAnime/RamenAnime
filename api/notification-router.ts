@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { createRouter, publicQuery, authedQuery } from "./middleware";
+import { createRouter, authedQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { notifications } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
@@ -13,12 +13,12 @@ export const notificationRouter = createRouter({
   unreadCount: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     const rows = await db.select().from(notifications).where(eq(notifications.userId, ctx.user.id));
-    return rows.filter((n) => !n.isRead).length;
+    return rows.filter((n: any) => !n.isRead).length;
   }),
 
   markRead: authedQuery
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ ctx, input }) => {
+    .mutation(async ({ input }) => {
       const db = getDb();
       await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, input.id));
       return { success: true };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -9,8 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, ThumbsUp, Eye, Pin, Plus, Search, Clock, ChevronDown, TrendingUp, Users, Flame, Lock, FolderOpen, MessageCircle, Award, ArrowRight } from "lucide-react";
-import TosGate from "@/components/TosGate";
+import { MessageSquare, ThumbsUp, Eye, Pin, Plus, Search, Clock, ChevronDown, TrendingUp, Users, Lock, FolderOpen, Award, ArrowRight } from "lucide-react";
 
 const SUBFORUMS = [
   { id: "general", name: "General Discussion", desc: "Chat about anything anime and manga related", icon: "MessageSquare" },
@@ -49,12 +48,20 @@ function ForumContent() {
   const [hasMore, setHasMore] = useState(true);
   const [sort, setSort] = useState<"latest" | "popular" | "pinned">("latest");
 
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
   const utils = trpc.useUtils();
 
-  const { data: posts, isLoading } = trpc.social.listPosts.useQuery({
+  const { data: _postsData, isLoading } = trpc.social.listPosts.useQuery({
     category: activeCategory, limit: PAGE_SIZE, offset, sort,
-  }, { onSuccess: (data) => { if (offset === 0) setAllPosts(data); else setAllPosts((prev) => [...prev, ...data]); setHasMore(data.length === PAGE_SIZE); } });
+  });
+
+  useEffect(() => {
+    if (_postsData) {
+      if (offset === 0) setAllPosts(_postsData);
+      else setAllPosts((prev) => [...prev, ..._postsData]);
+      setHasMore(_postsData.length === PAGE_SIZE);
+    }
+  }, [_postsData, offset]);
 
   const { data: subforumStats } = trpc.social.getSubforumStats.useQuery();
   const { data: recentActivity } = trpc.social.getRecentActivity.useQuery({ limit: 8 });
@@ -140,4 +147,4 @@ function ForumContent() {
   );
 }
 
-export default function Social() { return (<TosGate><ForumContent /></TosGate>); }
+export default function Social() { return <ForumContent />; }

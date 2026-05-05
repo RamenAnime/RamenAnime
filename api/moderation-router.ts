@@ -16,9 +16,9 @@ export const moderationRouter = createRouter({
       const opts = input ?? { limit: 50, offset: 0, filter: "all" as const };
       const rows = await db.select().from(moderationLogs).orderBy(desc(moderationLogs.createdAt)).limit(opts.limit).offset(opts.offset);
       let filtered = rows;
-      if (opts.filter === "auto") filtered = rows.filter((r) => r.autoModerated);
-      if (opts.filter === "manual") filtered = rows.filter((r) => !r.autoModerated);
-      if (opts.filter === "bans") filtered = rows.filter((r) => r.action === "ban");
+      if (opts.filter === "auto") filtered = rows.filter((r: any) => r.autoModerated);
+      if (opts.filter === "manual") filtered = rows.filter((r: any) => !r.autoModerated);
+      if (opts.filter === "bans") filtered = rows.filter((r: any) => r.action === "ban");
       return filtered;
     }),
 
@@ -34,7 +34,7 @@ export const moderationRouter = createRouter({
       return {
         total: totalLogs.count, auto: autoLogs.count, manual: manualLogs.count,
         bans: banLogs.count, removals: removeLogs.count, flags: flagLogs.count,
-        pendingReview: pendingReview.filter((r) => !r.reviewedBy).length,
+        pendingReview: pendingReview.filter((r: any) => !r.reviewedBy).length,
       };
     }),
 

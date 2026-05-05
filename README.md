@@ -2,7 +2,7 @@
 
 Full-stack anime merchandise marketplace with live auctions, social features, 35 languages, and real-time messaging.
 
-**Live:** https://ramen-anime-denj.onrender.com
+**Live:** https://ramenanime.com
 
 **Quick Links:** [Business Plan](docs/BUSINESS_PLAN.md) · [Custom Domain Setup](docs/DOMAIN_SETUP.md)
 

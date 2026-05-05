@@ -47,27 +47,24 @@ function hashResetToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-const transporter = process.env.SMTP_HOST
-  ? createTransport({
-      host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT || 587),
-      secure: Number(process.env.SMTP_PORT || 587) === 465,
-      auth: {
-        user: process.env.SMTP_USER || "",
-        pass: process.env.SMTP_PASS || "",
-      },
-    })
-  : null;
-
 async function sendEmail(to: string, subject: string, html: string) {
-  if (!transporter) {
-    logger.info("No SMTP configured, skipping email", { to, subject });
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    logger.info("No RESEND_API_KEY set, skipping email", { to, subject });
     return;
   }
   try {
-    const from = process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@ramenanime.com";
-    await transporter.sendMail({ from, to, subject, html });
-    logger.info("Email sent via SMTP", { to, subject });
+    const resp = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: "ラーメンアニメ <noreply@ramenanime.com>", to, subject, html }),
+    });
+    if (!resp.ok) {
+      const text = await resp.text();
+      logger.error("Resend email error", { status: resp.status, text, to });
+    } else {
+      logger.info("Email sent", { to, subject });
+    }
   } catch (err) {
     logger.error("Email send failed", { to, subject, error: (err as Error).message });
   }
@@ -87,7 +84,7 @@ function resetEmailHtml(username: string, token: string, baseUrl: string) {
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;"><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td align="center" style="padding:20px 0;"><table role="presentation" width="600" cellspacing="0" cellpadding="0" style="background:#1a1a1a;border-radius:12px;overflow:hidden;"><tr><td style="background:linear-gradient(135deg,#d4a853,#b8860b);padding:30px;text-align:center;"><h1 style="color:#1a1a1a;margin:0;font-size:32px;font-weight:bold;">ラーメンアニメ</h1><p style="color:#1a1a1a;margin:8px 0 0;font-size:14px;font-weight:500;">Password Reset Request</p></td></tr><tr><td style="padding:30px;background:#ffffff;"><p style="font-size:16px;color:#333;line-height:1.6;">Hi <strong>${username}</strong>,</p><p style="font-size:16px;color:#333;line-height:1.6;">We received a request to reset your password. Click the button below to set a new password:</p><p style="margin:20px 0;text-align:center;"><a href="${link}" style="display:inline-block;background:#d4a853;color:#1a1a1a;text-decoration:none;padding:14px 28px;border-radius:6px;font-weight:bold;font-size:14px;">Reset Password</a></p><p style="font-size:14px;color:#555;line-height:1.5;">This link expires in 1 hour. If you did not request a password reset, you can safely ignore this email.</p><p style="font-size:14px;color:#555;line-height:1.5;">If the button doesn't work, copy and paste this link:<br/><code style="background:#f0f0f0;padding:4px 8px;border-radius:4px;word-break:break-all;">${link}</code></p></td></tr><tr><td style="background:#1a1a1a;padding:20px;text-align:center;font-size:12px;color:#888;"><p style="margin:0;">ラーメンアニメ | Anime Collectibles & Social Community</p></td></tr></table></td></tr></table></body></html>`;
 }
 
-const baseUrl = () => process.env.SITE_URL || "https://ramen-anime-denj.onrender.com";
+const baseUrl = () => process.env.SITE_URL || "https://ramenanime.com";
 
 function getClientIp(req: Request): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()

@@ -29,7 +29,7 @@ If you haven't already, buy your domain at [godaddy.com](https://godaddy.com).
 
 1. Log in to [dashboard.render.com](https://dashboard.render.com)
 2. Click your **ramen-anime** service
-3. Copy the current URL (looks like `https://ramen-anime-abc123.onrender.com`)
+3. Copy the current URL (looks like `https://ramenanime.com`)
 4. Keep this tab open — you'll need it
 
 ---
@@ -52,7 +52,7 @@ Value: 216.24.57.1
 
 Type:  CNAME
 Name:  www
-Value: ramen-anime-abc123.onrender.com
+Value: ramenanime.com
 ```
 
 ---
@@ -69,7 +69,7 @@ Value: ramen-anime-abc123.onrender.com
 | Type | Name | Value | TTL |
 |------|------|-------|-----|
 | A | @ | `216.24.57.1` (Render's IP) | 600 seconds |
-| CNAME | www | `your-app.onrender.com` | 1 hour |
+| CNAME | www | `ramenanime.com` | 1 hour |
 
 > **Note:** The exact IP and CNAME values are provided by Render in Step 3. Use what Render gives you, not the examples above.
 

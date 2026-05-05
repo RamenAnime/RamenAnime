@@ -32,7 +32,7 @@ X-Frame-Options: DENY
 X-Content-Type-Options: nosniff
 Referrer-Policy: strict-origin-when-cross-origin
 Permissions-Policy: camera=(), microphone=(), geolocation=()
-Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://*.onrender.com https://ipapi.co https://ipinfo.io;
+Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' https://ramenanime.com https://*.onrender.com https://ipapi.co https://ipinfo.io;
 Strict-Transport-Security: max-age=31536000; includeSubDomains
 */
 
@@ -41,5 +41,5 @@ Strict-Transport-Security: max-age=31536000; includeSubDomains
 // X-Content-Type-Options: nosniff
 // Referrer-Policy: strict-origin-when-cross-origin
 // Permissions-Policy: camera=(), microphone=(), geolocation=()
-// Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.onrender.com;
+// Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://ramenanime.com https://*.onrender.com;
 // Strict-Transport-Security: max-age=31536000; includeSubDomains

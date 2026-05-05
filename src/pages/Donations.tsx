@@ -375,4 +375,6 @@ export default function Donations() {
           </Card>
         </div>
       </div>
-    </d
+    </div>
+  );
+}

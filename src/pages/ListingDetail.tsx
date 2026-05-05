@@ -86,6 +86,17 @@ export default function ListingDetail() {
     onSuccess: () => setDepositPaid(true),
   });
 
+  if (listingId <= 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg mb-2">Invalid listing ID</p>
+          <Button asChild><Link to="/marketplace">Back to Marketplace</Link></Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!listing) {
     return (
       <div className="min-h-screen flex items-center justify-center">

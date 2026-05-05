@@ -1,348 +1,514 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router";
-import { trpc } from "@/providers/trpc";
-import { useAuth } from "@/hooks/useAuth";
-import { useTranslation } from "react-i18next";
-import {
-  Loader2, Sparkles, X, Check, TrendingUp, ImagePlus, Film,
-  Gavel, Tag, Clock, Shield, FileAudio, BarChart3,
-} from "lucide-react";
+import { useState, useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  processMediaFiles, formatFileSize, calculateTotalSavings,
-  type UniversalMediaResult,
-} from "@/lib/mediaCompression";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { trpc } from "@/providers/trpc";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate, Link } from "react-router";
+import { Upload, X, ImageIcon, Sparkles, Camera, Package, Tag, Clock, FileText, ChevronRight, AlertCircle } from "lucide-react";
+
+const CATEGORIES = [
+  { id: "anime-figures", name: "Anime Figures", icon: "🎌" },
+  { id: "manga", name: "Manga / Books", icon: "📚" },
+  { id: "art-cels", name: "Art / Cels", icon: "🎨" },
+  { id: "collectibles", name: "Collectibles", icon: "🏆" },
+  { id: "apparel", name: "Apparel / Cosplay", icon: "👕" },
+  { id: "accessories", name: "Accessories", icon: "⌚" },
+  { id: "trading-cards", name: "Trading Cards", icon: "🃏" },
+  { id: "games", name: "Games / Consoles", icon: "🎮" },
+  { id: "dvds", name: "DVDs / Blu-ray", icon: "📀" },
+  { id: "posters", name: "Posters / Prints", icon: "🖼️" },
+  { id: "plush", name: "Plush / Toys", icon: "🧸" },
+  { id: "other", name: "Other Anime Goods", icon: "✨" },
+];
+
+const CONDITIONS = [
+  { id: "new", label: "New", desc: "Unopened, brand new" },
+  { id: "like_new", label: "Like New", desc: "Opened but perfect" },
+  { id: "used", label: "Used", desc: "Gently used" },
+  { id: "fair", label: "Fair", desc: "Visible wear" },
+  { id: "poor", label: "Poor", desc: "Heavy wear / parts" },
+];
+
+const DURATIONS = [
+  { label: "3 Days", hours: 72 },
+  { label: "5 Days", hours: 120 },
+  { label: "7 Days", hours: 168 },
+  { label: "10 Days", hours: 240 },
+  { label: "14 Days", hours: 336 },
+];
 
 export default function CreateListing() {
-  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-
-  const [step, setStep] = useState(1);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("figures");
-  const [condition, setCondition] = useState("new");
-  const [price, setPrice] = useState("");
-  const [listingType, setListingType] = useState<"fixed" | "auction">("fixed");
+  const [category, setCategory] = useState("");
+  const [condition, setCondition] = useState("");
   const [startPrice, setStartPrice] = useState("");
   const [reservePrice, setReservePrice] = useState("");
   const [buyNowPrice, setBuyNowPrice] = useState("");
-  const [auctionDuration, setAuctionDuration] = useState("7");
+  const [duration, setDuration] = useState(168);
+  const [isAuction, setIsAuction] = useState(true);
   const [images, setImages] = useState<string[]>([]);
-  const [videos, setVideos] = useState<{ url: string; thumbnail: string }[]>([]);
-  const [mediaResults, setMediaResults] = useState<UniversalMediaResult[]>([]);
-  const [compressing, setCompressing] = useState(false);
-  const [error, setError] = useState("");
-  const [isSearching, setIsSearching] = useState(false);
-  const [trends, setTrends] = useState<any[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [titleSuggestions, setTitleSuggestions] = useState<string[]>([]);
-  const [priceAnalysis, setPriceAnalysis] = useState<any>(null);
+  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const createListing = trpc.marketplace.createListing.useMutation({
-    onSuccess: () => navigate("/marketplace"),
-    onError: (e) => setError(e.message),
+  const createMutation = trpc.marketplace.createListing.useMutation({
+    onSuccess: () => {
+      toast.success("Listing created successfully!");
+      navigate("/marketplace");
+    },
+    onError: (err) => toast.error(err.message),
   });
 
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (title.length < 3) { setTrends([]); return; }
-      setIsSearching(true);
-      try {
-        const res = await fetch(`/api/trpc/ai.trends?input=${encodeURIComponent(JSON.stringify({ query: title }))}`);
-        if (res.ok) { const json = await res.json(); setTrends(json.result?.data?.trends || []); }
-      } catch { /* ignore */ }
-      setIsSearching(false);
-    }, 800);
-    return () => clearTimeout(timer);
-  }, [title]);
+  const analyzePrice = trpc.marketplace.analyzePrice.useMutation({
+    onSuccess: (data) => {
+      setAiAnalysis(data.analysis);
+      setAiLoading(false);
+    },
+    onError: () => {
+      toast.error("Price analysis failed");
+      setAiLoading(false);
+    },
+  });
 
-  const handleGenerateTitle = async () => {
-    if (!description.trim()) return;
-    setIsGenerating(true);
-    try {
-      const res = await fetch(`/api/trpc/ai.suggestTitles?input=${encodeURIComponent(JSON.stringify({ description }))}`);
-      if (res.ok) { const json = await res.json(); setTitleSuggestions(json.result?.data?.titles || []); }
-    } catch { /* ignore */ }
-    setIsGenerating(false);
-  };
-
-  const handleAnalyzePrice = async () => {
-    if (!title.trim()) return;
-    try {
-      const res = await fetch(`/api/trpc/ai.analyzePrice?input=${encodeURIComponent(JSON.stringify({ title, category }))}`);
-      if (res.ok) { const json = await res.json(); setPriceAnalysis(json.result?.data); }
-    } catch { /* ignore */ }
-  };
-
-  const handleMediaUpload = async (files: FileList | null, type: "image" | "video") => {
-    if (!files || files.length === 0) return;
-    setCompressing(true);
-    setError("");
-    try {
-      const results = await processMediaFiles(Array.from(files));
-      setMediaResults((prev) => [...prev, ...results]);
-      const imgUrls = results.filter((r) => r.type === "image" && r.success).map((r) => r.url);
-      const vidUrls = results.filter((r) => r.type === "video" && r.success).map((r) => ({ url: r.url, thumbnail: r.thumbnailUrl || r.url }));
-      if (type === "image") setImages((prev) => [...prev, ...imgUrls]);
-      else setVideos((prev) => [...prev, ...vidUrls]);
-    } catch (e: any) {
-      setError(e.message || "Failed to process media");
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    if (images.length + files.length > 10) {
+      toast.error("Max 10 images allowed");
+      return;
     }
-    setCompressing(false);
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setImages((prev) => [...prev, reader.result]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
-  const removeImage = (idx: number) => setImages((prev) => prev.filter((_, i) => i !== idx));
-  const removeVideo = (idx: number) => setVideos((prev) => prev.filter((_, i) => i !== idx));
+  const removeImage = (idx: number) =>
+    setImages((prev) => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = () => {
-    if (!title.trim() || !price.trim()) { setError("Title and price are required"); return; }
-    setError("");
-    createListing.mutate({
-      title, description, category, condition,
-      price: listingType === "auction" ? startPrice : price,
-      listingType, startPrice, reservePrice, buyNowPrice,
-      auctionEnd: listingType === "auction" ? new Date(Date.now() + parseInt(auctionDuration) * 86400000).toISOString() : undefined,
-      images, videos: videos.map((v) => v.url),
+    if (!title || !category || !condition || !startPrice) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+    if (images.length === 0) {
+      toast.error("Please upload at least one image");
+      return;
+    }
+    const endTime = new Date(Date.now() + duration * 3600000).toISOString();
+    createMutation.mutate({
+      title,
+      description,
+      category,
+      condition: condition as "new" | "used" | "like_new",
+      price: startPrice,
+      startPrice,
+      reservePrice: reservePrice || undefined,
+      buyNowPrice: buyNowPrice || undefined,
+      images: images.slice(0, 5),
+      listingType: isAuction ? "auction" : "fixed",
+      auctionEnd: endTime,
     });
   };
 
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-muted-foreground mb-4">Please log in to create a listing</p>
-          <Button onClick={() => navigate("/login")}>Login</Button>
-        </div>
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-xl font-bold mb-2">Please log in to create a listing</h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              You need to be signed in to start selling your anime collectibles.
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button asChild><Link to="/login">Sign In</Link></Button>
+              <Button variant="outline" asChild><Link to="/register">Create Account</Link></Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
-  const compressionStats = mediaResults.length > 0 && !compressing
-    ? calculateTotalSavings(mediaResults)
-    : null;
+  const selectedCat = CATEGORIES.find((c) => c.id === category);
+  const selectedCond = CONDITIONS.find((c) => c.id === condition);
+  const selectedDur = DURATIONS.find((d) => d.hours === duration);
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-3xl mx-auto px-4">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">{t("marketplace.createListing") || "Create Listing"}</h1>
-          <p className="text-sm text-muted-foreground">{t("marketplace.listItem") || "List your item for sale or auction"}</p>
-        </div>
-
-        <div className="flex items-center gap-2 mb-6">
-          {[1, 2, 3].map((s) => (
-            <div key={s} className={`h-2 flex-1 rounded-full ${s <= step ? "bg-primary" : "bg-muted"}`} />
-          ))}
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">{error}</div>
-        )}
-
-        {step === 1 && (
-          <div className="space-y-6">
-            <div>
-              <label className="block font-medium mb-2 text-sm">{t("marketplace.title") || "Title"}</label>
-              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={t("marketplace.titlePlaceholder") || "e.g., Rare Goku Action Figure"} className="bg-muted/50" />
-              {title.length >= 3 && (
-                <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                  {isSearching ? <Loader2 className="w-3 h-3 animate-spin" /> : <TrendingUp className="w-3 h-3" />}
-                  {isSearching ? "Searching..." : `${trends.length} trends`}
-                </div>
-              )}
-              {trends.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {trends.map((tr, i) => (
-                    <Badge key={i} variant="outline" className="cursor-pointer hover:bg-primary/10" onClick={() => setTitle(tr.title)}>
-                      <Sparkles className="w-3 h-3 mr-1" />{tr.title}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="block font-medium mb-2 text-sm">{t("marketplace.description") || "Description"}</label>
-              <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Describe your item..." className="w-full rounded-md bg-muted/50 border border-border/50 px-3 py-2 text-sm" />
-              {description.length > 20 && titleSuggestions.length === 0 && (
-                <Button variant="outline" size="sm" className="mt-2" onClick={handleGenerateTitle} disabled={isGenerating}>
-                  {isGenerating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
-                  {t("marketplace.suggestTitle") || "Suggest Title"}
-                </Button>
-              )}
-              {titleSuggestions.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {titleSuggestions.map((s, i) => (
-                    <button key={i} className="block text-sm text-left w-full p-2 rounded hover:bg-muted transition-colors" onClick={() => { setTitle(s); setTitleSuggestions([]); }}>{s}</button>
-                  ))}
-                </div>
-              )}
-            </div>
-            <Button className="w-full" onClick={() => setStep(2)} disabled={!title.trim()}>
-              {t("common.continue") || "Continue"}
-            </Button>
+    <div className="min-h-screen bg-background">
+      {/* Progress Header */}
+      <div className="bg-card border-b border-border">
+        <div className="max-w-3xl mx-auto px-4 py-6">
+          <h1 className="text-2xl font-bold mb-1">Create a New Listing</h1>
+          <p className="text-sm text-muted-foreground mb-4">
+            Fill in the details below to list your item for auction
+          </p>
+          <div className="flex items-center gap-2">
+            <Badge variant="default" className="bg-primary text-primary-foreground">1. Item Info</Badge>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <Badge variant="outline">2. Photos</Badge>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <Badge variant="outline">3. Review & List</Badge>
           </div>
-        )}
+        </div>
+      </div>
 
-        {step === 2 && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block font-medium mb-2 text-sm">Category</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md bg-muted/50 border border-border/50 px-3 py-2 text-sm">
-                  <option value="figures">Figures</option>
-                  <option value="trading-cards">Trading Cards</option>
-                  <option value="3d-prints">3D Prints</option>
-                  <option value="apparel">Apparel</option>
-                  <option value="accessories">Accessories</option>
-                  <option value="other">Other</option>
-                </select>
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+        {/* PHOTOS SECTION */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Camera className="h-5 w-5" />
+              Photos
+              <span className="text-red-500 text-sm">*Required — max 10</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {/* Main image slot */}
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="w-32 h-32 rounded-lg border-2 border-dashed border-border hover:border-primary cursor-pointer flex flex-col items-center justify-center bg-muted/30 transition-colors"
+              >
+                <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                <span className="text-xs text-muted-foreground">Add Photo</span>
               </div>
-              <div>
-                <label className="block font-medium mb-2 text-sm">Condition</label>
-                <select value={condition} onChange={(e) => setCondition(e.target.value)} className="w-full rounded-md bg-muted/50 border border-border/50 px-3 py-2 text-sm">
-                  <option value="new">New</option>
-                  <option value="used">Used</option>
-                  <option value="like-new">Like New</option>
-                </select>
+
+              {/* Uploaded images */}
+              {images.map((img, i) => (
+                <div key={i} className="relative w-32 h-32 rounded-lg overflow-hidden border border-border group">
+                  <img src={img} alt={`upload-${i}`} className="w-full h-full object-cover" />
+                  {i === 0 && (
+                    <Badge className="absolute top-1 left-1 text-[10px] px-1.5 py-0 bg-primary/90">MAIN</Badge>
+                  )}
+                  <button
+                    onClick={() => removeImage(i)}
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleImageUpload}
+            />
+            {images.length > 0 && (
+              <p className="text-xs text-muted-foreground mt-2">{images.length}/10 photos uploaded</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* BASIC INFO */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Item Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-5">
+
+            {/* Title */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">
+                Title <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., One Piece Luffy Gear 5 Figure — Banpresto Ichiban Kuji"
+                className="h-11"
+              />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{title.length}/80 characters</span>
               </div>
             </div>
 
-            <div>
-              <label className="block font-medium mb-2 text-sm">Listing Type</label>
-              <div className="flex gap-2">
-                <Button variant={listingType === "fixed" ? "default" : "outline"} onClick={() => setListingType("fixed")} className="flex-1"><Tag className="w-4 h-4 mr-2" />Fixed Price</Button>
-                <Button variant={listingType === "auction" ? "default" : "outline"} onClick={() => setListingType("auction")} className="flex-1"><Gavel className="w-4 h-4 mr-2" />Auction</Button>
-              </div>
+            {/* Description */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Description</Label>
+              <Textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Describe your item — include details about condition, packaging, any defects, and shipping preferences..."
+                className="min-h-[120px] resize-none"
+              />
+              <p className="text-xs text-muted-foreground">{description.length}/5000 characters</p>
             </div>
 
-            {listingType === "fixed" ? (
-              <div>
-                <label className="block font-medium mb-2 text-sm">Price</label>
-                <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" className="bg-muted/50" />
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label className="block font-medium mb-2 text-sm">Start Price</label>
-                  <Input type="number" value={startPrice} onChange={(e) => setStartPrice(e.target.value)} placeholder="0.00" className="bg-muted/50" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block font-medium mb-2 text-sm">Reserve Price</label>
-                    <Input type="number" value={reservePrice} onChange={(e) => setReservePrice(e.target.value)} placeholder="Optional" className="bg-muted/50" />
-                  </div>
-                  <div>
-                    <label className="block font-medium mb-2 text-sm">Buy Now Price</label>
-                    <Input type="number" value={buyNowPrice} onChange={(e) => setBuyNowPrice(e.target.value)} placeholder="Optional" className="bg-muted/50" />
-                  </div>
-                </div>
-                <div>
-                  <label className="block font-medium mb-2 text-sm flex items-center gap-1"><Clock className="w-3 h-3" />Duration</label>
-                  <select value={auctionDuration} onChange={(e) => setAuctionDuration(e.target.value)} className="w-full rounded-md bg-muted/50 border border-border/50 px-3 py-2 text-sm">
-                    <option value="1">1 day</option>
-                    <option value="3">3 days</option>
-                    <option value="5">5 days</option>
-                    <option value="7">7 days</option>
-                    <option value="14">14 days</option>
-                    <option value="30">30 days</option>
-                  </select>
-                </div>
-              </div>
-            )}
+          </CardContent>
+        </Card>
 
-            <Button variant="outline" onClick={handleAnalyzePrice} disabled={!title.trim()} className="w-full">
-              <TrendingUp className="w-4 h-4 mr-2" />Price Analysis
-            </Button>
-            {priceAnalysis && (
-              <div className="p-3 bg-primary/5 rounded-lg border border-primary/10">
-                <p className="text-sm font-medium">Suggested: ${priceAnalysis.suggested}</p>
-                <p className="text-xs text-muted-foreground">Range: ${priceAnalysis.min} - ${priceAnalysis.max}</p>
-              </div>
-            )}
+        {/* CATEGORY */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Tag className="h-5 w-5" />
+              Category <span className="text-red-500">*</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategory(cat.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
+                    category === cat.id
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-card border-border hover:border-primary/50 text-foreground"
+                  }`}
+                >
+                  <span className="mr-1">{cat.icon}</span>
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
+        {/* CONDITION */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Condition <span className="text-red-500">*</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+              {CONDITIONS.map((c) => (
+                <button
+                  key={c.id}
+                  onClick={() => setCondition(c.id)}
+                  className={`p-3 rounded-lg border text-left transition-all ${
+                    condition === c.id
+                      ? "border-primary bg-primary/5 ring-1 ring-primary"
+                      : "border-border hover:border-primary/40 bg-card"
+                  }`}
+                >
+                  <div className={`font-semibold text-sm ${condition === c.id ? "text-primary" : ""}`}>
+                    {c.label}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{c.desc}</div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* LISTING TYPE */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Listing Type</CardTitle>
+          </CardHeader>
+          <CardContent>
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep(1)} className="flex-1">Back</Button>
-              <Button onClick={() => setStep(3)} className="flex-1">Continue</Button>
+              <button
+                onClick={() => setIsAuction(true)}
+                className={`flex-1 p-4 rounded-lg border text-center transition-all ${
+                  isAuction
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                <Clock className="h-5 w-5 mx-auto mb-1 text-primary" />
+                <div className="font-semibold text-sm">Auction</div>
+                <div className="text-xs text-muted-foreground">Buyers place bids</div>
+              </button>
+              <button
+                onClick={() => setIsAuction(false)}
+                className={`flex-1 p-4 rounded-lg border text-center transition-all ${
+                  !isAuction
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border bg-card hover:border-primary/40"
+                }`}
+              >
+                <Tag className="h-5 w-5 mx-auto mb-1 text-primary" />
+                <div className="font-semibold text-sm">Fixed Price</div>
+                <div className="text-xs text-muted-foreground">Immediate purchase</div>
+              </button>
             </div>
-          </div>
-        )}
+          </CardContent>
+        </Card>
 
-        {step === 3 && (
-          <div className="space-y-6">
-            <div>
-              <label className="block font-medium mb-2 text-sm">Photos ({images.length})</label>
-              <div className="grid grid-cols-4 gap-2 mb-2">
-                {images.map((img, i) => (
-                  <div key={i} className="relative aspect-square rounded-lg overflow-hidden border border-border/50">
-                    <img src={img} alt="" className="w-full h-full object-cover" />
-                    <button onClick={() => removeImage(i)} className="absolute top-1 right-1 w-5 h-5 bg-destructive text-white rounded-full flex items-center justify-center text-xs"><X className="w-3 h-3" /></button>
-                  </div>
-                ))}
+        {/* PRICING */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <span className="text-lg font-bold">$</span>
+              Pricing
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">
+                  {isAuction ? "Starting Bid" : "Price"} <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                  <Input
+                    type="number"
+                    value={startPrice}
+                    onChange={(e) => setStartPrice(e.target.value)}
+                    placeholder="0.00"
+                    className="pl-7 h-11"
+                  />
+                </div>
               </div>
-              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => handleMediaUpload(e.target.files, "image")} />
-              <Button variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full" disabled={compressing}>
-                <ImagePlus className="w-4 h-4 mr-2" />Add Photos
-              </Button>
-            </div>
-
-            <div>
-              <label className="block font-medium mb-2 text-sm">Videos & Audio ({videos.length})</label>
-              <div className="grid grid-cols-3 gap-2 mb-2">
-                {videos.map((v, i) => (
-                  <div key={i} className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                    {v.thumbnail ? <img src={v.thumbnail} alt="" className="w-full h-full object-cover" /> : <Film className="w-full h-full p-4 text-muted-foreground" />}
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      {mediaResults.find(r => r.result?.dataUrl === v.url)?.type === "audio" ? <FileAudio className="w-6 h-6 text-white drop-shadow" /> : <Film className="w-6 h-6 text-white drop-shadow" />}
+              {isAuction && (
+                <>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Reserve Price</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <Input
+                        type="number"
+                        value={reservePrice}
+                        onChange={(e) => setReservePrice(e.target.value)}
+                        placeholder="Optional"
+                        className="pl-7 h-11"
+                      />
                     </div>
-                    <button onClick={() => removeVideo(i)} className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full hover:bg-black/70"><X className="w-3 h-3" /></button>
+                    <p className="text-xs text-muted-foreground">Hidden minimum to sell</p>
                   </div>
-                ))}
-              </div>
-              <input ref={videoInputRef} type="file" accept="video/*,audio/*" multiple className="hidden" onChange={(e) => handleMediaUpload(e.target.files, "video")} />
-              <Button variant="outline" onClick={() => videoInputRef.current?.click()} className="w-full" disabled={compressing}>
-                <Film className="w-4 h-4 mr-2" />Add Videos
-              </Button>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Buy It Now</Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                      <Input
+                        type="number"
+                        value={buyNowPrice}
+                        onChange={(e) => setBuyNowPrice(e.target.value)}
+                        placeholder="Optional"
+                        className="pl-7 h-11"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">Instant purchase price</p>
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
-              <Shield className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-              <p className="text-xs text-muted-foreground">All listings are scanned by our copyright detection system.</p>
-            </div>
-
-            {compressionStats && (
-              <div className="p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="flex items-center gap-1 text-xs text-green-700 mb-1">
-                  <BarChart3 className="w-3 h-3" /><span className="font-medium">Compression Stats</span>
-                </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] text-green-600">
-                  <span>Saved: {compressionStats.saved}</span>
-                  <span>Images: {compressionStats.imageCount} Videos: {compressionStats.videoCount} Audio: {compressionStats.audioCount}</span>
-                  <span>Original: {formatFileSize(compressionStats.originalTotal)}</span>
-                  <span>Compressed: {formatFileSize(compressionStats.compressedTotal)}</span>
+            {isAuction && (
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Auction Duration</Label>
+                <div className="flex flex-wrap gap-2">
+                  {DURATIONS.map((d) => (
+                    <button
+                      key={d.hours}
+                      onClick={() => setDuration(d.hours)}
+                      className={`px-4 py-2 rounded-lg text-sm border transition-all ${
+                        duration === d.hours
+                          ? "border-primary bg-primary/5 text-primary font-medium"
+                          : "border-border bg-card hover:border-primary/40"
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
 
-            {compressing && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" />Compressing media...
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setStep(2)} className="flex-1">Back</Button>
-              <Button onClick={handleSubmit} disabled={createListing.isPending} className="flex-1">
-                {createListing.isPending ? <><Loader2 className="w-5 h-5 animate-spin mr-2" />Listing...</> : <><Check className="w-5 h-5 mr-2" />List Item</>}
-              </Button>
+        {/* AI PRICE ANALYSIS */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-full h-12 text-base gap-2"
+              onClick={() => {
+                if (!title || !category) {
+                  toast.error("Enter a title and category first");
+                  return;
+                }
+                setAiLoading(true);
+                analyzePrice.mutate({ title, category });
+              }}
+              disabled={aiLoading}
+            >
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              {aiLoading ? "Analyzing market data..." : "Get AI Price Analysis"}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                Price Analysis
+              </DialogTitle>
+            </DialogHeader>
+            <div className="text-sm leading-relaxed whitespace-pre-line">
+              {aiAnalysis || "No analysis yet. Click the button to analyze."}
             </div>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
+
+        {/* SUMMARY + SUBMIT */}
+        <Card className="bg-muted/30">
+          <CardContent className="p-5 space-y-4">
+            <h3 className="font-semibold flex items-center gap-2">
+              <AlertCircle className="h-4 w-4" />
+              Listing Summary
+            </h3>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+              <div className="text-muted-foreground">Category</div>
+              <div>{selectedCat ? `${selectedCat.icon} ${selectedCat.name}` : <span className="text-red-500">Not selected</span>}</div>
+              <div className="text-muted-foreground">Condition</div>
+              <div>{selectedCond?.label || <span className="text-red-500">Not selected</span>}</div>
+              <div className="text-muted-foreground">Type</div>
+              <div>{isAuction ? "Auction" : "Fixed Price"}</div>
+              <div className="text-muted-foreground">{isAuction ? "Starting Bid" : "Price"}</div>
+              <div>{startPrice ? `$${startPrice}` : <span className="text-red-500">Not set</span>}</div>
+              {isAuction && (
+                <>
+                  <div className="text-muted-foreground">Duration</div>
+                  <div>{selectedDur?.label}</div>
+                </>
+              )}
+              <div className="text-muted-foreground">Photos</div>
+              <div>{images.length > 0 ? `${images.length} uploaded` : <span className="text-red-500">None</span>}</div>
+            </div>
+            <Separator />
+            <Button
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || !title || !category || !condition || !startPrice || images.length === 0}
+              className="w-full h-12 text-base font-semibold"
+              size="lg"
+            >
+              {createMutation.isPending ? "Creating Listing..." : "List My Item"}
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              By listing, you agree to our Terms of Service and confirm this item is authentic.
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

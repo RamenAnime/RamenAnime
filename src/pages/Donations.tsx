@@ -32,7 +32,7 @@ const CURRENCIES = [
   { code: "THB", symbol: "฿", name: "Thai Baht" },
 ];
 
-const REVOLUT_USERNAME = "ramenanime"; // Configurable
+const REVOLUT_USERNAME = "jasonakw8"; // Your Revolut.me username
 
 const COUNTRY_PAYMENTS: Record<string, { methods: { id: string; name: string; icon: string }[]; revolutLink: string; instructions: string }> = {
   US: {
@@ -375,6 +375,4 @@ export default function Donations() {
           </Card>
         </div>
       </div>
-    </div>
-  );
-}
+    </d

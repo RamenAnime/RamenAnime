@@ -75,7 +75,7 @@ export default function Home() {
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
-              <Link to="/marketplace/create">
+              <Link to="/marketplace/new">
                 <Button size="lg" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 px-8">
                   <Gavel className="mr-2 h-4 w-4" />
                   Start Selling
@@ -169,7 +169,7 @@ export default function Home() {
             <Card className="border-border/50"><CardContent className="p-8 text-center">
               <Gavel className="w-10 h-10 text-muted-foreground/30 mx-auto mb-2" />
               <p className="text-muted-foreground text-sm">No active auctions. Be the first to list one!</p>
-              <Link to="/marketplace/create" className="mt-2 inline-block">
+              <Link to="/marketplace/new" className="mt-2 inline-block">
                 <Button size="sm" className="mt-2"><Gavel className="w-4 h-4 mr-1" /> Start an Auction</Button>
               </Link>
             </CardContent></Card>
@@ -308,7 +308,7 @@ export default function Home() {
               and our copyright bot keeps the marketplace clean and authentic.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/marketplace/create">
+              <Link to="/marketplace/new">
                 <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 px-8">
                   <Gavel className="mr-2 h-4 w-4" /> List an Item
                 </Button>

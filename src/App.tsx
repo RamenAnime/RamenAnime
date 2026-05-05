@@ -50,6 +50,7 @@ export default function App() {
                 {/* Marketplace routes */}
                 <Route path="/marketplace" element={<Marketplace />} />
                 <Route path="/marketplace/new" element={<CreateListing />} />
+                <Route path="/marketplace/create" element={<CreateListing />} />
                 <Route path="/marketplace/:id" element={<ListingDetail />} />
                 
                 {/* Legacy redirects */}

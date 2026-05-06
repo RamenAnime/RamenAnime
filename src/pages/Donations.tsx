@@ -47,11 +47,9 @@ function PayPalButton({ currency }: { currency: string }) {
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    // Load PayPal SDK if not already loaded
     if (!document.getElementById("paypal-sdk")) {
       const script = document.createElement("script");
       script.id = "paypal-sdk";
-      // Force English locale with &locale=en_US
       script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&enable-funding=venmo&currency=${currency}&locale=en_US`;
       script.crossOrigin = "anonymous";
       script.async = true;
@@ -85,15 +83,23 @@ function PayPalButton({ currency }: { currency: string }) {
   }
 
   return (
-    <div className="space-y-2 w-full">
+    <div className="space-y-2" style={{ minWidth: "300px", maxWidth: "100%" }}>
       {!loaded && (
         <div className="flex items-center justify-center py-4">
           <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
           <span className="ml-2 text-sm text-muted-foreground">Loading PayPal...</span>
         </div>
       )}
-      {/* Full width container so PayPal button has room */}
-      <div ref={paypalRef} className="w-full flex justify-center min-h-[50px]" />
+      {/* CRITICAL: min-width prevents vertical text wrapping */}
+      <div
+        ref={paypalRef}
+        style={{
+          minWidth: "300px",
+          minHeight: "50px",
+          width: "100%",
+          textAlign: "center",
+        }}
+      />
     </div>
   );
 }
@@ -232,7 +238,10 @@ export default function Donations() {
                   <Shield className="h-4 w-4 text-primary" />
                   <p className="text-sm font-semibold text-foreground">Pay with PayPal</p>
                 </div>
-                <PayPalButton currency={currency} />
+                {/* Centered container with minimum width */}
+                <div className="flex justify-center">
+                  <PayPalButton currency={currency} />
+                </div>
                 <p className="text-xs text-muted-foreground text-center">
                   Supports PayPal balance, cards, Venmo, and PayPal Credit
                 </p>

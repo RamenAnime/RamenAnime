@@ -20,7 +20,11 @@ export default function TosGate({ children }: { children: React.ReactNode }) {
 
   const acceptMutation = trpc.tos.accept.useMutation({
     onSuccess: () => {
-      utils.tos.getStatus.invalidate();
+      utils.tos.getStatus.refetch();
+      window.location.reload();
+    },
+    onError: (err) => {
+      alert("Failed to accept terms: " + err.message);
     },
   });
 

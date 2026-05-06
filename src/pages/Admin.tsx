@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Shield, MessageSquare, ShoppingBag, Heart, BarChart3, Trash2, Crown, X, Check, Ban, Unlock } from "lucide-react";
+import { Users, Shield, MessageSquare, ShoppingBag, Heart, BarChart3, Trash2, Crown, X, Check, Ban, Unlock, Eye, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -94,6 +94,9 @@ export default function Admin() {
               <StatCard label="Marketplace" value={stats?.listings ?? 0} icon={ShoppingBag} color="#22c55e" />
               <StatCard label="Donations" value={stats?.donations ?? 0} icon={Heart} color="#ec4899" />
               <StatCard label="TOS Accepted" value={stats?.tosAcceptances ?? 0} icon={Check} color="#f59e0b" />
+              <StatCard label="Total Visits" value={stats?.visits ?? 0} icon={Eye} color="#06b6d4" />
+              <StatCard label="Orders" value={stats?.orders ?? 0} icon={ShoppingBag} color="#a855f7" />
+              <StatCard label="Paid Orders" value={stats?.paidOrders ?? 0} icon={CreditCard} color="#22c55e" />
             </div>
           </TabsContent>
 
@@ -103,13 +106,14 @@ export default function Admin() {
                 <h2 className="text-lg font-bold mb-4">Users ({userList?.length ?? 0})</h2>
                 <ScrollArea className="h-[60vh]">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">ID</th><th className="pb-2">Username</th><th className="pb-2">Role</th><th className="pb-2">Status</th><th className="pb-2">Actions</th></tr></thead>
+                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">ID</th><th className="pb-2">Username</th><th className="pb-2">Role</th><th className="pb-2">TOS</th><th className="pb-2">Status</th><th className="pb-2">Actions</th></tr></thead>
                     <tbody>
                       {userList?.map((u: any) => (
                         <tr key={u.id} className={`border-b border-border/50 ${u.isBanned ? "opacity-50" : ""}`}>
                           <td className="py-2 text-muted-foreground">{u.id}</td>
                           <td className="py-2 font-medium">{u.username ?? "-"}</td>
                           <td className="py-2"><Badge variant={u.role === "admin" ? "default" : "secondary"} className="text-xs">{u.role}</Badge></td>
+                          <td className="py-2">{u.hasAcceptedTos ? <Check className="h-4 w-4 text-green-500" /> : <span className="text-muted-foreground text-xs">-</span>}</td>
                           <td className="py-2">{u.isBanned ? <Badge variant="destructive" className="text-xs">Banned</Badge> : <Badge variant="outline" className="text-xs">Active</Badge>}</td>
                           <td className="py-2 flex gap-1">
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/profile/${u.id}`)}>View</Button>

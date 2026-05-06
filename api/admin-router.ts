@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { banUser } from "./queries/users";
-import { users, userProfiles, forumPosts, forumComments, friends, marketplaceListings, donations, geoVerifications, tosAcceptances } from "@db/schema";
+import { users, userProfiles, forumPosts, forumComments, friends, marketplaceListings, donations, geoVerifications, tosAcceptances, siteVisits, orders } from "@db/schema";
 import { eq, desc, count } from "drizzle-orm";
 
 export const adminRouter = createRouter({
@@ -19,8 +19,11 @@ export const adminRouter = createRouter({
     const [profileCount] = await db.select({ count: count() }).from(userProfiles);
     const [adminCount] = await db.select({ count: count() }).from(users).where(eq(users.role, "admin"));
     const [bannedCount] = await db.select({ count: count() }).from(users).where(eq(users.isBanned, true));
+    const [visitCount] = await db.select({ count: count() }).from(siteVisits);
+    const [orderCount] = await db.select({ count: count() }).from(orders);
+    const [paidOrderCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, "paid"));
     return {
-      users: userCount.count, admins: adminCount.count, banned: bannedCount.count, posts: postCount.count,
+      users: userCount.count, admins: adminCount.count, banned: bannedCount.count, visits: visitCount.count, orders: orderCount.count, paidOrders: paidOrderCount.count, posts: postCount.count,
       comments: commentCount.count, listings: listingCount.count,
       donations: donationCount.count, friends: friendCount.count,
       geoVerifications: geoCount.count, tosAcceptances: tosCount.count,
@@ -30,7 +33,12 @@ export const adminRouter = createRouter({
 
   listUsers: adminQuery.query(async () => {
     const db = getDb();
-    return db.select().from(users).orderBy(desc(users.createdAt));
+    const allUsers = await db.select().from(users).orderBy(desc(users.createdAt));
+    const tosList = await db.select().from(tosAcceptances);
+    return allUsers.map((u) => ({
+      ...u,
+      hasAcceptedTos: tosList.some((tos) => tos.userId === u.id),
+    }));
   }),
 
   updateUserRole: adminQuery

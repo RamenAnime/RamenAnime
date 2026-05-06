@@ -1,0 +1,271 @@
+import { z } from "zod";
+import { createRouter, authedQuery, publicQuery } from "./middleware";
+import { getDb } from "./queries/connection";
+import { users, marketplaceListings, orders, transactions } from "@db/schema";
+import { eq, and } from "drizzle-orm";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+  apiVersion: "2025-04-30.basil",
+});
+
+const PLATFORM_FEE_PERCENT = 5;  // Seller pays 5%
+const BUYER_FEE_PERCENT = 3;      // Buyer pays 3% (added to total)
+
+function generateOrderNumber() {
+  return "ORD-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+}
+
+function generateTransactionNumber() {
+  return "TXN-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+}
+
+export const stripeRouter = createRouter({
+  // Check if seller has connected Stripe account
+  getSellerStatus: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, ctx.user.id),
+      columns: { stripeAccountId: true, stripeOnboardingComplete: true },
+    });
+    return {
+      connected: !!user?.stripeAccountId,
+      onboardingComplete: user?.stripeOnboardingComplete || false,
+    };
+  }),
+
+  // Create Stripe Connect onboarding link for seller
+  createOnboardingLink: authedQuery.mutation(async ({ ctx }) => {
+    const db = getDb();
+    let user = await db.query.users.findFirst({ where: eq(users.id, ctx.user.id) });
+
+    // Create Stripe Express account if not exists
+    if (!user?.stripeAccountId) {
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "US",
+        email: user?.email || undefined,
+        business_type: "individual",
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+      });
+
+      await db.update(users)
+        .set({ stripeAccountId: account.id })
+        .where(eq(users.id, ctx.user.id));
+
+      user = { ...user, stripeAccountId: account.id };
+    }
+
+    // Create account link for onboarding
+    const accountLink = await stripe.accountLinks.create({
+      account: user.stripeAccountId!,
+      refresh_url: `${process.env.SITE_URL || "https://ramenanime.com"}/seller/stripe-return?success=false`,
+      return_url: `${process.env.SITE_URL || "https://ramenanime.com"}/seller/stripe-return?success=true`,
+      type: "account_onboarding",
+    });
+
+    return { url: accountLink.url };
+  }),
+
+  // Create a checkout session for buyer to pay
+  createCheckoutSession: authedQuery
+    .input(z.object({ listingId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+
+      const listing = await db.query.marketplaceListings.findFirst({
+        where: eq(marketplaceListings.id, input.listingId),
+        with: { seller: true },
+      });
+      if (!listing) throw new Error("Listing not found");
+      if (!listing.seller?.stripeAccountId) throw new Error("Seller has not connected a payment account");
+      if (!listing.seller?.stripeOnboardingComplete) throw new Error("Seller payment account is not fully set up");
+
+      const priceCents = Math.round(parseFloat(listing.price || listing.buyNowPrice || "0") * 100);
+      if (priceCents <= 0) throw new Error("Invalid listing price");
+
+      const sellerFeeCents = Math.round(priceCents * (PLATFORM_FEE_PERCENT / 100));
+      const buyerFeeCents = Math.round(priceCents * (BUYER_FEE_PERCENT / 100));
+      const totalCents = priceCents + buyerFeeCents;
+      const applicationFeeCents = sellerFeeCents + buyerFeeCents;
+      const sellerReceivesCents = priceCents - sellerFeeCents;
+
+      // Create order record
+      const orderNum = generateOrderNumber();
+      const [{ id: orderId }] = await db.insert(orders).values({
+        orderNumber: orderNum,
+        buyerId: ctx.user.id,
+        sellerId: listing.sellerId,
+        listingId: input.listingId,
+        totalAmount: (totalCents / 100).toFixed(2),
+        currency: "USD",
+        status: "pending",
+      }).$returningId();
+
+      // Create transaction record
+      await db.insert(transactions).values({
+        transactionNumber: generateTransactionNumber(),
+        orderId,
+        payerId: ctx.user.id,
+        payeeId: listing.sellerId,
+        amount: (totalCents / 100).toFixed(2),
+        currency: "USD",
+        paymentMethod: "stripe",
+        status: "pending",
+      });
+
+      // Create Stripe Checkout Session
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [{
+          price_data: {
+            currency: "usd",
+            unit_amount: totalCents,
+            product_data: {
+              name: listing.title,
+              description: `Ramen Anime Marketplace - ${listing.title}`,
+              images: listing.thumbnail ? [listing.thumbnail] : undefined,
+            },
+          },
+          quantity: 1,
+        }],
+        payment_intent_data: {
+          application_fee_amount: applicationFeeCents,
+          transfer_data: {
+            destination: listing.seller.stripeAccountId,
+          },
+        },
+        mode: "payment",
+        success_url: `${process.env.SITE_URL || "https://ramenanime.com"}/listing/${input.listingId}?payment=success&order=${orderNum}`,
+        cancel_url: `${process.env.SITE_URL || "https://ramenanime.com"}/listing/${input.listingId}?payment=cancel`,
+        metadata: {
+          orderId: orderId.toString(),
+          listingId: input.listingId.toString(),
+          buyerId: ctx.user.id.toString(),
+          sellerId: listing.sellerId.toString(),
+          platformFee: (applicationFeeCents / 100).toFixed(2),
+          sellerReceives: (sellerReceivesCents / 100).toFixed(2),
+        },
+      });
+
+      return {
+        url: session.url,
+        orderNumber: orderNum,
+        total: (totalCents / 100).toFixed(2),
+        platformFee: (applicationFeeCents / 100).toFixed(2),
+        sellerReceives: (sellerReceivesCents / 100).toFixed(2),
+      };
+    }),
+
+  // Handle Stripe webhook — called when payment succeeds
+  webhook: publicQuery
+    .input(z.object({
+      type: z.string(),
+      data: z.object({
+        object: z.any(),
+      }),
+    }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const event = input;
+
+      if (event.type === "checkout.session.completed") {
+        const session = event.data.object;
+        const orderId = session.metadata?.orderId;
+        if (!orderId) return { received: true };
+
+        await db.update(orders)
+          .set({ status: "paid", updatedAt: new Date() })
+          .where(eq(orders.id, parseInt(orderId)));
+
+        await db.update(transactions)
+          .set({ status: "completed", updatedAt: new Date() })
+          .where(eq(transactions.orderId, parseInt(orderId)));
+
+        // Mark listing as sold
+        const listingId = session.metadata?.listingId;
+        if (listingId) {
+          await db.update(marketplaceListings)
+            .set({ isActive: false })
+            .where(eq(marketplaceListings.id, parseInt(listingId)));
+        }
+      }
+
+      return { received: true };
+    }),
+
+  // Get my orders (buyer)
+  myOrders: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    return db.query.orders.findMany({
+      where: eq(orders.buyerId, ctx.user.id),
+      with: { listing: true, seller: true },
+      orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+    });
+  }),
+
+  // Get my sales (seller)
+  mySales: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    return db.query.orders.findMany({
+      where: eq(orders.sellerId, ctx.user.id),
+      with: { listing: true, buyer: true },
+      orderBy: (orders, { desc }) => [desc(orders.createdAt)],
+    });
+  }),
+
+  // Seller marks order as shipped
+  markShipped: authedQuery
+    .input(z.object({
+      orderId: z.number(),
+      trackingNumber: z.string().optional(),
+      carrier: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const order = await db.query.orders.findFirst({ where: eq(orders.id, input.orderId) });
+      if (!order || order.sellerId !== ctx.user.id) throw new Error("Unauthorized");
+
+      await db.update(orders).set({
+        status: "shipped",
+        trackingNumber: input.trackingNumber || null,
+        shippingCarrier: input.carrier || null,
+        updatedAt: new Date(),
+      }).where(eq(orders.id, input.orderId));
+
+      return { success: true };
+    }),
+
+  // Buyer marks order as received
+  markReceived: authedQuery
+    .input(z.object({ orderId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const order = await db.query.orders.findFirst({ where: eq(orders.id, input.orderId) });
+      if (!order || order.buyerId !== ctx.user.id) throw new Error("Unauthorized");
+
+      await db.update(orders).set({
+        status: "delivered",
+        updatedAt: new Date(),
+      }).where(eq(orders.id, input.orderId));
+
+      return { success: true };
+    }),
+
+  // Get order details
+  getOrder: authedQuery
+    .input(z.object({ orderId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = getDb();
+      const order = await db.query.orders.findFirst({
+        where: eq(orders.id, input.orderId),
+        with: { listing: true, buyer: true, seller: true },
+      });
+      if (!order) throw new Error("Order not found");
+      if (order.buyerId !== ctx.user.id && order.sellerId !== ctx.user.id) throw new Error("Unauthorized");
+      return order;
+    }),
+});

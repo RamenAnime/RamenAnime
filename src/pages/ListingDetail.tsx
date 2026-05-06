@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Heart, Share2, MessageSquare, Gavel, Tag, Zap,
   Clock, Shield, ChevronDown, ChevronUp, TrendingUp,
-  Star, Truck, MapPin, AlertTriangle, Check
+  Star, Truck, MapPin, AlertTriangle, Check,
+  ExternalLink, Copy
 } from "lucide-react";
 
 function CountdownTimer({ endTime }: { endTime: string }) {
@@ -59,6 +60,7 @@ export default function ListingDetail() {
   const [showAllBids, setShowAllBids] = useState(false);
   const [isWatching, setIsWatching] = useState(false);
   const [depositPaid, setDepositPaid] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState<{id: number; orderNumber: string} | null>(null);
 
   const { data: listing } = trpc.marketplace.getListing.useQuery(
     { id: listingId },
@@ -72,11 +74,23 @@ export default function ListingDetail() {
     { listingId },
     { enabled: listingId > 0 }
   );
+  const { data: myOrder } = trpc.order.getByListing.useQuery(
+    { listingId },
+    { enabled: listingId > 0 }
+  );
+  const { data: sellerStripe } = trpc.stripe.getSellerStatus.useQuery(
+    undefined,
+    { enabled: !!listing?.sellerId }
+  );
 
   const placeBid = trpc.marketplace.placeBid.useMutation({
-    onSuccess: () => {
+    onSuccess: (data) => {
       setBidAmount("");
-      window.location.reload();
+      if (data.won && data.orderId) {
+        setCreatedOrder({ id: data.orderId, orderNumber: data.orderNumber || "" });
+      } else {
+        window.location.reload();
+      }
     },
   });
   const toggleWatch = trpc.marketplace.toggleWatchlist.useMutation({
@@ -85,17 +99,14 @@ export default function ListingDetail() {
   const payDeposit = trpc.marketplace.payDeposit.useMutation({
     onSuccess: () => setDepositPaid(true),
   });
-
-  if (listingId <= 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-lg mb-2">Invalid listing ID</p>
-          <Button asChild><Link to="/marketplace">Back to Marketplace</Link></Button>
-        </div>
-      </div>
-    );
-  }
+  const markPaid = trpc.order.markPaid.useMutation({
+    onSuccess: () => window.location.reload(),
+  });
+  const stripeCheckout = trpc.stripe.createCheckoutSession.useMutation({
+    onSuccess: (data) => {
+      if (data?.url) window.location.href = data.url;
+    },
+  });
 
   if (!listing) {
     return (
@@ -250,6 +261,79 @@ export default function ListingDetail() {
                       <Share2 className="w-4 h-4 mr-1" />Share
                     </Button>
                   </div>
+
+                  {/* Payment Section - Show when user has pending order */}
+                  {(createdOrder || (myOrder && myOrder.status === "pending")) && (
+                    <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20 space-y-3">
+                      <p className="text-sm font-semibold text-yellow-600">Payment Required</p>
+                      <p className="text-xs text-muted-foreground">
+                        Order: {createdOrder?.orderNumber || myOrder?.orderNumber}
+                      </p>
+                      {(() => {
+                        const amount = parseFloat(listing.currentBid || listing.price || "0");
+                        const platformFee = amount * 0.05;
+                        const sellerReceives = amount - platformFee;
+                        return (
+                          <>
+                            <div className="space-y-1 text-xs">
+                              <p className="flex justify-between font-semibold text-foreground text-sm">
+                                <span>Total:</span>
+                                <span>${amount.toFixed(2)}</span>
+                              </p>
+                              <div className="pt-1 border-t border-yellow-500/20 space-y-1 text-muted-foreground">
+                                <p className="flex justify-between">
+                                  <span>Platform fee:</span>
+                                  <span>${platformFee.toFixed(2)}</span>
+                                </p>
+                                <p className="flex justify-between">
+                                  <span>Seller receives:</span>
+                                  <span>${sellerReceives.toFixed(2)}</span>
+                                </p>
+                              </div>
+                            </div>
+                            {!sellerStripe?.connected ? (
+                              <p className="text-xs text-red-500 text-center">
+                                Seller has not set up payment processing yet
+                              </p>
+                            ) : (
+                              <Button
+                                className="w-full bg-primary"
+                                onClick={() => stripeCheckout.mutate({ listingId })}
+                                disabled={stripeCheckout.isPending}
+                              >
+                                {stripeCheckout.isPending ? "Redirecting..." : "Pay with Card (Stripe)"}
+                              </Button>
+                            )}
+                          </>
+                        );
+                      })()}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => markPaid.mutate({ orderId: createdOrder?.id || myOrder?.id || 0 })}
+                        disabled={markPaid.isPending}
+                      >
+                        <Check className="w-4 h-4 mr-1" />
+                        {markPaid.isPending ? "Confirming..." : "I Have Paid"}
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Order Status - Show when paid */}
+                  {myOrder && myOrder.status !== "pending" && (
+                    <div className={`mt-4 p-3 rounded-lg border text-center ${
+                      myOrder.status === "paid" ? "bg-green-500/10 border-green-500/20" :
+                      myOrder.status === "shipped" ? "bg-blue-500/10 border-blue-500/20" :
+                      "bg-muted border-border/50"
+                    }`}>
+                      <p className="text-sm font-semibold">
+                        {myOrder.status === "paid" && "Payment Received - Awaiting Shipment"}
+                        {myOrder.status === "shipped" && "Shipped - " + (myOrder.trackingNumber || "Tracking info available")}
+                        {myOrder.status === "delivered" && "Delivered - Thank you!"}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

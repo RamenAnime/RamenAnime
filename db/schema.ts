@@ -688,3 +688,17 @@ export const forumReactionsRelations = relations(forumReactions, ({ one }) => ({
 export const userSignaturesRelations = relations(userSignatures, ({ one }) => ({
   user: one(users, { fields: [userSignatures.userId], references: [users.id] }),
 }));
+
+// --- Site Visit Counter ---
+export const siteVisits = mysqlTable("site_visits", {
+  id: serial("id").primaryKey(),
+  ipHash: varchar("ip_hash", { length: 64 }),
+  userAgent: varchar("user_agent", { length: 255 }),
+  path: varchar("path", { length: 255 }).default("/"),
+  referrer: varchar("referrer", { length: 500 }),
+  country: varchar("country", { length: 10 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type SiteVisit = typeof siteVisits.$inferSelect;
+export type InsertSiteVisit = typeof siteVisits.$inferInsert;

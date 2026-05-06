@@ -51,7 +51,8 @@ function PayPalButton({ currency }: { currency: string }) {
     if (!document.getElementById("paypal-sdk")) {
       const script = document.createElement("script");
       script.id = "paypal-sdk";
-      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&enable-funding=venmo&currency=${currency}`;
+      // Force English locale with &locale=en_US
+      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&enable-funding=venmo&currency=${currency}&locale=en_US`;
       script.crossOrigin = "anonymous";
       script.async = true;
       script.onload = () => setLoaded(true);
@@ -84,14 +85,15 @@ function PayPalButton({ currency }: { currency: string }) {
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 w-full">
       {!loaded && (
         <div className="flex items-center justify-center py-4">
           <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
           <span className="ml-2 text-sm text-muted-foreground">Loading PayPal...</span>
         </div>
       )}
-      <div ref={paypalRef} className="flex justify-center" />
+      {/* Full width container so PayPal button has room */}
+      <div ref={paypalRef} className="w-full flex justify-center min-h-[50px]" />
     </div>
   );
 }

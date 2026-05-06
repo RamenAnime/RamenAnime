@@ -330,18 +330,57 @@ export default function Donations() {
 
         {step === 2 && (
           <Card className="bg-card/50 border-border/50">
-            <CardContent className="p-8 text-center space-y-4">
+            <CardContent className="p-8 text-center space-y-5">
               <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
                 <CheckCircle2 className="h-10 w-10 text-green-500" />
               </div>
               <h2 className="text-2xl font-bold text-foreground">Thank You!</h2>
               <p className="text-muted-foreground">
-                Your donation of {selectedCurrency.symbol}{amount} {selectedCurrency.code} has been recorded. Please complete the payment using your selected method.
+                Your donation of {selectedCurrency.symbol}{amount} {selectedCurrency.code} has been recorded.
               </p>
-              <div className="bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground space-y-2">
-                <p><strong>Method:</strong> {countryData.methods.find(m => m.id === method)?.name}</p>
-                <p><strong>Reference:</strong> Donation-{Date.now().toString(36).toUpperCase()}</p>
+
+              {/* Payment completion section */}
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-5 space-y-4 text-left">
+                <p className="font-semibold text-foreground text-center">Complete Your Payment</p>
+
+                {method === "revolut" && (
+                  <div className="space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      Click below to open Revolut and send your donation directly:
+                    </p>
+                    <a
+                      href={countryData.revolutLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground font-medium py-3 px-4 rounded-lg hover:bg-primary/90 transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Pay {selectedCurrency.symbol}{amount} on Revolut.me
+                    </a>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 bg-background border border-border rounded px-3 py-2 text-sm break-all text-muted-foreground">
+                        {countryData.revolutLink}
+                      </code>
+                      <Button size="sm" variant="outline" onClick={copyLink}>
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {method !== "revolut" && (
+                  <p className="text-sm text-muted-foreground">
+                    Please complete your payment using <strong>{countryData.methods.find(m => m.id === method)?.name}</strong>.
+                    Contact us at ramenanime@protonmail.com if you need help.
+                  </p>
+                )}
+
+                <div className="text-xs text-muted-foreground border-t border-border/30 pt-3">
+                  <p><strong>Reference:</strong> Donation-{Date.now().toString(36).toUpperCase()}</p>
+                  <p><strong>Status:</strong> Pending payment confirmation</p>
+                </div>
               </div>
+
               <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => { setStep(0); setAmount(""); }}>
                 <Heart className="mr-2 h-4 w-4" />
                 Make Another Donation

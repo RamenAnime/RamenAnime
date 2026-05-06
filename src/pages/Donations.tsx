@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
@@ -13,24 +13,88 @@ import {
 
 const CURRENCIES = [
   { code: "USD", symbol: "$", name: "US Dollar" },
-  { code: "EUR", symbol: "€", name: "Euro" },
-  { code: "GBP", symbol: "£", name: "British Pound" },
-  { code: "JPY", symbol: "¥", name: "Japanese Yen" },
+  { code: "EUR", symbol: "\u20AC", name: "Euro" },
+  { code: "GBP", symbol: "\u00A3", name: "British Pound" },
+  { code: "JPY", symbol: "\u00A5", name: "Japanese Yen" },
   { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
   { code: "AUD", symbol: "A$", name: "Australian Dollar" },
   { code: "CHF", symbol: "Fr", name: "Swiss Franc" },
   { code: "SGD", symbol: "S$", name: "Singapore Dollar" },
-  { code: "KRW", symbol: "₩", name: "South Korean Won" },
-  { code: "CNY", symbol: "¥", name: "Chinese Yuan" },
-  { code: "INR", symbol: "₹", name: "Indian Rupee" },
-  { code: "THB", symbol: "฿", name: "Thai Baht" },
+  { code: "KRW", symbol: "\u20A9", name: "South Korean Won" },
+  { code: "CNY", symbol: "\u00A5", name: "Chinese Yuan" },
+  { code: "INR", symbol: "\u20B9", name: "Indian Rupee" },
+  { code: "THB", symbol: "\u0E3F", name: "Thai Baht" },
   { code: "MXN", symbol: "MX$", name: "Mexican Peso" },
   { code: "BRL", symbol: "R$", name: "Brazilian Real" },
   { code: "HKD", symbol: "HK$", name: "Hong Kong Dollar" },
 ];
 
 const REVOLUT_USERNAME = "jasonakw8";
-const PAYPAL_USERNAME = "ramenanime";
+
+// PayPal Hosted Button config
+const PAYPAL_CLIENT_ID = "BAASlHbTmeb5Ew6qO8-3cDi2V-Ox9RR6PAhDBtM8neOZ4UsC7yUhZzFbSnpWWwhX4TGPs5qZviWNkriI4w";
+const PAYPAL_HOSTED_BUTTON_ID = "5G88A7F9K4WBA";
+
+declare global {
+  interface Window {
+    paypal?: any;
+  }
+}
+
+function PayPalButton({ currency }: { currency: string }) {
+  const paypalRef = useRef<HTMLDivElement>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    // Load PayPal SDK if not already loaded
+    if (!document.getElementById("paypal-sdk")) {
+      const script = document.createElement("script");
+      script.id = "paypal-sdk";
+      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&enable-funding=venmo&currency=${currency}`;
+      script.crossOrigin = "anonymous";
+      script.async = true;
+      script.onload = () => setLoaded(true);
+      script.onerror = () => setError(true);
+      document.body.appendChild(script);
+    } else if (window.paypal) {
+      setLoaded(true);
+    }
+  }, [currency]);
+
+  useEffect(() => {
+    if (loaded && paypalRef.current && window.paypal) {
+      try {
+        paypalRef.current.innerHTML = "";
+        window.paypal.HostedButtons({
+          hostedButtonId: PAYPAL_HOSTED_BUTTON_ID,
+        }).render(paypalRef.current);
+      } catch {
+        setError(true);
+      }
+    }
+  }, [loaded]);
+
+  if (error) {
+    return (
+      <p className="text-sm text-destructive text-center">
+        PayPal button failed to load. Please use Revolut below.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {!loaded && (
+        <div className="flex items-center justify-center py-4">
+          <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
+          <span className="ml-2 text-sm text-muted-foreground">Loading PayPal...</span>
+        </div>
+      )}
+      <div ref={paypalRef} className="flex justify-center" />
+    </div>
+  );
+}
 
 export default function Donations() {
   const { t } = useTranslation();
@@ -44,7 +108,6 @@ export default function Donations() {
 
   const selectedCurrency = CURRENCIES.find((c) => c.code === currency) || CURRENCIES[0];
   const revolutUrl = `https://revolut.me/${REVOLUT_USERNAME}?amount=${amount}&currency=${currency}&note=RamenAnime+Donation`;
-  const paypalUrl = `https://paypal.me/${PAYPAL_USERNAME}/${amount}${currency}`;
 
   const createDonation = trpc.donation.create.useMutation({
     onSuccess: () => setSubmitted(true),
@@ -58,13 +121,13 @@ export default function Donations() {
       amount,
       currency,
       countryCode: "US",
-      paymentMethod: "revolut",
+      paymentMethod: "paypal",
       message: message || undefined,
     });
   };
 
   const copyRevolut = () => {
-    navigator.clipboard.writeText(revolutUrl);
+    navigator.clipboard.writeText(`https://revolut.me/${REVOLUT_USERNAME}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -82,8 +145,8 @@ export default function Donations() {
             {t("donate.title", "Support Ramen Anime")}
           </h1>
           <p className="text-muted-foreground max-w-lg mx-auto">
-            Your donations help us grow the anime collectibles community, improve the marketplace,
-            and create more awesome features. Every contribution matters!
+            Your donations help us grow the anime collectibles community and improve the marketplace.
+            Every contribution matters!
           </p>
         </div>
 
@@ -94,7 +157,7 @@ export default function Donations() {
               {/* Amount Section */}
               <div className="space-y-3">
                 <label className="text-sm font-semibold text-foreground">
-                  {t("donate.amount", "Choose Amount & Currency")}
+                  Choose Amount & Currency
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {CURRENCIES.map((c) => (
@@ -161,16 +224,33 @@ export default function Donations() {
                 />
               </div>
 
-              {/* Divider */}
-              <div className="border-t border-border/50 pt-4 space-y-3">
+              {/* PayPal Section */}
+              <div className="border-t border-border/50 pt-5 space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Pay with PayPal</p>
+                </div>
+                <PayPalButton currency={currency} />
                 <p className="text-xs text-muted-foreground text-center">
-                  <Shield className="h-3 w-3 inline mr-1" />
-                  Secure payment. No card data stored on our servers.
+                  Supports PayPal balance, cards, Venmo, and PayPal Credit
                 </p>
+              </div>
 
-                {/* PRIMARY: Revolut Button */}
+              {/* Divider */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-border/50" />
+                <span className="text-xs text-muted-foreground">or</span>
+                <div className="flex-1 h-px bg-border/50" />
+              </div>
+
+              {/* Revolut Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Landmark className="h-4 w-4 text-primary" />
+                  <p className="text-sm font-semibold text-foreground">Pay with Revolut</p>
+                </div>
                 <a
-                  href={amount ? revolutUrl : "#"}
+                  href={amount && parseFloat(amount) > 0 ? revolutUrl : "#"}
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => {
@@ -180,21 +260,19 @@ export default function Donations() {
                     }
                     handleDonate();
                   }}
-                  className={`flex items-center justify-center gap-3 w-full font-semibold py-4 px-6 rounded-xl transition-all ${
+                  className={`flex items-center justify-center gap-2 w-full font-medium py-3 px-4 rounded-lg border transition-all ${
                     amount && parseFloat(amount) > 0
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20"
-                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                      ? "border-primary/50 bg-primary/5 text-primary hover:bg-primary/10"
+                      : "border-border/30 text-muted-foreground cursor-not-allowed opacity-50"
                   }`}
                 >
-                  <Landmark className="h-5 w-5" />
+                  <Landmark className="h-4 w-4" />
                   {amount && parseFloat(amount) > 0
-                    ? `Donate ${selectedCurrency.symbol}${amount} ${selectedCurrency.code} via Revolut`
-                    : "Enter an amount to donate"
+                    ? `Send ${selectedCurrency.symbol}${amount} ${selectedCurrency.code} via Revolut`
+                    : "Enter an amount above"
                   }
-                  <ExternalLink className="h-4 w-4" />
+                  <ExternalLink className="h-3 w-3" />
                 </a>
-
-                {/* Copy Link Option */}
                 {amount && parseFloat(amount) > 0 && (
                   <div className="flex items-center gap-2">
                     <code className="flex-1 bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-xs break-all text-muted-foreground">
@@ -204,21 +282,6 @@ export default function Donations() {
                       {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     </Button>
                   </div>
-                )}
-
-                {/* Secondary: PayPal */}
-                {amount && parseFloat(amount) > 0 && (
-                  <a
-                    href={paypalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={handleDonate}
-                    className="flex items-center justify-center gap-2 w-full py-3 px-4 rounded-xl border border-border/50 text-sm text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-all"
-                  >
-                    <Globe className="h-4 w-4" />
-                    Prefer PayPal? Donate via PayPal.me
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
                 )}
               </div>
             </CardContent>
@@ -234,35 +297,22 @@ export default function Donations() {
               <p className="text-muted-foreground">
                 Your donation of <strong className="text-foreground">{selectedCurrency.symbol}{amount} {selectedCurrency.code}</strong> means the world to us.
               </p>
+              <p className="text-sm text-muted-foreground">
+                If you used PayPal, your payment is being processed. If you used Revolut, click below to complete your payment.
+              </p>
 
-              {/* Complete Payment Box */}
-              <div className="bg-primary/10 border border-primary/20 rounded-xl p-5 space-y-4">
-                <p className="font-semibold text-foreground">Complete Your Payment</p>
-                <p className="text-sm text-muted-foreground">
-                  Click the button below to open Revolut and send your donation.
-                  The amount is already filled in for you.
-                </p>
+              {/* Revolut completion */}
+              <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 space-y-3">
                 <a
                   href={revolutUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground font-semibold py-4 px-6 rounded-xl hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
+                  className="flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground font-semibold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all"
                 >
-                  <Landmark className="h-5 w-5" />
-                  Pay {selectedCurrency.symbol}{amount} on Revolut
+                  <Landmark className="h-4 w-4" />
+                  Complete Payment on Revolut
                   <ExternalLink className="h-4 w-4" />
                 </a>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-background/50 border border-border/50 rounded-lg px-3 py-2 text-xs break-all text-muted-foreground">
-                    {revolutUrl}
-                  </code>
-                  <Button size="sm" variant="ghost" onClick={copyRevolut}>
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Reference: <strong>Donation-{Date.now().toString(36).toUpperCase()}</strong>
-                </p>
               </div>
 
               <Button
@@ -286,23 +336,23 @@ export default function Donations() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
           <Card className="bg-card/30 border-border/30">
             <CardContent className="p-4 text-center">
-              <Landmark className="h-6 w-6 text-primary mb-2 mx-auto" />
-              <p className="font-medium text-foreground text-sm">Revolut</p>
-              <p className="text-xs text-muted-foreground">135+ currencies, instant, zero fees</p>
+              <DollarSign className="h-6 w-6 text-primary mb-2 mx-auto" />
+              <p className="font-medium text-foreground text-sm">Multiple Currencies</p>
+              <p className="text-xs text-muted-foreground">15 currencies supported</p>
             </CardContent>
           </Card>
           <Card className="bg-card/30 border-border/30">
             <CardContent className="p-4 text-center">
               <Shield className="h-6 w-6 text-primary mb-2 mx-auto" />
               <p className="font-medium text-foreground text-sm">Secure</p>
-              <p className="text-xs text-muted-foreground">No payment data stored on our servers</p>
+              <p className="text-xs text-muted-foreground">PayPal & Revolut handle all payments</p>
             </CardContent>
           </Card>
           <Card className="bg-card/30 border-border/30">
             <CardContent className="p-4 text-center">
-              <DollarSign className="h-6 w-6 text-primary mb-2 mx-auto" />
+              <Globe className="h-6 w-6 text-primary mb-2 mx-auto" />
               <p className="font-medium text-foreground text-sm">Global</p>
-              <p className="text-xs text-muted-foreground">Works from any country, any device</p>
+              <p className="text-xs text-muted-foreground">Works from any country</p>
             </CardContent>
           </Card>
         </div>

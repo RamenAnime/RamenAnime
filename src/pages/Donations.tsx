@@ -1,21 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { useTranslation } from "react-i18next";
-import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Heart, DollarSign, Globe, CheckCircle2,
-  Shield, ExternalLink, Copy, Check, Landmark,
-} from "lucide-react";
-
-
+import { Heart, ExternalLink, Copy, Check } from "lucide-react";
 
 const REVOLUT_USERNAME = "jasonakw8";
-
-// PayPal Hosted Button config - single button only
 const PAYPAL_CLIENT_ID = "BAASlHbTmeb5Ew6qO8-3cDi2V-Ox9RR6PAhDBtM8neOZ4UsC7yUhZzFbSnpWWwhX4TGPs5qZviWNkriI4w";
 const PAYPAL_HOSTED_BUTTON_ID = "5G88A7F9K4WBA";
 
@@ -25,27 +13,23 @@ declare global {
   }
 }
 
-/** PayPal hosted button - renders ONE PayPal button only */
-function PayPalButton({ currency, onPaymentStart }: { currency: string; onPaymentStart: () => void }) {
+function PayPalButton() {
   const paypalRef = useRef<HTMLDivElement>(null);
   const [loaded, setLoaded] = useState(false);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (!document.getElementById("paypal-sdk")) {
       const script = document.createElement("script");
       script.id = "paypal-sdk";
-      // No enable-funding = only PayPal button, no Venmo/etc
-      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&currency=${currency}&locale=en_US`;
+      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&components=hosted-buttons&currency=USD&locale=en_US`;
       script.crossOrigin = "anonymous";
       script.async = true;
       script.onload = () => setLoaded(true);
-      script.onerror = () => setError(true);
       document.body.appendChild(script);
     } else if (window.paypal) {
       setLoaded(true);
     }
-  }, [currency]);
+  }, []);
 
   useEffect(() => {
     if (loaded && paypalRef.current && window.paypal) {
@@ -55,309 +39,105 @@ function PayPalButton({ currency, onPaymentStart }: { currency: string; onPaymen
           hostedButtonId: PAYPAL_HOSTED_BUTTON_ID,
         }).render(paypalRef.current);
       } catch {
-        setError(true);
+        // ignore
       }
     }
   }, [loaded]);
 
-  // Clicking anywhere in the PayPal area records the donation intent
-  const handlePayPalClick = () => {
-    onPaymentStart();
-  };
-
-  if (error) {
-    return (
-      <p className="text-sm text-destructive text-center">
-        PayPal button failed to load. Please use Revolut below.
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-2 w-full" onClick={handlePayPalClick}>
+    <div style={{ minWidth: "300px", maxWidth: "500px", width: "100%", margin: "0 auto" }}>
       {!loaded && (
-        <div className="flex items-center justify-center py-4">
-          <div className="animate-spin h-5 w-5 border-2 border-primary border-t-transparent rounded-full" />
-          <span className="ml-2 text-sm text-muted-foreground">Loading PayPal...</span>
-        </div>
+        <div className="text-center py-4 text-sm text-muted-foreground">Loading PayPal...</div>
       )}
-      <div
-        ref={paypalRef}
-        className="w-full flex justify-center"
-        style={{ minHeight: "50px" }}
-      />
+      <div ref={paypalRef} style={{ width: "100%", minHeight: "50px" }} />
     </div>
   );
 }
 
 export default function Donations() {
-  const { t } = useTranslation();
   const [amount, setAmount] = useState("");
-    const currency = "USD";
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [submitted, setSubmitted] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const revolutUrl = `https://revolut.me/${REVOLUT_USERNAME}?amount=${amount || "0"}&currency=USD`;
 
-    const revolutUrl = `https://revolut.me/${REVOLUT_USERNAME}?amount=${amount}&currency=USD&note=RamenAnime+Donation`;
-
-  const createDonation = trpc.donation.create.useMutation({
-    onSuccess: () => setSubmitted(true),
-  });
-
-  const handlePayPalDonate = () => {
-    if (!amount || parseFloat(amount) <= 0) return;
-    setPaymentMethod("paypal");
-    createDonation.mutate({
-      donorName: name || "Anonymous",
-      donorEmail: email || undefined,
-      amount,
-      currency,
-      countryCode: "US",
-      paymentMethod: "paypal",
-      message: message || undefined,
-    });
-  };
-
-  const handleRevolutDonate = () => {
-    if (!amount || parseFloat(amount) <= 0) return;
-    setPaymentMethod("revolut");
-    createDonation.mutate({
-      donorName: name || "Anonymous",
-      donorEmail: email || undefined,
-      amount,
-      currency,
-      countryCode: "US",
-      paymentMethod: "revolut",
-      message: message || undefined,
-    });
-    // Open Revolut in new tab
-    window.open(revolutUrl, "_blank");
-  };
-
-  const copyRevolut = () => {
+  const copyLink = () => {
     navigator.clipboard.writeText(`https://revolut.me/${REVOLUT_USERNAME}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const canDonate = amount && parseFloat(amount) > 0;
-
   return (
-    <div className="min-h-screen py-12">
-      <div className="container px-4 md:px-6 max-w-xl mx-auto">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4">
+      <div className="w-full max-w-md text-center space-y-8">
 
         {/* Header */}
-        <div className="text-center mb-10 space-y-3">
+        <div className="space-y-3">
           <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
             <Heart className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-            {t("donate.title", "Support Ramen Anime")}
-          </h1>
-          <p className="text-muted-foreground max-w-lg mx-auto">
+          <h1 className="text-3xl font-bold text-foreground">Support Ramen Anime</h1>
+          <p className="text-muted-foreground">
             Your donations help us grow the anime collectibles community. Every contribution matters!
           </p>
         </div>
 
-        {!submitted ? (
-          <Card className="bg-card/50 border-border/50">
-            <CardContent className="p-6 md:p-8 space-y-6">
-
-              {/* Amount */}
-              <div className="space-y-3">
-                <label className="text-sm font-semibold text-foreground">
-                  Donation Amount (USD)
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-lg">
-                    $
-                  </span>
-                  <Input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    placeholder="0.00"
-                    min="1"
-                    step="0.01"
-                    className="pl-10 bg-muted/50 text-lg font-semibold"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
-                    USD
-                  </span>
-                </div>
-              </div>
-
-              {/* Optional fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Name (optional)</label>
-                  <Input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Your name"
-                    className="bg-muted/50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-muted-foreground">Email (optional)</label>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="For receipt"
-                    className="bg-muted/50"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Message (optional)</label>
-                <Textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Say something nice..."
-                  rows={2}
-                  className="bg-muted/50"
-                />
-              </div>
-
-              {/* Payment Options */}
-              <div className="border-t border-border/50 pt-6 space-y-5">
-                <p className="text-sm font-semibold text-foreground text-center">Choose Payment Method</p>
-
-                {/* Option 1: PayPal */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 justify-center">
-                    <Shield className="h-4 w-4 text-primary" />
-                    <p className="text-sm font-medium text-muted-foreground">PayPal</p>
-                  </div>
-                  <PayPalButton currency="USD" onPaymentStart={handlePayPalDonate} />
-                </div>
-
-                {/* Divider */}
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-px bg-border/50" />
-                  <span className="text-xs text-muted-foreground">or</span>
-                  <div className="flex-1 h-px bg-border/50" />
-                </div>
-
-                {/* Option 2: Revolut */}
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2 justify-center">
-                    <Landmark className="h-4 w-4 text-primary" />
-                    <p className="text-sm font-medium text-muted-foreground">Revolut</p>
-                  </div>
-                  <Button
-                    disabled={!canDonate}
-                    onClick={handleRevolutDonate}
-                    className="w-full py-3 h-auto bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 font-medium"
-                    variant="outline"
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    {canDonate
-                      ? `Send $$${amount} $USD via Revolut`
-                      : "Enter an amount to donate"
-                    }
-                  </Button>
-                  {canDonate && (
-                    <div className="flex items-center gap-2">
-                      <code className="flex-1 bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-xs break-all text-muted-foreground">
-                        revolut.me/{REVOLUT_USERNAME}
-                      </code>
-                      <Button size="sm" variant="ghost" onClick={copyRevolut} className="shrink-0">
-                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                <Shield className="h-3 w-3 inline mr-1" />
-                Secure payment. No card data stored on our servers.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          /* Thank You Screen */
-          <Card className="bg-card/50 border-border/50">
-            <CardContent className="p-8 text-center space-y-5">
-              <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="h-10 w-10 text-green-500" />
-              </div>
-              <h2 className="text-2xl font-bold text-foreground">Thank You!</h2>
-              <p className="text-muted-foreground">
-                Your donation of <strong className="text-foreground">${amount} USD</strong> has been recorded.
-              </p>
-
-              {paymentMethod === "revolut" && (
-                <div className="bg-primary/10 border border-primary/20 rounded-xl p-4 space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Complete your payment by clicking below:
-                  </p>
-                  <a
-                    href={revolutUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 w-full bg-primary text-primary-foreground font-semibold py-3 px-4 rounded-lg hover:bg-primary/90 transition-all"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    Pay on Revolut
-                  </a>
-                </div>
-              )}
-
-              {paymentMethod === "paypal" && (
-                <p className="text-sm text-muted-foreground">
-                  Your PayPal payment is being processed. You should receive a confirmation email shortly.
-                </p>
-              )}
-
-              <Button
-                className="bg-primary text-primary-foreground hover:bg-primary/90"
-                onClick={() => {
-                  setSubmitted(false);
-                  setAmount("");
-                  setName("");
-                  setEmail("");
-                  setMessage("");
-                  setPaymentMethod("");
-                }}
-              >
-                <Heart className="mr-2 h-4 w-4" />
-                Make Another Donation
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Info Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
-          <Card className="bg-card/30 border-border/30">
-            <CardContent className="p-4 text-center">
-              <DollarSign className="h-6 w-6 text-primary mb-2 mx-auto" />
-              <p className="font-medium text-foreground text-sm">15 Currencies</p>
-              <p className="text-xs text-muted-foreground">Donate in USD</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/30 border-border/30">
-            <CardContent className="p-4 text-center">
-              <Shield className="h-6 w-6 text-primary mb-2 mx-auto" />
-              <p className="font-medium text-foreground text-sm">Secure</p>
-              <p className="text-xs text-muted-foreground">PayPal & Revolut handle payments</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card/30 border-border/30">
-            <CardContent className="p-4 text-center">
-              <Globe className="h-6 w-6 text-primary mb-2 mx-auto" />
-              <p className="font-medium text-foreground text-sm">Global</p>
-              <p className="text-xs text-muted-foreground">Works from any country</p>
-            </CardContent>
-          </Card>
+        {/* Amount */}
+        <div className="relative max-w-xs mx-auto">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-lg">$</span>
+          <Input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="0.00"
+            min="1"
+            step="0.01"
+            className="pl-10 bg-muted/50 text-lg font-semibold text-center"
+          />
         </div>
+
+        {/* PayPal */}
+        <PayPalButton />
+
+        {/* Divider */}
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-px bg-border/50" />
+          <span className="text-xs text-muted-foreground">or</span>
+          <div className="flex-1 h-px bg-border/50" />
+        </div>
+
+        {/* Revolut */}
+        <div className="space-y-3">
+          <a
+            href={amount && parseFloat(amount) > 0 ? revolutUrl : "#"}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              if (!amount || parseFloat(amount) <= 0) {
+                e.preventDefault();
+              }
+            }}
+            className={`inline-flex items-center justify-center gap-2 font-medium py-3 px-6 rounded-lg border transition-all ${
+              amount && parseFloat(amount) > 0
+                ? "border-primary/50 bg-primary/5 text-primary hover:bg-primary/10"
+                : "border-border/30 text-muted-foreground cursor-not-allowed opacity-50"
+            }`}
+          >
+            <ExternalLink className="h-4 w-4" />
+            {amount && parseFloat(amount) > 0
+              ? `Send $${amount} via Revolut`
+              : "Enter an amount"
+            }
+          </a>
+
+          <div className="flex items-center justify-center gap-2">
+            <code className="bg-muted/30 border border-border/50 rounded-lg px-3 py-2 text-xs text-muted-foreground">
+              revolut.me/{REVOLUT_USERNAME}
+            </code>
+            <Button size="sm" variant="ghost" onClick={copyLink}>
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+
       </div>
     </div>
   );

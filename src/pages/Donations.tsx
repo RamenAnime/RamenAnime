@@ -11,23 +11,7 @@ import {
   Shield, ExternalLink, Copy, Check, Landmark,
 } from "lucide-react";
 
-const CURRENCIES = [
-  { code: "USD", symbol: "$", name: "US Dollar" },
-  { code: "EUR", symbol: "\u20AC", name: "Euro" },
-  { code: "GBP", symbol: "\u00A3", name: "British Pound" },
-  { code: "JPY", symbol: "\u00A5", name: "Japanese Yen" },
-  { code: "CAD", symbol: "C$", name: "Canadian Dollar" },
-  { code: "AUD", symbol: "A$", name: "Australian Dollar" },
-  { code: "CHF", symbol: "Fr", name: "Swiss Franc" },
-  { code: "SGD", symbol: "S$", name: "Singapore Dollar" },
-  { code: "KRW", symbol: "\u20A9", name: "South Korean Won" },
-  { code: "CNY", symbol: "\u00A5", name: "Chinese Yuan" },
-  { code: "INR", symbol: "\u20B9", name: "Indian Rupee" },
-  { code: "THB", symbol: "\u0E3F", name: "Thai Baht" },
-  { code: "MXN", symbol: "MX$", name: "Mexican Peso" },
-  { code: "BRL", symbol: "R$", name: "Brazilian Real" },
-  { code: "HKD", symbol: "HK$", name: "Hong Kong Dollar" },
-];
+
 
 const REVOLUT_USERNAME = "jasonakw8";
 
@@ -109,7 +93,7 @@ function PayPalButton({ currency, onPaymentStart }: { currency: string; onPaymen
 export default function Donations() {
   const { t } = useTranslation();
   const [amount, setAmount] = useState("");
-  const [currency, setCurrency] = useState("USD");
+    const currency = "USD";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -117,8 +101,7 @@ export default function Donations() {
   const [copied, setCopied] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string>("");
 
-  const selectedCurrency = CURRENCIES.find((c) => c.code === currency) || CURRENCIES[0];
-  const revolutUrl = `https://revolut.me/${REVOLUT_USERNAME}?amount=${amount}&currency=${currency}&note=RamenAnime+Donation`;
+    const revolutUrl = `https://revolut.me/${REVOLUT_USERNAME}?amount=${amount}&currency=USD&note=RamenAnime+Donation`;
 
   const createDonation = trpc.donation.create.useMutation({
     onSuccess: () => setSubmitted(true),
@@ -186,23 +169,11 @@ export default function Donations() {
               {/* Amount */}
               <div className="space-y-3">
                 <label className="text-sm font-semibold text-foreground">
-                  Choose Amount & Currency
+                  Donation Amount (USD)
                 </label>
-                <div className="flex flex-wrap gap-2">
-                  {CURRENCIES.map((c) => (
-                    <Badge
-                      key={c.code}
-                      variant={currency === c.code ? "default" : "outline"}
-                      className={`cursor-pointer text-sm ${currency === c.code ? "bg-primary text-primary-foreground" : "border-border/50 hover:border-primary/30"}`}
-                      onClick={() => setCurrency(c.code)}
-                    >
-                      {c.symbol} {c.code}
-                    </Badge>
-                  ))}
-                </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-semibold text-lg">
-                    {selectedCurrency.symbol}
+                    $
                   </span>
                   <Input
                     type="number"
@@ -214,7 +185,7 @@ export default function Donations() {
                     className="pl-10 bg-muted/50 text-lg font-semibold"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">
-                    {selectedCurrency.code}
+                    USD
                   </span>
                 </div>
               </div>
@@ -263,7 +234,7 @@ export default function Donations() {
                     <Shield className="h-4 w-4 text-primary" />
                     <p className="text-sm font-medium text-muted-foreground">PayPal</p>
                   </div>
-                  <PayPalButton currency={currency} onPaymentStart={handlePayPalDonate} />
+                  <PayPalButton currency="USD" onPaymentStart={handlePayPalDonate} />
                 </div>
 
                 {/* Divider */}
@@ -287,7 +258,7 @@ export default function Donations() {
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     {canDonate
-                      ? `Send ${selectedCurrency.symbol}${amount} ${selectedCurrency.code} via Revolut`
+                      ? `Send $$${amount} $USD via Revolut`
                       : "Enter an amount to donate"
                     }
                   </Button>
@@ -319,7 +290,7 @@ export default function Donations() {
               </div>
               <h2 className="text-2xl font-bold text-foreground">Thank You!</h2>
               <p className="text-muted-foreground">
-                Your donation of <strong className="text-foreground">{selectedCurrency.symbol}{amount} {selectedCurrency.code}</strong> has been recorded.
+                Your donation of <strong className="text-foreground">${amount} USD</strong> has been recorded.
               </p>
 
               {paymentMethod === "revolut" && (
@@ -369,7 +340,7 @@ export default function Donations() {
             <CardContent className="p-4 text-center">
               <DollarSign className="h-6 w-6 text-primary mb-2 mx-auto" />
               <p className="font-medium text-foreground text-sm">15 Currencies</p>
-              <p className="text-xs text-muted-foreground">Donate in your local currency</p>
+              <p className="text-xs text-muted-foreground">Donate in USD</p>
             </CardContent>
           </Card>
           <Card className="bg-card/30 border-border/30">

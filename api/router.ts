@@ -19,7 +19,6 @@ import { categoryRouter } from "./category-router";
 import { antiScalpingRouter } from "./anti-scalping-router";
 import { disputeRouter } from "./dispute-router";
 import { webAuthnRouter } from "./webauthn-router";
-import { visitRouter } from "./visit-router";
 import { orderRouter } from "./order-router";
 import { stripeRouter } from "./stripe-router";
 import { createRouter } from "./middleware";
@@ -46,7 +45,6 @@ export const appRouter = createRouter({
   antiScalping: antiScalpingRouter,
   dispute: disputeRouter,
   webauthn: webAuthnRouter,
-  visit: visitRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -19,8 +19,11 @@ import { categoryRouter } from "./category-router";
 import { antiScalpingRouter } from "./anti-scalping-router";
 import { disputeRouter } from "./dispute-router";
 import { webAuthnRouter } from "./webauthn-router";
+import { visitRouter } from "./visit-router";
 import { orderRouter } from "./order-router";
 import { stripeRouter } from "./stripe-router";
+import { analyticsRouter } from "./analytics-router";
+import { swarmRouter } from "./swarm-router";
 import { createRouter } from "./middleware";
 
 export const appRouter = createRouter({
@@ -45,6 +48,11 @@ export const appRouter = createRouter({
   antiScalping: antiScalpingRouter,
   dispute: disputeRouter,
   webauthn: webAuthnRouter,
+  visit: visitRouter,
+  order: orderRouter,
+  stripe: stripeRouter,
+  analytics: analyticsRouter,
+  swarm: swarmRouter,
 });
 
 export type AppRouter = typeof appRouter;

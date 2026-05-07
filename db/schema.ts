@@ -702,3 +702,61 @@ export const siteVisits = mysqlTable("site_visits", {
 
 export type SiteVisit = typeof siteVisits.$inferSelect;
 export type InsertSiteVisit = typeof siteVisits.$inferInsert;
+
+// --- Analytics & Tracking ---
+export const pageViews = mysqlTable("page_views", {
+  id: serial("id").primaryKey(),
+  userId: int("user_id"),
+  ipHash: varchar("ip_hash", { length: 64 }),
+  path: varchar("path", { length: 255 }).notNull(),
+  referrer: varchar("referrer", { length: 500 }),
+  userAgent: varchar("user_agent", { length: 255 }),
+  country: varchar("country", { length: 10 }),
+  sessionId: varchar("session_id", { length: 64 }),
+  duration: int("duration_seconds").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const searchQueries = mysqlTable("search_queries", {
+  id: serial("id").primaryKey(),
+  userId: int("user_id"),
+  query: varchar("query", { length: 500 }).notNull(),
+  category: varchar("category", { length: 50 }),
+  resultsCount: int("results_count").default(0),
+  clickedListingId: int("clicked_listing_id"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const userEvents = mysqlTable("user_events", {
+  id: serial("id").primaryKey(),
+  userId: int("user_id"),
+  eventType: varchar("event_type", { length: 50 }).notNull(),
+  eventData: text("event_data"),
+  pagePath: varchar("page_path", { length: 255 }),
+  ipHash: varchar("ip_hash", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const productViews = mysqlTable("product_views", {
+  id: serial("id").primaryKey(),
+  userId: int("user_id"),
+  listingId: int("listing_id").notNull(),
+  viewCount: int("view_count").default(1),
+  lastViewedAt: timestamp("last_viewed_at").defaultNow(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const userSessions = mysqlTable("user_sessions", {
+  id: serial("id").primaryKey(),
+  userId: int("user_id"),
+  sessionId: varchar("session_id", { length: 64 }).notNull().unique(),
+  ipHash: varchar("ip_hash", { length: 64 }),
+  userAgent: varchar("user_agent", { length: 255 }),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  endedAt: timestamp("ended_at"),
+  pageViews: int("page_views").default(0),
+});
+
+export const productViewsRelations = relations(productViews, ({ one }) => ({
+  listing: one(marketplaceListings, { fields: [productViews.listingId], references: [marketplaceListings.id] }),
+}));

@@ -1,11 +1,17 @@
 import { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate } from 'react-router'
+import { Routes, Route, Navigate, useLocation } from 'react-router'
+import TosGate from './components/TosGate'
+import AdminRoute from './components/AdminRoute'
+import ErrorBoundary from './components/ErrorBoundary'
 import GeoBlock from '@/components/GeoBlock'
 import EnhancedAgeGate from '@/components/EnhancedAgeGate'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
+import AIAssistant from './components/AIAssistant'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
+import { useVisitTracker } from './hooks/useVisitTracker'
+import { useAnalytics } from './hooks/useAnalytics'
 
 const Prints3D = lazy(() => import('./pages/Prints3D'))
 const TradingCards = lazy(() => import('./pages/TradingCards'))
@@ -22,11 +28,26 @@ const Donations = lazy(() => import('./pages/Donations'))
 const Login = lazy(() => import('./pages/Login'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'))
 const Admin = lazy(() => import('./pages/Admin'))
-const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
+const SiteDoctor = lazy(() => import('./pages/SiteDoctor'))
+const SwarmDashboard = lazy(() => import('./pages/SwarmDashboard'))
 const CreateListing = lazy(() => import('./pages/CreateListing'))
 const ListingDetail = lazy(() => import('./pages/ListingDetail'))
 const Messages = lazy(() => import('./pages/Messages'))
+
+
+function PageTracker() { useVisitTracker(); return null; }
+
+function AnalyticsTracker() {
+  const location = useLocation();
+  return <AnalyticsTrackerInner key={location.pathname + location.search} />;
+}
+
+function AnalyticsTrackerInner() {
+  useAnalytics();
+  return null;
+}
 
 function PageLoader() {
   return (
@@ -40,9 +61,12 @@ export default function App() {
   return (
     <GeoBlock>
       <EnhancedAgeGate>
+        <ErrorBoundary>
         <div className="min-h-screen flex flex-col bg-background">
           <Navbar />
           <main className="flex-1">
+            <PageTracker />
+            <AnalyticsTracker />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
@@ -88,8 +112,10 @@ export default function App() {
                 <Route path="/reset-password" element={<ResetPassword />} />
                 
                 {/* Admin */}
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/admin/analytics" element={<AdminDashboard />} />
+                <Route path="/admin" element={<TosGate><AdminRoute><Admin /></AdminRoute></TosGate>} />
+                <Route path="/admin/analytics" element={<TosGate><AdminRoute><AdminAnalytics /></AdminRoute></TosGate>} />
+                <Route path="/admin/site-doctor" element={<TosGate><AdminRoute><SiteDoctor /></AdminRoute></TosGate>} />
+                <Route path="/admin/swarm" element={<TosGate><AdminRoute><SwarmDashboard /></AdminRoute></TosGate>} />
                 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />
@@ -97,7 +123,9 @@ export default function App() {
             </Suspense>
           </main>
           <Footer />
+          <AIAssistant />
         </div>
+        </ErrorBoundary>
       </EnhancedAgeGate>
     </GeoBlock>
   )

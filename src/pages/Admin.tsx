@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Shield, MessageSquare, ShoppingBag, Heart, BarChart3, Trash2, Crown, X, Check, Ban, Unlock, Eye, CreditCard } from "lucide-react";
+import { Users, Shield, MessageSquare, ShoppingBag, Heart, BarChart3, Trash2, Crown, X, Check, Ban, Unlock, Eye, CreditCard, Bug, Radio } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -67,11 +67,27 @@ export default function Admin() {
   return (
     <div className="min-h-screen py-8 bg-background">
       <div className="container px-4 md:px-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Manage your community</p>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
+              <p className="text-sm text-muted-foreground">Manage your community</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate("/admin/analytics")}>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Analytics
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/admin/swarm")}>
+              <Radio className="h-4 w-4 mr-2" />
+              Swarm
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/admin/site-doctor")}>
+              <Bug className="h-4 w-4 mr-2" />
+              Site Doctor
+            </Button>
           </div>
         </div>
 

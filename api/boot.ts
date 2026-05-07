@@ -4,25 +4,16 @@ import type { HttpBindings } from "@hono/node-server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
-import { env } from "./lib/env";
+import { env } from "./lib/utils/env";
 import { getDb } from "./queries/connection";
 import { sql } from "drizzle-orm";
 import type { Context as HonoContext } from "hono";
 
-const ALLOWED_COUNTRIES = [
-  "US", "CA", "AU", "NZ", "MX", "BR",
-  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR",
-  "DE", "GR", "HU", "IT", "LV", "LT", "LU", "MT", "NL", "PL",
-  "PT", "RO", "SK", "SI", "ES", "SE",
-  "AF", "AM", "AZ", "BH", "BD", "BT", "BN", "KH", "CN", "GE",
-  "IN", "ID", "IR", "IQ", "IL", "JP", "JO", "KZ", "KW", "KG",
-  "LA", "LB", "MY", "MV", "MN", "MM", "NP", "OM", "PK", "PH",
-  "QA", "SA", "SG", "KR", "LK", "SY", "TW", "TJ", "TH", "TL",
-  "TR", "TM", "AE", "UZ", "VN", "YE", "HK",
-];
+// Blocklist: only sanctioned/prohibited countries (blocklist approach = worldwide)
+const BLOCKED_COUNTRIES = ["IR", "KP", "SY", "CU", "MM"];
 
 const app = new Hono<{ Bindings: HttpBindings }>();
-app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
+app.use(bodyLimit({ maxSize: 10 * 1024 * 1024 })); // 10MB max upload
 
 app.use("*", async (c, next) => {
   await next();
@@ -34,14 +25,16 @@ app.use("*", async (c, next) => {
   c.header("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
 });
 
+// Hardened: Only trust Cloudflare headers. X-Forwarded-For is ignored
+// to prevent IP spoofing when not behind Cloudflare.
 function getClientCountry(c: HonoContext): { country: string; source: string; ip: string } {
   const cfCountry = c.req.header("CF-IPCountry");
   const cfIP = c.req.header("CF-Connecting-IP");
-  const xForwardedFor = c.req.header("X-Forwarded-For");
   const xCountryCode = c.req.header("X-Country-Code");
   let ip = "unknown";
+  // Only trust CF-Connecting-IP (set by Cloudflare). Never trust X-Forwarded-For
+  // directly as it can be spoofed by clients.
   if (cfIP) ip = cfIP;
-  else if (xForwardedFor) ip = xForwardedFor.split(",")[0]?.trim() || "unknown";
   if (cfCountry && cfCountry !== "XX") return { country: cfCountry.toUpperCase(), source: "cloudflare", ip };
   if (xCountryCode) return { country: xCountryCode.toUpperCase(), source: "header", ip };
   return { country: "", source: "unknown", ip };
@@ -49,9 +42,9 @@ function getClientCountry(c: HonoContext): { country: string; source: string; ip
 
 app.use("/api/*", async (c, next) => {
   const path = c.req.path;
-  if (path === "/api/ping" || path.includes("geo.checkAccess") || path === "/api/run-migration") return next();
+  if (path === "/api/ping" || path.includes("geo.checkAccess")) return next();
   const geo = getClientCountry(c);
-  if (geo.country && !ALLOWED_COUNTRIES.includes(geo.country)) {
+  if (geo.country && BLOCKED_COUNTRIES.includes(geo.country)) {
     return c.json({ error: "GEO_BLOCKED", code: "GEO_BLOCKED", message: "Service not available in your country.", country: geo.country, source: geo.source }, 403);
   }
   return next();
@@ -71,7 +64,12 @@ app.get("/api/ping", (c) => c.json({ ok: true, ts: Date.now() }));
 app.use("/api/trpc", async (c) => fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext }));
 app.use("/api/trpc/*", async (c) => fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext }));
 
+// SECURE: Run-migration endpoint requires admin API key
 app.get("/api/run-migration", async (c) => {
+  const adminKey = c.req.header("X-Admin-Key");
+  if (adminKey !== process.env.ADMIN_MIGRATION_KEY) {
+    return c.json({ error: "UNAUTHORIZED", message: "Invalid or missing admin key. Set ADMIN_MIGRATION_KEY env var." }, 401);
+  }
   try {
     const db = getDb();
     await db.execute(sql`CREATE TABLE IF NOT EXISTS tax_rates (id VARCHAR(128) PRIMARY KEY, country_code VARCHAR(2) NOT NULL, rate DECIMAL(5,2) NOT NULL, vat_name VARCHAR(50) DEFAULT 'VAT', updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE KEY (country_code))`);
@@ -97,7 +95,7 @@ export default app;
 
 if (env.isProduction) {
   const { serve } = await import("@hono/node-server");
-  const { serveStaticFiles } = await import("./lib/vite");
+  const { serveStaticFiles } = await import("./lib/utils/vite");
   serveStaticFiles(app);
   const port = parseInt(process.env.PORT || "3000");
   serve({ fetch: app.fetch, port }, () => console.log(`Server running on http://localhost:${port}/`));

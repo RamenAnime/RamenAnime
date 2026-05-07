@@ -1,49 +1,88 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { AlertTriangle, Shield } from "lucide-react";
 
-const STORAGE_KEY = "age_gate_passed";
-const ADULT_CATEGORIES = ["/marketplace", "/3d-prints", "/trading-cards"];
+const AGE_KEY = "ramen_anime_age_verified_v2";
 
 export default function EnhancedAgeGate({ children }: { children: React.ReactNode }) {
-  const [passed, setPassed] = useState(false);
-  const [checking, setChecking] = useState(true);
+  const { t } = useTranslation();
+  const [age, setAge] = useState("");
+  const [error, setError] = useState("");
+  const [verified, setVerified] = useState(() => {
+    try { return localStorage.getItem(AGE_KEY) === "true"; } catch { return false; }
+  });
 
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    const needsCheck = ADULT_CATEGORIES.some((c) => window.location.pathname.startsWith(c));
-    if (stored === "true" || !needsCheck) {
-      setPassed(true);
+  const submitAge = trpc.geo.submitAgeVerification.useMutation({
+    onSuccess: () => {
+      localStorage.setItem(AGE_KEY, "true");
+      setVerified(true);
+      setError("");
+    },
+    onError: (err) => setError(err.message),
+  });
+
+  const verifyAge = () => {
+    const ageNum = parseInt(age);
+    if (isNaN(ageNum) || ageNum < 18) {
+      setError("You must be 18 or older to access this service.");
+      return;
     }
-    setChecking(false);
-  }, []);
+    submitAge.mutate({ age: ageNum });
+  };
 
-  if (checking) {
-    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
-  }
+  if (verified) return <>{children}</>;
 
-  if (!passed) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-6 space-y-4 text-center">
-            <h1 className="text-2xl font-bold">Age Verification</h1>
-            <p className="text-sm text-muted-foreground">
-              You must be 18 or older to access the marketplace. Please confirm your age.
-            </p>
-            <div className="flex gap-3 justify-center">
-              <Button variant="outline" onClick={() => window.location.href = "/"}>
-                I'm Under 18
-              </Button>
-              <Button onClick={() => { localStorage.setItem(STORAGE_KEY, "true"); setPassed(true); }}>
-                I am 18+
-              </Button>
+  return (
+    <div className="fixed inset-0 z-[150] bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="bg-card/90 border-border/50 backdrop-blur-sm shadow-2xl">
+          <CardContent className="p-6 space-y-6">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-xl mx-auto">
+                ラ
+              </div>
+              <h1 className="text-2xl font-bold text-foreground">{t("ageGate.title")}</h1>
+              <p className="text-sm text-muted-foreground">You must be 18 years or older to access this website.</p>
             </div>
+
+            {error && (
+              <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-sm text-destructive">
+                <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                {error}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Enter your age</label>
+              <Input
+                type="number"
+                value={age}
+                onChange={(e) => { setAge(e.target.value); setError(""); }}
+                placeholder="18"
+                min="1"
+                max="120"
+                className="bg-muted/50"
+              />
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={verifyAge} disabled={submitAge.isPending}>
+                <Shield className="mr-2 h-4 w-4" />
+                {submitAge.isPending ? "Verifying..." : "Confirm Age & Continue"}
+              </Button>
+              <Button variant="outline" onClick={() => window.location.href = "https://google.com"}>Exit</Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              By continuing, you confirm you are of legal age in your jurisdiction.
+            </p>
           </CardContent>
         </Card>
       </div>
-    );
-  }
-
-  return <>{children}</>;
+    </div>
+  );
 }

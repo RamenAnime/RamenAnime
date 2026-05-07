@@ -1,71 +1,161 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import * as webllm from "@mlc-ai/web-llm";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
+import { Bot, X, Send, Loader2, Cpu } from "lucide-react";
+
+const MODEL_NAME = "Llama-3.1-8B-Instruct-q4f32_1-MLC";
+const SYSTEM_PROMPT = `You are the Ramen Anime marketplace assistant. You help users find anime collectibles, figures, trading cards, and merchandise. You know about:
+- Anime series and characters
+- Collectible grading and pricing
+- Auction mechanics and bidding
+- Shipping and payment questions
+- Marketplace policies
+
+Be friendly, concise, and helpful. If you don't know something, say so.`;
 
 export default function AIAssistant() {
-  const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: string; text: string }[]>([
-    { role: "assistant", text: "Hi! I'm your Ramen Anime assistant. How can I help?" }
+  const [isOpen, setIsOpen] = useState(false);
+  const [messages, setMessages] = useState<{role: string; content: string}[]>([
+    { role: "assistant", content: "Hi! I'm your Ramen Anime assistant. Ask me anything about collectibles, auctions, or finding that perfect figure!" }
   ]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [modelLoaded, setModelLoaded] = useState(false);
+  const [progress, setProgress] = useState("");
+  const [usingGPU, setUsingGPU] = useState(false);
+  const chatRef = useRef<webllm.ChatModule | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const send = async () => {
-    if (!input.trim()) return;
+  // Initialize WebLLM on mount
+  useEffect(() => {
+    let chat: webllm.ChatModule | null = null;
+    
+    async function init() {
+      try {
+        // Check WebGPU support
+        if (!navigator.gpu) {
+          setProgress("WebGPU not available. Using CPU fallback (slower).");
+          setUsingGPU(false);
+        } else {
+          setUsingGPU(true);
+        }
+        
+        chat = new webllm.ChatModule();
+        chat.setInitProgressCallback((report: any) => {
+          setProgress(`Loading AI model... ${Math.round(report.progress * 100)}%`);
+        });
+        
+        await chat.reload(MODEL_NAME, {
+          chatOpts: { temperature: 0.7, max_gen_len: 512 },
+        });
+        
+        chatRef.current = chat;
+        setModelLoaded(true);
+        setProgress("");
+      } catch (err) {
+        setProgress("AI model failed to load. Please refresh.");
+        console.error("WebLLM init error:", err);
+      }
+    }
+    
+    init();
+    
+    return () => {
+      if (chat) chat.unload();
+    };
+  }, []);
+
+  // Scroll to bottom of messages
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  const sendMessage = useCallback(async () => {
+    if (!input.trim() || !chatRef.current || isLoading) return;
+    
     const userMsg = input.trim();
-    setMessages((prev) => [...prev, { role: "user", text: userMsg }]);
     setInput("");
-    setLoading(true);
-
-    // Simple rule-based responses (no LLM dependency)
-    const lower = userMsg.toLowerCase();
-    let reply = "I'm not sure about that. Try asking about marketplace, donations, or support.";
-    if (lower.includes("hello") || lower.includes("hi")) reply = "Hello! Welcome to Ramen Anime. How can I assist you today?";
-    else if (lower.includes("sell") || lower.includes("listing")) reply = "Go to /marketplace/new to create a listing. You need to be logged in.";
-    else if (lower.includes("buy") || lower.includes("purchase")) reply = "Browse the marketplace at /marketplace. Use the search bar to find items.";
-    else if (lower.includes("donate")) reply = "Visit /donate to support us via PayPal or Revolut.";
-    else if (lower.includes("contact") || lower.includes("support")) reply = "Email us at support@ramenanime.com or use the contact page.";
-    else if (lower.includes("login") || lower.includes("account")) reply = "Go to /login to sign in, or click Register if you don't have an account.";
-    else if (lower.includes("password") || lower.includes("forgot")) reply = "Use /forgot-password to reset your password.";
-    else if (lower.includes("tos") || lower.includes("terms")) reply = "Read our Terms at /terms. You must accept them to use certain features.";
-    else if (lower.includes("swarm") || lower.includes("analytics")) reply = "Admins can view site analytics and swarm intelligence at /admin.";
-
-    setTimeout(() => {
-      setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
-      setLoading(false);
-    }, 500);
-  };
+    setMessages(prev => [...prev, { role: "user", content: userMsg }]);
+    setIsLoading(true);
+    
+    try {
+      const reply = await chatRef.current.generate(userMsg, (step: any) => {
+        // Streaming not supported in simple mode, wait for full response
+      });
+      
+      setMessages(prev => [...prev, { role: "assistant", content: reply }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: "assistant", content: "Sorry, I had trouble processing that. Please try again." }]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [input, isLoading]);
 
   return (
     <>
+      {/* Floating button */}
       <Button
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50"
-        onClick={() => setOpen(!open)}
+        onClick={() => setIsOpen(!isOpen)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 z-50"
       >
-        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+        {isOpen ? <X className="w-6 h-6" /> : <Bot className="w-6 h-6" />}
       </Button>
-      {open && (
-        <div className="fixed bottom-24 right-6 w-80 h-96 bg-card border rounded-lg shadow-xl z-50 flex flex-col">
-          <div className="p-3 border-b font-bold text-sm">AI Assistant</div>
-          <div className="flex-1 overflow-y-auto p-3 space-y-2">
-            {messages.map((m, i) => (
-              <div key={i} className={`text-sm p-2 rounded ${m.role === "user" ? "bg-primary/10 ml-4" : "bg-muted mr-4"}`}>
-                {m.text}
+      
+      {/* Chat window */}
+      {isOpen && (
+        <Card className="fixed bottom-24 right-6 w-96 h-[500px] bg-card border-border shadow-2xl z-50 flex flex-col">
+          {/* Header */}
+          <div className="p-3 border-b border-border flex items-center gap-2">
+            <Bot className="w-5 h-5 text-primary" />
+            <span className="font-semibold text-sm">Ramen AI</span>
+            {usingGPU && <Cpu className="w-4 h-4 text-green-500 ml-auto" title="Running on your GPU" />}
+            {progress && <span className="text-xs text-muted-foreground ml-auto">{progress}</span>}
+          </div>
+          
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm ${
+                  msg.role === "user" 
+                    ? "bg-primary text-primary-foreground" 
+                    : "bg-muted text-foreground"
+                }`}>
+                  {msg.content}
+                </div>
               </div>
             ))}
-            {loading && <div className="text-xs text-muted-foreground italic">Thinking...</div>}
+            {isLoading && (
+              <div className="flex justify-start">
+                <div className="bg-muted px-3 py-2 rounded-lg">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
-          <div className="p-2 border-t flex gap-2">
-            <input
+          
+          {/* Input */}
+          <div className="p-3 border-t border-border flex gap-2">
+            <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && send()}
-              placeholder="Ask something..."
-              className="flex-1 bg-background border rounded px-2 py-1 text-sm"
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+              placeholder={modelLoaded ? "Ask about collectibles..." : "Loading AI model..."}
+              disabled={!modelLoaded || isLoading}
+              className="flex-1"
             />
-            <Button size="sm" onClick={send} disabled={loading}>Send</Button>
+            <Button 
+              size="icon" 
+              onClick={sendMessage}
+              disabled={!modelLoaded || isLoading || !input.trim()}
+            >
+              <Send className="w-4 h-4" />
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
     </>
   );

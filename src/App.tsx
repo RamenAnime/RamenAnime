@@ -35,6 +35,8 @@ const SwarmDashboard = lazy(() => import('./pages/SwarmDashboard'))
 const CreateListing = lazy(() => import('./pages/CreateListing'))
 const ListingDetail = lazy(() => import('./pages/ListingDetail'))
 const Messages = lazy(() => import('./pages/Messages'))
+const Orders = lazy(() => import('./pages/Orders'))
+const OrderDetail = lazy(() => import('./pages/OrderDetail'))
 
 
 function PageTracker() { useVisitTracker(); return null; }
@@ -116,6 +118,10 @@ export default function App() {
                 <Route path="/admin/analytics" element={<TosGate><AdminRoute><AdminAnalytics /></AdminRoute></TosGate>} />
                 <Route path="/admin/site-doctor" element={<TosGate><AdminRoute><SiteDoctor /></AdminRoute></TosGate>} />
                 <Route path="/admin/swarm" element={<TosGate><AdminRoute><SwarmDashboard /></AdminRoute></TosGate>} />
+                
+                {/* Orders */}
+                <Route path="/orders" element={<Orders />} />
+                <Route path="/orders/:id" element={<OrderDetail />} />
                 
                 {/* 404 */}
                 <Route path="*" element={<NotFound />} />

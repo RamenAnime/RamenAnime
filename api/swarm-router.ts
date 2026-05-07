@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { pageViews, searchQueries, userEvents, productViews, users } from "@db/schema";
+import { pageViews, searchQueries, userEvents, productViews, users, swarmSnapshots } from "@db/schema";
 import { eq, count, desc, and, sql, gte } from "drizzle-orm";
 
 // In-memory swarm state (resets on server restart, real-time)
@@ -21,6 +21,26 @@ setInterval(() => {
     }
   }
 }, 30000);
+
+// Persist swarm snapshot to DB every 5 minutes for analytics continuity
+setInterval(async () => {
+  try {
+    const db = getDb();
+    const snapshot = await swarmRouter._def.procedures.snapshot.resolve({} as any);
+    await db.insert(swarmSnapshots).values({
+      snapshotType: "aggregate",
+      data: JSON.stringify({
+        topListings: snapshot.topListings,
+        topSearches: snapshot.topSearches,
+        topCategories: snapshot.topCategories,
+        pageDistribution: snapshot.pageDistribution,
+      }),
+      activeUsers: snapshot.activeUsers,
+    });
+  } catch {
+    // Silently fail — DB persistence is best-effort
+  }
+}, 5 * 60 * 1000);
 
 export const swarmRouter = createRouter({
   // Join or update swarm presence

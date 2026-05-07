@@ -1,38 +1,80 @@
-// In-memory rate limiter for auth endpoints
-// Tracks requests by IP address with sliding window
+// Hybrid rate limiter: TiDB-backed (primary) with in-memory fallback
+// TiDB persistence ensures rate limits work across server restarts and multiple instances
+
+import { getDb } from "../queries/connection";
+import { rateLimitLogs } from "@db/schema";
+import { eq, and, gte, count } from "drizzle-orm";
 
 interface RateLimitEntry {
   count: number;
   resetTime: number;
 }
 
-const rateLimitStore = new Map<string, RateLimitEntry>();
+// In-memory fallback store (used when TiDB is unavailable or for speed)
+const memoryStore = new Map<string, RateLimitEntry>();
 const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-const MAX_REQUESTS = 5; // 5 attempts per window
+const MAX_REQUESTS = 5;
 
-export function checkRateLimit(ip: string, action: string): { allowed: boolean; retryAfter: number } {
+/** Check rate limit using TiDB first, fallback to memory */
+export async function checkRateLimit(ip: string, action: string): Promise<{ allowed: boolean; retryAfter: number }> {
   const key = `${ip}:${action}`;
-  const now = Date.now();
-  const entry = rateLimitStore.get(key);
+  const now = new Date();
+  const windowStart = new Date(Date.now() - WINDOW_MS);
 
-  if (!entry || now > entry.resetTime) {
-    rateLimitStore.set(key, { count: 1, resetTime: now + WINDOW_MS });
+  try {
+    // PRIMARY: TiDB-backed rate limiting
+    const db = getDb();
+
+    // Clean old entries
+    await db.delete(rateLimitLogs)
+      .where(and(
+        eq(rateLimitLogs.ipHash, ip),
+        eq(rateLimitLogs.action, action),
+        gte(rateLimitLogs.createdAt, windowStart)
+      ));
+
+    // Count recent requests
+    const [result] = await db.select({ count: count() })
+      .from(rateLimitLogs)
+      .where(and(
+        eq(rateLimitLogs.ipHash, ip),
+        eq(rateLimitLogs.action, action),
+        gte(rateLimitLogs.createdAt, windowStart)
+      ));
+
+    const requestCount = result?.count ?? 0;
+
+    if (requestCount >= MAX_REQUESTS) {
+      return { allowed: false, retryAfter: Math.ceil(WINDOW_MS / 1000) };
+    }
+
+    // Log this attempt
+    await db.insert(rateLimitLogs).values({
+      ipHash: ip,
+      action,
+      createdAt: now,
+    });
+
+    return { allowed: true, retryAfter: 0 };
+  } catch (err) {
+    // FALLBACK: In-memory rate limiting when DB is unavailable
+    const entry = memoryStore.get(key);
+    if (!entry || Date.now() > entry.resetTime) {
+      memoryStore.set(key, { count: 1, resetTime: Date.now() + WINDOW_MS });
+      return { allowed: true, retryAfter: 0 };
+    }
+    if (entry.count >= MAX_REQUESTS) {
+      return { allowed: false, retryAfter: Math.ceil((entry.resetTime - Date.now()) / 1000) };
+    }
+    entry.count += 1;
     return { allowed: true, retryAfter: 0 };
   }
-
-  if (entry.count >= MAX_REQUESTS) {
-    return { allowed: false, retryAfter: Math.ceil((entry.resetTime - now) / 1000) };
-  }
-
-  entry.count += 1;
-  return { allowed: true, retryAfter: 0 };
 }
 
-// Cleanup old entries every hour
+// Cleanup old memory entries every hour
 setInterval(() => {
   const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    if (now > entry.resetTime) rateLimitStore.delete(key);
+  for (const [key, entry] of memoryStore.entries()) {
+    if (now > entry.resetTime) memoryStore.delete(key);
   }
 }, 60 * 60 * 1000);
-

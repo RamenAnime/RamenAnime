@@ -757,6 +757,27 @@ export const userSessions = mysqlTable("user_sessions", {
   pageViews: int("page_views").default(0),
 });
 
+// ── Rate Limiting ──
+export const rateLimitLogs = mysqlTable("rate_limit_logs", {
+  id: serial("id").primaryKey(),
+  ipHash: varchar("ip_hash", { length: 64 }).notNull(),
+  action: varchar("action", { length: 50 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RateLimitLog = typeof rateLimitLogs.$inferSelect;
+export type InsertRateLimitLog = typeof rateLimitLogs.$inferInsert;
+
+// ── Swarm Persistence ──
+export const swarmSnapshots = mysqlTable("swarm_snapshots", {
+  id: serial("id").primaryKey(),
+  snapshotType: varchar("snapshot_type", { length: 50 }).notNull(),
+  data: text("data").notNull(),
+  activeUsers: int("active_users").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+
 export const productViewsRelations = relations(productViews, ({ one }) => ({
   listing: one(marketplaceListings, { fields: [productViews.listingId], references: [marketplaceListings.id] }),
 }));

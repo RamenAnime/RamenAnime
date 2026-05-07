@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, authedQuery, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { users, marketplaceListings, orders, transactions } from "@db/schema";
+import { users, marketplaceListings, orders, transactions, geoVerifications } from "@db/schema";
 import { eq, and } from "drizzle-orm";
 import Stripe from "stripe";
 
@@ -41,9 +41,16 @@ export const stripeRouter = createRouter({
 
     // Create Stripe Express account if not exists
     if (!user?.stripeAccountId) {
+      // Look up user's verified country from geo-verification, fallback to "US"
+      const geo = await db.query.geoVerifications.findFirst({
+        where: eq(geoVerifications.userId, ctx.user.id),
+        columns: { countryCode: true },
+      });
+      const country = geo?.countryCode || "US";
+
       const account = await stripe.accounts.create({
         type: "express",
-        country: "US",
+        country,
         email: user?.email || undefined,
         business_type: "individual",
         capabilities: {

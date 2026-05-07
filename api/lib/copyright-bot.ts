@@ -1,3 +1,14 @@
+/**
+ * Copyright & Prohibited Content Scanner
+ *
+ * CURRENT LIMITATION: This scanner only performs TEXT-BASED analysis on the
+ * listing title and description. Image copyright enforcement is NOT implemented.
+ * The `imageUrls` parameter is accepted and logged for future expansion but the
+ * images themselves are not analyzed (no reverse-image-search, OCR, or watermark
+ * detection). To add image scanning, integrate a service like Google Vision API
+ * or TinEye and call it here.
+ */
+
 const PROHIBITED_TERMS = [
   "bootleg", "knockoff", "replica", "fake", "counterfeit", "unofficial copy",
   "1:1 replica", "high quality replica", "mirror quality", "AAA replica",
@@ -47,6 +58,7 @@ export async function runCopyrightScan(listingId: number, title: string, descrip
     confidence: textResult.confidence.toString(),
     matchedTerms: JSON.stringify(textResult.matchedTerms),
     reason: textResult.reason,
+    scanDetails: JSON.stringify({ imageCount: imageUrls.length, imageUrls: imageUrls.slice(0, 5), note: "Image scanning not yet implemented — text-only analysis" }),
   });
   const overallStatus = textResult.status;
   await db.update(marketplaceListings)

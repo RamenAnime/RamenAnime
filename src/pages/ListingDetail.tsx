@@ -62,9 +62,9 @@ export default function ListingDetail() {
   const [depositPaid, setDepositPaid] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<{id: number; orderNumber: string} | null>(null);
 
-  const { data: listing } = trpc.marketplace.getListing.useQuery(
+  const { data: listing, isLoading: listingLoading, isError: listingError } = trpc.marketplace.getListing.useQuery(
     { id: listingId },
-    { enabled: listingId > 0 }
+    { enabled: listingId > 0, retry: false }
   );
   const { data: bids } = trpc.marketplace.getBidHistory.useQuery(
     { listingId },
@@ -108,10 +108,22 @@ export default function ListingDetail() {
     },
   });
 
-  if (!listing) {
+  if (listingId === 0 || listingLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+
+  if (!listing || listingError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4 px-4">
+          <p className="text-2xl font-bold text-foreground">Listing Not Found</p>
+          <p className="text-muted-foreground">This listing may have been removed or doesn\'t exist.</p>
+          <a href="/marketplace" className="inline-flex items-center gap-2 text-primary hover:underline">← Back to Marketplace</a>
+        </div>
       </div>
     );
   }

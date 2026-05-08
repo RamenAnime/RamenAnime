@@ -11,7 +11,7 @@ import i18n from 'i18next';
     document.documentElement.lang = lng;
   }
 
-  const resources = {
+  const resources: Record<string, { translation: Record<string, any> }> = {
     en: { translation: {
       nav: { home:'Home', brand:'Ramen Anime', shop:'Shop', prints3d:'3D Prints', cards:'Trading Cards', contact:'Contact', social:'Social Forum', login:'Join / Login', terms:'Terms', friends:'Friends', profile:'Profile', marketplace:'Marketplace', myProfile:'My Profile', admin:'Admin Dashboard', logout:'Logout', menu:'Menu', language:'Language', donate:'Donate' },
       hero: { title:'ラーメンアニメ', subtitle:'Your one-stop shop for custom 3D printed anime goods and trading cards. Handcrafted with passion. Shipped with care.', shopNow:'Shop Now', joinCommunity:'Join Community' },

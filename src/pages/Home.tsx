@@ -12,6 +12,7 @@ import {
   Layers, Box, Store, Gavel, Flame, TrendingUp, ArrowRight,
   MessageCircle, Star, Clock, ShieldCheck, Zap, Globe, Heart,
 } from "lucide-react";
+import BetaBanner from "@/components/BetaBanner";
 
 function getTimeLeft(endDate: string | null): string {
   if (!endDate) return "";
@@ -50,6 +51,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
+      {/* Beta tester recruitment banner */}
+      <BetaBanner />
+
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">

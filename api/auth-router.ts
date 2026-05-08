@@ -125,7 +125,7 @@ export const authRouter = createRouter({
     }))
     .mutation(async ({ input, ctx }) => {
       const ip = getClientIp(ctx.req);
-      const rl = checkRateLimit(ip, "register");
+      const rl = await checkRateLimit(ip, "register");
       if (!rl.allowed) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: `Too many registration attempts. Please try again in ${rl.retryAfter} seconds.` });
 
       const recaptchaOk = await verifyRecaptcha(input.recaptchaToken);
@@ -177,7 +177,7 @@ export const authRouter = createRouter({
     .input(z.object({ username: z.string().min(1), password: z.string().min(1), recaptchaToken: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const ip = getClientIp(ctx.req);
-      const rl = checkRateLimit(ip, "login");
+      const rl = await checkRateLimit(ip, "login");
       if (!rl.allowed) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: `Too many login attempts. Please try again in ${rl.retryAfter} seconds.` });
 
       const recaptchaOk = await verifyRecaptcha(input.recaptchaToken);
@@ -206,7 +206,7 @@ export const authRouter = createRouter({
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ input, ctx }) => {
       const ip = getClientIp(ctx.req);
-      const rl = checkRateLimit(ip, "forgotPassword");
+      const rl = await checkRateLimit(ip, "forgotPassword");
       if (!rl.allowed) throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: `Too many password reset attempts. Please try again in ${rl.retryAfter} seconds.` });
 
       const user = await findUserByEmail(input.email);

@@ -80,7 +80,7 @@ import { Hono } from "hono";
       await db.execute(sql`CREATE TABLE IF NOT EXISTS user_events (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED, event_type VARCHAR(50) NOT NULL, data TEXT, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
       await db.execute(sql`CREATE TABLE IF NOT EXISTS product_views (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, listing_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED, session_id VARCHAR(128), viewed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
       await db.execute(sql`CREATE TABLE IF NOT EXISTS user_sessions (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL, session_token VARCHAR(255) NOT NULL UNIQUE, ip_address VARCHAR(45), user_agent TEXT, last_active TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
-      await db.execute(sql`CREATE TABLE IF NOT EXISTS rate_limit_logs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, key_hash VARCHAR(64) NOT NULL, endpoint VARCHAR(100), attempts INT NOT NULL DEFAULT 1, window_start TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, UNIQUE KEY uq_rate_key (key_hash, endpoint))`);
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS rate_limit_logs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, ip_hash VARCHAR(64) NOT NULL, action VARCHAR(50) NOT NULL, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
       await db.execute(sql`CREATE TABLE IF NOT EXISTS swarm_snapshots (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, active_users INT NOT NULL DEFAULT 0, page_counts TEXT, country_counts TEXT, captured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
 
       // ── Phase 7: Indexes ───────────────────────────────────────────────────
@@ -94,7 +94,10 @@ import { Hono } from "hono";
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_bids_listing ON auction_bids(listing_id)`); } catch (_) {}
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id)`); } catch (_) {}
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_id)`); } catch (_) {}
-      console.log("DB migration: all tables and columns verified");
+      // Clear stale rate-limit entries (removes lockouts from before the await fix)
+    try { await db.execute(sql`DELETE FROM rate_limit_logs WHERE createdAt < NOW() - INTERVAL 15 MINUTE`); } catch (_) {}
+
+        console.log("DB migration: all tables and columns verified");
     } catch (err) {
       console.error("DB migration error:", err, " failed — server continuing anyway");
     }

@@ -56,7 +56,7 @@ function PostContent() {
   const [replyTo, setReplyTo] = useState<{ id: number; authorName: string; content: string } | null>(null);
   const utils = trpc.useUtils();
 
-  const { data: post, isLoading } = trpc.social.getPost.useQuery({ postId }, { enabled: postId > 0 });
+  const { data: post, isLoading, isError } = trpc.social.getPost.useQuery({ postId }, { enabled: postId > 0, retry: false });
   const createComment = trpc.social.createComment.useMutation({ onSuccess: () => { utils.social.getPost.invalidate({ postId }); setCommentContent(""); setReplyTo(null); } });
   const likePost = trpc.social.likePost.useMutation({ onSuccess: () => utils.social.getPost.invalidate({ postId }) });
   const likeComment = trpc.social.likeComment.useMutation({ onSuccess: () => utils.social.getPost.invalidate({ postId }) });
@@ -73,7 +73,7 @@ function PostContent() {
   const handleReply = () => { if (!commentContent.trim()) return; createComment.mutate({ postId, content: commentContent, parentId: replyTo?.id }); };
 
   if (isLoading) return (<div className="min-h-screen py-12 flex items-center justify-center"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>);
-  if (!post) return (<div className="min-h-screen py-12"><div className="container px-4 md:px-6 max-w-4xl mx-auto text-center"><h1 className="text-2xl font-bold text-foreground mb-4">Thread not found</h1><Button onClick={() => navigate("/social")} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />Back to Community</Button></div></div>);
+  if (!post || isError) return (<div className="min-h-screen py-12"><div className="container px-4 md:px-6 max-w-4xl mx-auto text-center"><h1 className="text-2xl font-bold text-foreground mb-4">Thread not found</h1><p className="text-muted-foreground mb-4">This thread may have been deleted or doesn't exist.</p><Button onClick={() => navigate("/social")} variant="outline"><ArrowLeft className="mr-2 h-4 w-4" />Back to Community</Button></div></div>);
 
   const isAdmin = user?.role === "admin";
 

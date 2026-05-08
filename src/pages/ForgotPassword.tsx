@@ -58,7 +58,7 @@ export default function ForgotPassword() {
                 )}
                 <div className="space-y-2">
                   <Label htmlFor="email">{t("forgotPassword.emailLabel")}</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="{t("forgotPassword.emailPlaceholder")}" required className="bg-muted/50" />
+                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("forgotPassword.emailPlaceholder")} required className="bg-muted/50" />
                 </div>
                 <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={forgotMutation.isPending}>
                   <Mail className="mr-2 h-4 w-4" />

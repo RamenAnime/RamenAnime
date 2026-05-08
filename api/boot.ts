@@ -18,8 +18,10 @@ import { Hono } from "hono";
   async function runMigrations(): Promise<void> {
     try {
       const db = getDb();
-      // ── Phase 1: Add missing columns to forum_comments ────────────────────
-      try { await db.execute(sql`ALTER TABLE forum_comments ADD COLUMN IF NOT EXISTS parent_id BIGINT UNSIGNED`); } catch (_) {}
+      // ── Phase 1: Add missing columns to forum_posts and forum_comments ─────
+      // Note: IF NOT EXISTS is not universally supported; use try/catch double-attempt
+      try { await db.execute(sql`ALTER TABLE forum_posts ADD COLUMN parent_id BIGINT UNSIGNED DEFAULT NULL`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE forum_comments ADD COLUMN parent_id BIGINT UNSIGNED DEFAULT NULL`); } catch (_) {}
 
       // ── Phase 2: Add missing columns to marketplace_listings ──────────────
       try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS listing_type ENUM('fixed','auction') NOT NULL DEFAULT 'fixed'`); } catch (_) {}

@@ -110,6 +110,7 @@ export default function App() {
                 
                 {/* Auth */}
                 <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Login initialMode="register" />} />
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 

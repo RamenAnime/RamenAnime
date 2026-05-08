@@ -6,7 +6,8 @@ import i18n from 'i18next';
 
   function setDocumentDirection(lng: string) {
     const base = lng.split('-')[0];
-    const dir = RTL_LANGUAGES.has(base) ? 'rtl' : "ltr';"    document.documentElement.dir = dir;
+    const dir = RTL_LANGUAGES.has(base) ? 'rtl' : 'ltr';
+    document.documentElement.dir = dir;
     document.documentElement.lang = lng;
   }
 

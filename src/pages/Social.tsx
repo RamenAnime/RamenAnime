@@ -148,10 +148,4 @@ function ForumContent() {
   );
 }
 
-export default function Social() {
-    const { t } = useTranslation();
-    const SUBFORUMS = SUBFORUM_IDS.map(id => ({
-      id,
-      name: t(`forum.cat_${id.replace('-','')}`),
-      desc: t(`forum.cat_${id.replace('-','')}_desc`),
-    })); return <ForumContent />; }
+export default ForumContent;

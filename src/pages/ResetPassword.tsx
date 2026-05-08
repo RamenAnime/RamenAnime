@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, KeyRound, CheckCircle, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 export default function ResetPassword() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
@@ -22,7 +24,7 @@ export default function ResetPassword() {
   const verifyQuery = trpc.auth.verifyResetToken.useQuery({ token }, { enabled: !!token });
 
   const resetMutation = trpc.auth.resetPassword.useMutation({
-    onSuccess: () => { toast.success("Password updated!"); navigate("/login"); },
+    onSuccess: () => { toast.success(t("resetPassword.success")); navigate("/login"); },
     onError: (err) => setError(err.message),
   });
 
@@ -33,7 +35,7 @@ export default function ResetPassword() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password !== confirmPassword) { setError("Passwords do not match."); return; }
+    if (password !== confirmPassword) { setError("{t("resetPassword.passwordsMatch")}"); return; }
     if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(password)) {
       setError("Password must contain uppercase, lowercase, number, and special character.");
@@ -53,7 +55,7 @@ export default function ResetPassword() {
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
           <h1 className="text-xl font-bold">Invalid or Expired Link</h1>
           <p className="text-muted-foreground">This password reset link is no longer valid. Please request a new one.</p>
-          <Link to="/forgot-password"><Button variant="outline">Request New Link</Button></Link>
+          <Link to="/forgot-password"><Button variant="outline">{t("resetPassword.requestNew")}</Button></Link>
         </div>
       </div>
     );
@@ -70,7 +72,7 @@ export default function ResetPassword() {
             <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-xl mx-auto mb-3">
               ラ
             </div>
-            <CardTitle className="text-2xl font-bold">Set New Password</CardTitle>
+            <CardTitle className="text-2xl font-bold">{t("resetPassword.title")}</CardTitle>
             <p className="text-sm text-muted-foreground">Create a strong password for your account.</p>
           </CardHeader>
           <CardContent className="p-6">
@@ -82,7 +84,7 @@ export default function ResetPassword() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="password">New Password</Label>
+                <Label htmlFor="password">{t("resetPassword.newPassword")}</Label>
                 <div className="relative">
                   <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter new password" required className="bg-muted/50 pr-10" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
@@ -91,7 +93,7 @@ export default function ResetPassword() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirm">Confirm Password</Label>
+                <Label htmlFor="confirm">{t("resetPassword.confirmPassword")}</Label>
                 <Input id="confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" required className="bg-muted/50" />
               </div>
               <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={resetMutation.isPending}>

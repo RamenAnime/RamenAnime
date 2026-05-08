@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { trpc } from "@/providers/trpc";
 import {
@@ -80,27 +81,27 @@ const statusConfig: Record<
   { label: string; color: string; icon: React.ReactNode }
 > = {
   pending: {
-    label: "Pending",
+    label: t("orders.pending"),
     color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
     icon: <Clock className="w-3.5 h-3.5" />,
   },
   paid: {
-    label: "Paid",
+    label: t("orders.paid"),
     color: "bg-blue-500/15 text-blue-400 border-blue-500/30",
     icon: <ShoppingBag className="w-3.5 h-3.5" />,
   },
   shipped: {
-    label: "Shipped",
+    label: t("orders.shipped"),
     color: "bg-purple-500/15 text-purple-400 border-purple-500/30",
     icon: <Truck className="w-3.5 h-3.5" />,
   },
   delivered: {
-    label: "Delivered",
+    label: t("orders.delivered"),
     color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
     icon: <CheckCircle className="w-3.5 h-3.5" />,
   },
   cancelled: {
-    label: "Cancelled",
+    label: t("orders.cancelled"),
     color: "bg-gray-500/15 text-gray-400 border-gray-500/30",
     icon: <AlertTriangle className="w-3.5 h-3.5" />,
   },
@@ -110,7 +111,7 @@ const statusConfig: Record<
     icon: <AlertTriangle className="w-3.5 h-3.5" />,
   },
   refunded: {
-    label: "Refunded",
+    label: t("orders.refunded"),
     color: "bg-orange-500/15 text-orange-400 border-orange-500/30",
     icon: <Package className="w-3.5 h-3.5" />,
   },
@@ -224,6 +225,7 @@ function OrderCard({
 /* ------------------------------------------------------------------ */
 
 export default function Orders() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"purchases" | "sales">("purchases");
 

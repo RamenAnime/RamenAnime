@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { trpc } from "@/providers/trpc";
 import {
@@ -246,6 +247,7 @@ function PriceRow({
 /* ------------------------------------------------------------------ */
 
 export default function OrderDetail() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const orderId = id ? parseInt(id, 10) : NaN;
@@ -439,7 +441,7 @@ export default function OrderDetail() {
             </h3>
             <Separator className="bg-[#2a2a2a] mb-2" />
             <PriceRow
-              label="Subtotal"
+              label={t("orderDetail.subtotal")}
               amount={subtotal.toFixed(2)}
               currency={o.currency}
             />
@@ -448,7 +450,7 @@ export default function OrderDetail() {
             )}
             {shipping > 0 && (
               <PriceRow
-                label="Shipping"
+                label={t("orderDetail.shipping_cost")}
                 amount={o.shippingCost}
                 currency={o.currency}
               />
@@ -462,7 +464,7 @@ export default function OrderDetail() {
             )}
             <Separator className="bg-[#2a2a2a] my-2" />
             <PriceRow
-              label="Total"
+              label={t("orderDetail.total")}
               amount={o.totalAmount}
               currency={o.currency}
               bold

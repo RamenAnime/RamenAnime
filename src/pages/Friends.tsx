@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, MessageSquare, UserPlus, Clock, Check, X } from "lucide-react";
 import TosGate from "@/components/TosGate";
+import { useTranslation } from "react-i18next";
 
 function FriendsContent() {
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const { data: friends, isLoading: friendsLoading } = trpc.social.listFriends.useQuery();
   const { data: requests, isLoading: requestsLoading } = trpc.social.listFriendRequests.useQuery();

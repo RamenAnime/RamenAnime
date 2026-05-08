@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ThumbsUp, MessageSquare, Eye, Clock, Send, Pin, Lock, Unlock, Quote, Reply, Calendar, Award } from "lucide-react";
+  import { useTranslation } from "react-i18next";
 
 const REACTION_EMOJIS = ["👍", "❤️", "🔥", "😂", "🤔", "👏"];
 
@@ -92,4 +93,5 @@ function PostContent() {
   );
 }
 
-export default function ForumPost() { return <PostContent />; }
+export default function ForumPost() {
+  const { t } = useTranslation(); return <PostContent />; }

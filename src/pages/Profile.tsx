@@ -14,10 +14,12 @@ import {
   MessageSquare, Globe, Gamepad2, Tv, Smile, Send, Loader2,
 } from "lucide-react";
 import { useState, useCallback } from "react";
+  import { useTranslation } from "react-i18next";
 import TosGate from "@/components/TosGate";
 import { toast } from "sonner";
 
 function ProfileContent() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const profileUserId = parseInt(id ?? "0");
   
@@ -43,7 +45,7 @@ function ProfileContent() {
     },
     onSuccess: (result) => {
       console.log("[Profile] Save success:", result);
-      toast.success("Profile saved!");
+      toast.success(t("profile.saveBtn"));
       setEditOpen(false);
       utils.social.getProfile.setData({ userId: profileUserId }, result);
       utils.social.getMyProfile.setData(undefined, result);
@@ -69,7 +71,7 @@ function ProfileContent() {
   }, [updateProfile]);
 
   const sendFriendRequest = trpc.social.sendFriendRequest.useMutation({
-    onSuccess: () => { utils.social.listFriends.invalidate(); toast.success("Friend request sent!"); },
+    onSuccess: () => { utils.social.listFriends.invalidate(); toast.success(t("profile.addFriend")); },
     onError: (err) => toast.error(err.message),
   });
 
@@ -88,10 +90,10 @@ function ProfileContent() {
       <div className="min-h-screen py-12">
         <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            {isMyProfile ? "Welcome! Set up your profile" : "Profile not found"}
+            {isMyProfile ? "Welcome! Set up your profile" : {t("profile.notFound")}}
           </h1>
           <p className="text-muted-foreground mb-6">
-            {isMyProfile ? "Set up your profile to connect with the community." : "This user hasn't set up their profile yet."}
+            {isMyProfile ? "Set up your profile to connect with the community." : {t("profile.noProfile")}}
           </p>
           {isMyProfile && (
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -283,7 +285,7 @@ function ProfileEditForm({ profile, onSave, isPending }: { profile?: any; onSave
       <div><label className="text-xs font-medium mb-1 block">Background Image URL</label><Input value={form.backgroundImage} onChange={(e) => update("backgroundImage", e.target.value)} className="bg-muted/50" placeholder="https://..." /></div>
       <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isPending} onClick={onSubmit}>
         {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-        {isPending ? "Saving..." : "Save Profile"}
+        {isPending ? {t("profile.saving")} : {t("profile.saveBtn")}}
       </Button>
     </div>
   );

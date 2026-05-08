@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
   import { Card, CardContent } from "@/components/ui/card";
   import { Heart, ExternalLink, Copy, CheckCircle } from "lucide-react";
   import { trpc } from "@/providers/trpc";
+import { useTranslation } from "react-i18next";
 
   const REVOLUT_USERNAME = "jasonakw8";
   const PAYPAL_CLIENT_ID =
@@ -58,6 +59,7 @@ import { useState, useEffect, useRef } from "react";
   }
 
   export default function Donations() {
+  const { t } = useTranslation();
     const [amount, setAmount] = useState("");
     const [copied, setCopied] = useState(false);
 
@@ -168,7 +170,7 @@ import { useState, useEffect, useRef } from "react";
                       <div className="flex items-center gap-2 min-w-0">
                         <Heart className="h-3 w-3 text-primary shrink-0" />
                         <span className="text-sm text-foreground truncate">
-                          {d.donorName ?? "Anonymous"}
+                          {d.donorName ?? {t("donations.anonymous")}}
                         </span>
                         {d.message && (
                           <span className="text-xs text-muted-foreground italic truncate max-w-[140px]">

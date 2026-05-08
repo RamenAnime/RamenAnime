@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MessageSquare, ThumbsUp, Eye, Pin, Plus, Search, Clock, ChevronDown, TrendingUp, Users, Lock, FolderOpen, Award, ArrowRight } from "lucide-react";
+  import { useTranslation } from "react-i18next";
 
 const SUBFORUMS = [
   { id: "general", name: "General Discussion", desc: "Chat about anything anime and manga related", icon: "MessageSquare" },
@@ -93,7 +94,7 @@ function ForumContent() {
                     <div><label className="text-sm font-medium text-foreground mb-1 block">Subforum</label><div className="flex flex-wrap gap-2">{SUBFORUMS.map((sub) => (<Badge key={sub.id} variant={newPostCategory === sub.id ? "default" : "outline"} className={`cursor-pointer ${newPostCategory === sub.id ? "bg-primary text-primary-foreground" : "border-border/50 text-muted-foreground hover:text-foreground"}`} onClick={() => setNewPostCategory(sub.id)}>{sub.name}</Badge>))}</div></div>
                     <div><label className="text-sm font-medium text-foreground mb-1 block">Title</label><Input value={newPostTitle} onChange={(e) => setNewPostTitle(e.target.value)} placeholder="What's on your mind?" className="bg-muted/50 border-border/50" /></div>
                     <div><label className="text-sm font-medium text-foreground mb-1 block">Content</label><textarea value={newPostContent} onChange={(e) => setNewPostContent(e.target.value)} placeholder="Tell the community more... Use [b]bold[/b], [i]italic[/i], [url=https://...]link[/url]" rows={5} className="w-full rounded-md bg-muted/50 border border-border/50 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-vertical" /></div>
-                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={!newPostTitle.trim() || !newPostContent.trim() || createPost.isPending} onClick={() => createPost.mutate({ title: newPostTitle, content: newPostContent, category: newPostCategory })}>{createPost.isPending ? "Posting..." : "Publish Thread"}</Button>
+                    <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={!newPostTitle.trim() || !newPostContent.trim() || createPost.isPending} onClick={() => createPost.mutate({ title: newPostTitle, content: newPostContent, category: newPostCategory })}>{createPost.isPending ? {t("forum.posting")} : "Publish Thread"}</Button>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -132,7 +133,7 @@ function ForumContent() {
                   </div>
                 </CardContent></Card>
               ))}
-              {hasMore && (<div className="flex justify-center pt-4"><Button variant="outline" onClick={loadMore} disabled={isLoading} className="border-border/50"><ChevronDown className="mr-2 h-4 w-4" />{isLoading ? "Loading..." : "Load More"}</Button></div>)}
+              {hasMore && (<div className="flex justify-center pt-4"><Button variant="outline" onClick={loadMore} disabled={isLoading} className="border-border/50"><ChevronDown className="mr-2 h-4 w-4" />{isLoading ? "Loading..." : {t("forum.load_more")}}</Button></div>)}
             </div>) : (<Card className="bg-card/50 border-border/50"><CardContent className="p-12 text-center"><MessageSquare className="h-12 w-12 text-muted-foreground mx-auto mb-4" /><h3 className="text-lg font-medium text-foreground mb-2">No threads yet</h3><p className="text-muted-foreground text-sm">Be the first to start a conversation!</p></CardContent></Card>)}
           </div>
 
@@ -147,4 +148,10 @@ function ForumContent() {
   );
 }
 
-export default function Social() { return <ForumContent />; }
+export default function Social() {
+    const { t } = useTranslation();
+    const SUBFORUMS = SUBFORUM_IDS.map(id => ({
+      id,
+      name: t(`forum.cat_${id.replace('-','')}`),
+      desc: t(`forum.cat_${id.replace('-','')}_desc`),
+    })); return <ForumContent />; }

@@ -12,12 +12,13 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router";
 import { Upload, X, ImageIcon, Sparkles, Camera, Package, Tag, Clock, FileText, ChevronRight, AlertCircle } from "lucide-react";
+  import { useTranslation } from "react-i18next";
 
 const CATEGORIES = [
   { id: "anime-figures", name: "Anime Figures", icon: "🎌" },
-  { id: "manga", name: "Manga / Books", icon: "📚" },
-  { id: "art-cels", name: "Art / Cels", icon: "🎨" },
-  { id: "collectibles", name: "Collectibles", icon: "🏆" },
+  { id: "manga", key: "cat_manga", icon: "📚" },
+  { id: "art-cels", key: "cat_art", icon: "🎨" },
+  { id: "collectibles", key: "cat_collectibles", icon: "🏆" },
   { id: "apparel", name: "Apparel / Cosplay", icon: "👕" },
   { id: "accessories", name: "Accessories", icon: "⌚" },
   { id: "trading-cards", name: "Trading Cards", icon: "🃏" },
@@ -29,9 +30,9 @@ const CATEGORIES = [
 ];
 
 const CONDITIONS = [
-  { id: "new", label: "New", desc: "Unopened, brand new" },
-  { id: "like_new", label: "Like New", desc: "Opened but perfect" },
-  { id: "used", label: "Used", desc: "Gently used" },
+  { id: "new", label: {t("createListing.new")}, desc: "Unopened, brand new" },
+  { id: "like_new", label: {t("createListing.like_new")}, desc: "Opened but perfect" },
+  { id: "used", label: {t("createListing.used")}, desc: "Gently used" },
   { id: "fair", label: "Fair", desc: "Visible wear" },
   { id: "poor", label: "Poor", desc: "Heavy wear / parts" },
 ];
@@ -45,6 +46,8 @@ const DURATIONS = [
 ];
 
 export default function CreateListing() {
+  const { t } = useTranslation();
+  const CATEGORIES = CATEGORY_IDS.map(c => ({ ...c, name: t(`createListing.${c.key}`) }));
   const { user } = useAuth();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
@@ -63,7 +66,7 @@ export default function CreateListing() {
 
   const createMutation = trpc.marketplace.createListing.useMutation({
     onSuccess: () => {
-      toast.success("Listing created successfully!");
+      toast.success(t("createListing.success"));
       navigate("/marketplace");
     },
     onError: (err) => toast.error(err.message),
@@ -84,7 +87,7 @@ export default function CreateListing() {
     const files = e.target.files;
     if (!files) return;
     if (images.length + files.length > 10) {
-      toast.error("Max 10 images allowed");
+      toast.error(t("createListing.max_images"));
       return;
     }
     Array.from(files).forEach((file) => {
@@ -483,7 +486,7 @@ export default function CreateListing() {
               <div className="text-muted-foreground">Condition</div>
               <div>{selectedCond?.label || <span className="text-red-500">Not selected</span>}</div>
               <div className="text-muted-foreground">Type</div>
-              <div>{isAuction ? "Auction" : "Fixed Price"}</div>
+              <div>{isAuction ? {t("createListing.auction")} : {t("createListing.fixed_price")}}</div>
               <div className="text-muted-foreground">{isAuction ? "Starting Bid" : "Price"}</div>
               <div>{startPrice ? `$${startPrice}` : <span className="text-red-500">Not set</span>}</div>
               {isAuction && (

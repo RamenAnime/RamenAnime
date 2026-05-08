@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +54,7 @@ function PriceChart({ data }: { data: any[] }) {
 }
 
 export default function ListingDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const listingId = parseInt(id ?? "0");
   const { format } = useCurrency();
@@ -191,7 +193,7 @@ export default function ListingDetail() {
                   {isAuction ? (
                     <>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                        {isEnded ? "Final Price" : "Current Bid"}
+                        {isEnded ? "Final Price" : {t("listing.current_bid")}}
                       </p>
                       <p className="text-4xl font-black text-primary">
                         ${format(listing.currentBid || listing.startPrice || "0")}
@@ -360,7 +362,7 @@ export default function ListingDetail() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-sm">{listing.seller?.name || "Seller"}</p>
+                    <p className="font-medium text-sm">{listing.seller?.name || {t("listing.seller")}}</p>
                     <div className="flex items-center gap-1">
                       {[1,2,3,4,5].map((s) => (
                         <Star key={s} className={`w-3 h-3 ${s <= 4 ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />

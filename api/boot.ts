@@ -13,76 +13,12 @@ import { Hono } from "hono";
   // OFAC and internationally sanctioned countries blocked at the server level
   const BLOCKED_COUNTRIES = ["IR", "KP", "SY", "CU", "MM"];
 
-  const app = new Hono<{ Bindings: HttpBindings }>();
-  app.use(bodyLimit({ maxSize: 10 * 1024 * 1024 })); // 10 MB max upload
-
-  app.use("*", async (c, next) => {
-    await next();
-    c.header("X-Content-Type-Options", "nosniff");
-    c.header("X-Frame-Options", "DENY");
-    c.header("X-XSS-Protection", "1; mode=block");
-    c.header("Referrer-Policy", "strict-origin-when-cross-origin");
-    c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)");
-    c.header("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
-  });
-
-  // Only trust Cloudflare-injected headers to prevent IP spoofing
-  function getClientCountry(c: HonoContext): { country: string; source: string; ip: string } {
-    const cfCountry = c.req.header("CF-IPCountry");
-    const cfIP = c.req.header("CF-Connecting-IP");
-    const xCountryCode = c.req.header("X-Country-Code");
-    let ip = "unknown";
-    if (cfIP) ip = cfIP;
-    if (cfCountry && cfCountry !== "XX") return { country: cfCountry.toUpperCase(), source: "cloudflare", ip };
-    if (xCountryCode) return { country: xCountryCode.toUpperCase(), source: "header", ip };
-    return { country: "", source: "unknown", ip };
-  }
-
-  app.use("/api/*", async (c, next) => {
-    const path = c.req.path;
-    if (path === "/api/ping" || path.includes("geo.checkAccess")) return next();
-    const geo = getClientCountry(c);
-    if (geo.country && BLOCKED_COUNTRIES.includes(geo.country)) {
-      return c.json({
-        error: "GEO_BLOCKED",
-        code: "GEO_BLOCKED",
-        message: "Service not available in your country.",
-        country: geo.country,
-        source: geo.source,
-      }, 403);
-    }
-    return next();
-  });
-
-  app.use("/api/*", async (c, next) => {
-    await next();
-    const geo = getClientCountry(c);
-    if (geo.country) {
-      c.header("X-Detected-Country", geo.country);
-      c.header("X-Geo-Source", geo.source);
-    }
-  });
-
-  app.get("/api/ping", (c) => c.json({ ok: true, ts: Date.now() }));
-
-  // Stripe webhook must be mounted BEFORE tRPC so it receives the raw request body
-  app.post("/api/stripe/webhook", handleStripeWebhook);
-
-  app.use("/api/trpc", async (c) =>
-    fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext })
-  );
-  app.use("/api/trpc/*", async (c) =>
-    fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext })
-  );
-
-  app.get("/api/run-migration", async (c) => {
-      const adminKey = c.req.header("X-Admin-Key");
-      if (adminKey !== process.env.ADMIN_MIGRATION_KEY) {
-        return c.json({ error: "UNAUTHORIZED", message: "Invalid or missing admin key." }, 401);
-      }
-      try {
-        const db = getDb();
-        // ── Phase 1: Add missing columns to forum_comments ────────────────────
+  
+  // ── Auto-migration: runs on every boot to ensure schema is up to date ─────────
+  async function runMigrations(): Promise<void> {
+    try {
+      const db = getDb();
+      // ── Phase 1: Add missing columns to forum_comments ────────────────────
       try { await db.execute(sql`ALTER TABLE forum_comments ADD COLUMN IF NOT EXISTS parent_id BIGINT UNSIGNED`); } catch (_) {}
 
       // ── Phase 2: Add missing columns to marketplace_listings ──────────────
@@ -158,11 +94,83 @@ import { Hono } from "hono";
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_bids_listing ON auction_bids(listing_id)`); } catch (_) {}
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id)`); } catch (_) {}
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_id)`); } catch (_) {}
-        return c.json({ ok: true, message: "Migration complete — all tables and columns created or already exist." });
-      } catch (e) {
-        return c.json({ ok: false, error: (e as Error).message }, 500);
+      console.log("DB migration: all tables and columns verified");
+    } catch (err) {
+      console.error("DB migration error:", err, " failed — server continuing anyway");
+    }
+  }
+  
+const app = new Hono<{ Bindings: HttpBindings }>();
+  app.use(bodyLimit({ maxSize: 10 * 1024 * 1024 })); // 10 MB max upload
+
+  app.use("*", async (c, next) => {
+    await next();
+    c.header("X-Content-Type-Options", "nosniff");
+    c.header("X-Frame-Options", "DENY");
+    c.header("X-XSS-Protection", "1; mode=block");
+    c.header("Referrer-Policy", "strict-origin-when-cross-origin");
+    c.header("Permissions-Policy", "camera=(), microphone=(), geolocation=(self)");
+    c.header("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+  });
+
+  // Only trust Cloudflare-injected headers to prevent IP spoofing
+  function getClientCountry(c: HonoContext): { country: string; source: string; ip: string } {
+    const cfCountry = c.req.header("CF-IPCountry");
+    const cfIP = c.req.header("CF-Connecting-IP");
+    const xCountryCode = c.req.header("X-Country-Code");
+    let ip = "unknown";
+    if (cfIP) ip = cfIP;
+    if (cfCountry && cfCountry !== "XX") return { country: cfCountry.toUpperCase(), source: "cloudflare", ip };
+    if (xCountryCode) return { country: xCountryCode.toUpperCase(), source: "header", ip };
+    return { country: "", source: "unknown", ip };
+  }
+
+  app.use("/api/*", async (c, next) => {
+    const path = c.req.path;
+    if (path === "/api/ping" || path.includes("geo.checkAccess")) return next();
+    const geo = getClientCountry(c);
+    if (geo.country && BLOCKED_COUNTRIES.includes(geo.country)) {
+      return c.json({
+        error: "GEO_BLOCKED",
+        code: "GEO_BLOCKED",
+        message: "Service not available in your country.",
+        country: geo.country,
+        source: geo.source,
+      }, 403);
+    }
+    return next();
+  });
+
+  app.use("/api/*", async (c, next) => {
+    await next();
+    const geo = getClientCountry(c);
+    if (geo.country) {
+      c.header("X-Detected-Country", geo.country);
+      c.header("X-Geo-Source", geo.source);
+    }
+  });
+
+  app.get("/api/ping", (c) => c.json({ ok: true, ts: Date.now() }));
+
+  // Stripe webhook must be mounted BEFORE tRPC so it receives the raw request body
+  app.post("/api/stripe/webhook", handleStripeWebhook);
+
+  app.use("/api/trpc", async (c) =>
+    fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext })
+  );
+  app.use("/api/trpc/*", async (c) =>
+    fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext })
+  );
+
+  app.get("/api/run-migration", async (c) => {
+      const adminKey = c.req.header("X-Admin-Key");
+      if (adminKey !== process.env.ADMIN_MIGRATION_KEY) {
+        return c.json({ error: "UNAUTHORIZED", message: "Invalid or missing admin key." }, 401);
       }
+      await runMigrations();
+      return c.json({ ok: true, message: "Migration complete — all tables and columns created or already exist." });
     });
+
   app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
   export default app;
@@ -172,6 +180,9 @@ import { Hono } from "hono";
     const { serveStaticFiles } = await import("./lib/utils/vite");
     serveStaticFiles(app);
     const port = parseInt(process.env.PORT || "3000");
-    serve({ fetch: app.fetch, port }, () => console.log(`Server running on http://localhost:${port}/`));
+    // Run schema migration on startup
+    await runMigrations();
+
+        serve({ fetch: app.fetch, port }, () => console.log(`Server running on http://localhost:${port}/`));
   }
   

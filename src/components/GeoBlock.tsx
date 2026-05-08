@@ -20,51 +20,104 @@ import { useState, useEffect } from "react";
   const GEO_COUNTRY_KEY = "ramen_anime_country";
   const TIMEOUT_MS = 4000;
 
-  function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-    return Promise.race([
-      promise,
-      new Promise<T>((_, reject) => setTimeout(() => reject(new Error("timeout")), ms)),
-    ]);
+  // Browser-compatible first-success race (no Promise.any required)
+  function firstSuccess<T>(
+    fns: Array<() => Promise<T | null>>
+  ): Promise<T | null> {
+    return new Promise((resolve) => {
+      let settled = false;
+      let pending = fns.length;
+
+      const done = (value: T | null) => {
+        if (!settled) {
+          settled = true;
+          resolve(value);
+        }
+      };
+
+      const timer = setTimeout(() => done(null), TIMEOUT_MS);
+
+      fns.forEach((fn) => {
+        fn()
+          .then((result) => {
+            if (result) {
+              clearTimeout(timer);
+              done(result);
+            }
+          })
+          .catch(() => {})
+          .finally(() => {
+            pending -= 1;
+            if (pending === 0) {
+              clearTimeout(timer);
+              done(null);
+            }
+          });
+      });
+    });
   }
 
   async function detectCountry(): Promise<{ code: string; name: string } | null> {
-    const services = [
-      () => fetch("https://ipapi.co/json/").then(r => r.json()).then(d => d.country_code ? { code: d.country_code, name: d.country_name || d.country_code } : null),
-      () => fetch("https://ipwho.is/").then(r => r.json()).then(d => d.country_code ? { code: d.country_code, name: d.country || d.country_code } : null),
-      () => fetch("https://api.country.is/").then(r => r.json()).then(d => d.country ? { code: d.country, name: d.country } : null),
-    ];
-
-    try {
-      const result = await withTimeout(
-        Promise.any(services.map(svc =>
-          svc().then(r => { if (!r?.code) throw new Error("no code"); return r; })
-        )),
-        TIMEOUT_MS
-      );
-      return result;
-    } catch {
-      return null;
-    }
+    return firstSuccess<{ code: string; name: string }>([
+      () =>
+        fetch("https://ipapi.co/json/")
+          .then((r) => r.json())
+          .then((d) =>
+            d.country_code
+              ? { code: d.country_code, name: d.country_name || d.country_code }
+              : null
+          ),
+      () =>
+        fetch("https://ipwho.is/")
+          .then((r) => r.json())
+          .then((d) =>
+            d.country_code
+              ? { code: d.country_code, name: d.country || d.country_code }
+              : null
+          ),
+      () =>
+        fetch("https://api.country.is/")
+          .then((r) => r.json())
+          .then((d) =>
+            d.country ? { code: d.country, name: d.country } : null
+          ),
+    ]);
   }
 
-  interface GeoBlockProps { children: React.ReactNode; }
+  interface GeoBlockProps {
+    children: React.ReactNode;
+  }
 
   export default function GeoBlock({ children }: GeoBlockProps) {
     const { t } = useTranslation();
-    const [status, setStatus] = useState<"checking" | "allowed" | "blocked">("checking");
-    const [country, setCountry] = useState<{ code: string; name: string } | null>(null);
+    const [status, setStatus] = useState<"checking" | "allowed" | "blocked">(
+      "checking"
+    );
+    const [country, setCountry] = useState<{
+      code: string;
+      name: string;
+    } | null>(null);
     const [showManual, setShowManual] = useState(false);
 
     useEffect(() => {
       const cached = localStorage.getItem(GEO_KEY);
       const cachedCountry = localStorage.getItem(GEO_COUNTRY_KEY);
-      if (cached === "true") { setStatus("allowed"); return; }
-      if (cached === "false" && cachedCountry) {
-        try { setCountry(JSON.parse(cachedCountry)); } catch {}
-        setStatus("blocked"); return;
+      if (cached === "true") {
+        setStatus("allowed");
+        return;
       }
-      detectCountry().then(result => {
-        if (!result) { setStatus("allowed"); return; }
+      if (cached === "false" && cachedCountry) {
+        try {
+          setCountry(JSON.parse(cachedCountry));
+        } catch {}
+        setStatus("blocked");
+        return;
+      }
+      detectCountry().then((result) => {
+        if (!result) {
+          setStatus("allowed");
+          return;
+        }
         const allowed = ALLOWED_COUNTRIES.includes(result.code);
         setCountry(result);
         localStorage.setItem(GEO_KEY, allowed ? "true" : "false");
@@ -88,8 +141,11 @@ import { useState, useEffect } from "react";
       localStorage.removeItem(GEO_KEY);
       localStorage.removeItem(GEO_COUNTRY_KEY);
       setStatus("checking");
-      detectCountry().then(result => {
-        if (!result) { setStatus("allowed"); return; }
+      detectCountry().then((result) => {
+        if (!result) {
+          setStatus("allowed");
+          return;
+        }
         const allowed = ALLOWED_COUNTRIES.includes(result.code);
         setCountry(result);
         localStorage.setItem(GEO_KEY, allowed ? "true" : "false");
@@ -98,14 +154,17 @@ import { useState, useEffect } from "react";
       });
     };
 
-    if (status === "checking") return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-          <p className="text-foreground text-sm font-medium">Loading ラーメンアニメ…</p>
+    if (status === "checking")
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+            <p className="text-foreground text-sm font-medium">
+              Loadingラーメンアニメ…
+            </p>
+          </div>
         </div>
-      </div>
-    );
+      );
 
     if (status === "allowed") return <>{children}</>;
 
@@ -118,29 +177,48 @@ import { useState, useEffect } from "react";
               <Globe className="h-10 w-10 text-muted-foreground" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-foreground mb-2">{t("geoBlock.title")}</h1>
+              <h1 className="text-2xl font-bold text-foreground mb-2">
+                {t("geoBlock.title")}
+              </h1>
               <p className="text-muted-foreground">{t("geoBlock.subtitle")}</p>
             </div>
             {country && (
               <div className="bg-muted rounded-lg p-3 text-sm">
-                <span className="text-muted-foreground">{t("geoBlock.detected")} </span>
-                <span className="font-semibold text-foreground">{country.name} ({country.code})</span>
+                <span className="text-muted-foreground">
+                  {t("geoBlock.detected")}{" "}
+                </span>
+                <span className="font-semibold text-foreground">
+                  {country.name} ({country.code})
+                </span>
               </div>
             )}
-            <p className="text-sm text-muted-foreground">{t("geoBlock.not_available")}</p>
+            <p className="text-sm text-muted-foreground">
+              {t("geoBlock.not_available")}
+            </p>
             <div className="flex flex-col gap-3">
-              <Button variant="outline" onClick={handleRetry}>{t("geoBlock.retry")}</Button>
-              <Button variant="ghost" size="sm" onClick={() => setShowManual(!showManual)}>
+              <Button variant="outline" onClick={handleRetry}>
+                {t("geoBlock.retry")}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowManual(!showManual)}
+              >
                 {t("geoBlock.select_country")}
               </Button>
             </div>
             {showManual && (
               <div className="mt-4">
-                <p className="text-xs text-muted-foreground mb-2">{t("geoBlock.available_in")}:</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  {t("geoBlock.available_in")}:
+                </p>
                 <div className="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto text-left">
                   {ALLOWED_COUNTRIES.map((code) => (
-                    <button key={code} onClick={() => handleManualSelect(code)}
-                      className="text-xs px-2 py-1 rounded hover:bg-muted text-left transition-colors text-foreground">
+                    <button
+                      key={code}
+                      onClick={() => handleManualSelect(code)}
+                      className="text-xs px-2 py-1 rounded hover:bg-muted text-left transition-colors text-foreground"
+                    >
                       {COUNTRY_NAMES[code] || code}
                     </button>
                   ))}

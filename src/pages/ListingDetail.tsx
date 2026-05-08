@@ -362,7 +362,7 @@ export default function ListingDetail() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-sm">{listing.seller?.name || {t("listing.seller")}}</p>
+                    <p className="font-medium text-sm">{listing.seller?.name || t("listing.seller")}</p>
                     <div className="flex items-center gap-1">
                       {[1,2,3,4,5].map((s) => (
                         <Star key={s} className={`w-3 h-3 ${s <= 4 ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />

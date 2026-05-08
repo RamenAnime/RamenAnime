@@ -5,15 +5,20 @@ import { createNotification, banUser } from "../queries/users";
 import { logger } from "./logger";
 
 async function isAdmin(userId: number): Promise<boolean> {
-  try {
     const db = getDb();
     const rows = await db.select().from(users).where(eq(users.id, userId)).limit(1);
     const user = rows[0];
     return user?.role === "admin" || false;
-  } catch {
-    return false;
   }
-}
+
+  async function safeIsAdmin(userId: number): Promise<boolean> {
+    try {
+      return await isAdmin(userId);
+    } catch {
+      // DB error — do NOT assume non-admin; skip banning when uncertain
+      return true;
+    }
+  }
 
 const BLOCKED_WORDS = [
   "fuck", "shit", "bitch", "asshole", "cunt", "damn",
@@ -154,7 +159,7 @@ export async function moderateContent(
 
   if (result.action === "remove" || result.action === "flag") {
     const violations = await getUserRecentViolations(userId, 24);
-    if (violations >= 3) {
+    if (violations >= 3 && !(await safeIsAdmin(userId))) {
       await banUser(userId, true);
       await db.insert(moderationLogs).values({
         userId,
@@ -217,7 +222,7 @@ export async function moderateListing(userId: number, listingId: number, title: 
 
   if (result.action === "remove" || result.action === "flag") {
     const violations = await getUserRecentViolations(userId, 24);
-    if (violations >= 3) {
+    if (violations >= 3 && !(await safeIsAdmin(userId))) {
       await banUser(userId, true);
       await db.insert(moderationLogs).values({
         userId,

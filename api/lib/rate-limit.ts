@@ -3,7 +3,7 @@
 
   import { getDb } from "../queries/connection";
   import { rateLimitLogs } from "@db/schema";
-  import { eq, and, gte, lt, count } from "drizzle-orm";
+  import { eq, and, gte, lt, count, sql as drizzleSql } from "drizzle-orm";
 
   interface RateLimitEntry {
     count: number;
@@ -22,7 +22,7 @@
     try {
       const db = getDb();
 
-      // Delete entries that are OLDER than the window (expired records)
+      // Delete entries older than the 15-minute window (expired)
       await db.delete(rateLimitLogs).where(
         and(
           eq(rateLimitLogs.ipHash, ip),
@@ -31,9 +31,9 @@
         )
       );
 
-      // Count attempts that fall WITHIN the window
-      const [result] = await db
-        .select({ count: count() })
+      // Find oldest entry and count within the window
+      const rows = await db
+        .select({ createdAt: rateLimitLogs.createdAt })
         .from(rateLimitLogs)
         .where(
           and(
@@ -43,10 +43,14 @@
           )
         );
 
-      const requestCount = result?.count ?? 0;
-
-      if (requestCount >= MAX_REQUESTS) {
-        return { allowed: false, retryAfter: Math.ceil(WINDOW_MS / 1000) };
+      if (rows.length >= MAX_REQUESTS) {
+        // Real remaining time: oldest entry expires at createdAt + WINDOW_MS
+        const oldestTs = rows.reduce((min, r) => {
+          const t = r.createdAt instanceof Date ? r.createdAt.getTime() : new Date(r.createdAt as string).getTime();
+          return t < min ? t : min;
+        }, Date.now());
+        const retryAfter = Math.max(1, Math.ceil((oldestTs + WINDOW_MS - Date.now()) / 1000));
+        return { allowed: false, retryAfter };
       }
 
       await db.insert(rateLimitLogs).values({ ipHash: ip, action, createdAt: now });
@@ -63,6 +67,22 @@
       }
       entry.count += 1;
       return { allowed: true, retryAfter: 0 };
+    }
+  }
+
+  /** Clear all rate-limit records for a given IP and optional action (admin use). */
+  export async function clearRateLimit(ip: string, action?: string): Promise<void> {
+    try {
+      const db = getDb();
+      if (action) {
+        await db.delete(rateLimitLogs).where(
+          and(eq(rateLimitLogs.ipHash, ip), eq(rateLimitLogs.action, action))
+        );
+      } else {
+        await db.delete(rateLimitLogs).where(eq(rateLimitLogs.ipHash, ip));
+      }
+    } catch {
+      // best-effort — never let this crash the server
     }
   }
 

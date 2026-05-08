@@ -232,33 +232,29 @@ export const analyticsRouter = createRouter({
       const db = getDb();
       
       // Get top viewed categories
-      const categoryViewsQuery = db.select({
+      const categoryViewsBase = db.select({
         category: marketplaceListings.category,
         count: count(),
       }).from(productViews)
-        .innerJoin(marketplaceListings, eq(productViews.listingId, marketplaceListings.id))
-        .groupBy(marketplaceListings.category)
+        .innerJoin(marketplaceListings, eq(productViews.listingId, marketplaceListings.id));
+      const categoryViews = await (input.userId
+        ? categoryViewsBase.where(eq(productViews.userId, input.userId))
+        : categoryViewsBase
+      ).groupBy(marketplaceListings.category)
         .orderBy(desc(count()))
         .limit(5);
-      
-      if (input.userId) {
-        categoryViewsQuery.where(eq(productViews.userId, input.userId));
-      }
-      const categoryViews = await categoryViewsQuery;
 
       // Get top searched terms
-      const searchTermsQuery = db.select({
+      const searchTermsBase = db.select({
         query: searchQueries.query,
         count: count(),
-      }).from(searchQueries)
-        .groupBy(searchQueries.query)
+      }).from(searchQueries);
+      const searchTerms = await (input.userId
+        ? searchTermsBase.where(eq(searchQueries.userId, input.userId))
+        : searchTermsBase
+      ).groupBy(searchQueries.query)
         .orderBy(desc(count()))
         .limit(10);
-      
-      if (input.userId) {
-        searchTermsQuery.where(eq(searchQueries.userId, input.userId));
-      }
-      const searchTerms = await searchTermsQuery;
 
       // Get users with high engagement but no purchase
       const window = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

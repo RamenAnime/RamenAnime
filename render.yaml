@@ -1,25 +1,46 @@
 services:
-  - type: web
-    name: ramen-anime
-    runtime: node
-    plan: starter
-    region: oregon
-    branch: main
-    buildCommand: npm install --include=dev && npm run build
-    startCommand: npm start
-    healthCheckPath: /api/ping
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 3000
-      - key: APP_ID
-        sync: false
-      - key: APP_SECRET
-        sync: false
-      - key: VITE_APP_ID
-        sync: false
-      - key: DATABASE_URL
-        sync: false
-      - key: OWNER_UNION_ID
-        sync: false
+    - type: web
+      name: ramen-anime
+      runtime: node
+      plan: starter
+      region: oregon
+      branch: main
+      buildCommand: npm install --include=dev && npm run build
+      startCommand: npm start
+      healthCheckPath: /api/ping
+      envVars:
+        - key: NODE_ENV
+          value: production
+        - key: PORT
+          value: 3000
+        - key: APP_ID
+          sync: false
+        - key: APP_SECRET
+          sync: false
+        - key: DATABASE_URL
+          sync: false
+        - key: RESEND_API_KEY
+          sync: false
+        - key: SITE_URL
+          sync: false
+        - key: STRIPE_SECRET_KEY
+          sync: false
+        - key: STRIPE_PUBLISHABLE_KEY
+          sync: false
+        - key: STRIPE_WEBHOOK_SECRET
+          sync: false
+        - key: VITE_STRIPE_PUBLISHABLE_KEY
+          sync: false
+        - key: VITE_RECAPTCHA_SITE_KEY
+          sync: false
+        - key: RECAPTCHA_SECRET_KEY
+          sync: false
+        - key: OWNER_UNION_ID
+          sync: false
+        - key: ADMIN_MIGRATION_KEY
+          sync: false
+        - key: GOOGLE_API_KEY
+          sync: false
+        - key: GOOGLE_CX
+          sync: false
+  

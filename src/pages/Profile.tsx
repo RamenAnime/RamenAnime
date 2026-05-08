@@ -90,10 +90,10 @@ function ProfileContent() {
       <div className="min-h-screen py-12">
         <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            {isMyProfile ? "Welcome! Set up your profile" : {t("profile.notFound")}}
+            {isMyProfile ? "Welcome! Set up your profile" : t("profile.notFound")}
           </h1>
           <p className="text-muted-foreground mb-6">
-            {isMyProfile ? "Set up your profile to connect with the community." : {t("profile.noProfile")}}
+            {isMyProfile ? "Set up your profile to connect with the community." : t("profile.noProfile")}
           </p>
           {isMyProfile && (
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -285,7 +285,7 @@ function ProfileEditForm({ profile, onSave, isPending }: { profile?: any; onSave
       <div><label className="text-xs font-medium mb-1 block">Background Image URL</label><Input value={form.backgroundImage} onChange={(e) => update("backgroundImage", e.target.value)} className="bg-muted/50" placeholder="https://..." /></div>
       <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isPending} onClick={onSubmit}>
         {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
-        {isPending ? {t("profile.saving")} : {t("profile.saveBtn")}}
+        {isPending ? t("profile.saving") : t("profile.saveBtn")}
       </Button>
     </div>
   );

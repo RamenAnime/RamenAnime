@@ -193,7 +193,7 @@ export default function ListingDetail() {
                   {isAuction ? (
                     <>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                        {isEnded ? "Final Price" : {t("listing.current_bid")}}
+                        {isEnded ? "Final Price" : t("listing.current_bid")}
                       </p>
                       <p className="text-4xl font-black text-primary">
                         ${format(listing.currentBid || listing.startPrice || "0")}

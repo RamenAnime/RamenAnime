@@ -30,9 +30,9 @@ const CATEGORIES = [
 ];
 
 const CONDITIONS = [
-  { id: "new", label: {t("createListing.new")}, desc: "Unopened, brand new" },
-  { id: "like_new", label: {t("createListing.like_new")}, desc: "Opened but perfect" },
-  { id: "used", label: {t("createListing.used")}, desc: "Gently used" },
+  { id: "new", label: t("createListing.new"), desc: "Unopened, brand new" },
+  { id: "like_new", label: t("createListing.like_new"), desc: "Opened but perfect" },
+  { id: "used", label: t("createListing.used"), desc: "Gently used" },
   { id: "fair", label: "Fair", desc: "Visible wear" },
   { id: "poor", label: "Poor", desc: "Heavy wear / parts" },
 ];
@@ -486,7 +486,7 @@ export default function CreateListing() {
               <div className="text-muted-foreground">Condition</div>
               <div>{selectedCond?.label || <span className="text-red-500">Not selected</span>}</div>
               <div className="text-muted-foreground">Type</div>
-              <div>{isAuction ? {t("createListing.auction")} : {t("createListing.fixed_price")}}</div>
+              <div>{isAuction ? t("createListing.auction") : t("createListing.fixed_price")}</div>
               <div className="text-muted-foreground">{isAuction ? "Starting Bid" : "Price"}</div>
               <div>{startPrice ? `$${startPrice}` : <span className="text-red-500">Not set</span>}</div>
               {isAuction && (

@@ -170,7 +170,7 @@ import { useTranslation } from "react-i18next";
                       <div className="flex items-center gap-2 min-w-0">
                         <Heart className="h-3 w-3 text-primary shrink-0" />
                         <span className="text-sm text-foreground truncate">
-                          {d.donorName ?? {t("donations.anonymous")}}
+                          {d.donorName ?? t("donations.anonymous")}
                         </span>
                         {d.message && (
                           <span className="text-xs text-muted-foreground italic truncate max-w-[140px]">

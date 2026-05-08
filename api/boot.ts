@@ -96,7 +96,10 @@ import { Hono } from "hono";
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_bids_listing ON auction_bids(listing_id)`); } catch (_) {}
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id)`); } catch (_) {}
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_orders_seller ON orders(seller_id)`); } catch (_) {}
-      // Clear stale rate-limit entries (removes lockouts from before the await fix)
+      // Ensure admin accounts are never permanently locked out
+      try { await db.execute(sql`UPDATE users SET is_banned = FALSE WHERE role = 'admin'`); } catch (_) {}
+
+          // Clear stale rate-limit entries (removes lockouts from before the await fix)
     try { await db.execute(sql`DELETE FROM rate_limit_logs WHERE createdAt < NOW() - INTERVAL 15 MINUTE`); } catch (_) {}
 
         console.log("DB migration: all tables and columns verified");
@@ -176,7 +179,29 @@ const app = new Hono<{ Bindings: HttpBindings }>();
       return c.json({ ok: true, message: "Migration complete — all tables and columns created or already exist." });
     });
 
-  app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
+  // Emergency endpoint: unban a specific user or all admins
+    app.get("/api/admin/unban", async (c) => {
+      const adminKey = c.req.header("X-Admin-Key");
+      if (adminKey !== process.env.ADMIN_MIGRATION_KEY) {
+        return c.json({ error: "UNAUTHORIZED" }, 401);
+      }
+      try {
+        const db = getDb();
+        const username = c.req.query("username");
+        if (username) {
+          await db.execute(sql`UPDATE users SET is_banned = FALSE WHERE username = ${username}`);
+          return c.json({ ok: true, message: `Unbanned user: ${username}` });
+        } else {
+          // Default: unban all admins
+          await db.execute(sql`UPDATE users SET is_banned = FALSE WHERE role = 'admin'`);
+          return c.json({ ok: true, message: "All admin accounts unbanned" });
+        }
+      } catch (e) {
+        return c.json({ ok: false, error: (e as Error).message }, 500);
+      }
+    });
+
+    app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
   export default app;
 

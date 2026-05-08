@@ -23,24 +23,45 @@ setInterval(() => {
 }, 30000);
 
 // Persist swarm snapshot to DB every 5 minutes for analytics continuity
-setInterval(async () => {
-  try {
-    const db = getDb();
-    const snapshot = await swarmRouter._def.procedures.snapshot.resolve({} as any);
-    await db.insert(swarmSnapshots).values({
-      snapshotType: "aggregate",
-      data: JSON.stringify({
-        topListings: snapshot.topListings,
-        topSearches: snapshot.topSearches,
-        topCategories: snapshot.topCategories,
-        pageDistribution: snapshot.pageDistribution,
-      }),
-      activeUsers: snapshot.activeUsers,
-    });
-  } catch {
-    // Silently fail — DB persistence is best-effort
+  function computeSwarmSnapshot() {
+    const activeList = Array.from(swarmState.activeUsers.values());
+    const pageDistribution: Record<string, number> = {};
+    const listingViewerMap: Record<string, number> = {};
+    const searchTrends: Record<string, number> = {};
+    const categoryActivity: Record<string, number> = {};
+    for (const u of activeList) {
+      if (u.pagePath) pageDistribution[u.pagePath] = (pageDistribution[u.pagePath] || 0) + 1;
+      if (u.currentListingId) listingViewerMap[String(u.currentListingId)] = (listingViewerMap[String(u.currentListingId)] || 0) + 1;
+      if (u.searchQuery) searchTrends[u.searchQuery] = (searchTrends[u.searchQuery] || 0) + 1;
+      if (u.category) categoryActivity[u.category] = (categoryActivity[u.category] || 0) + 1;
+    }
+    return {
+      activeUsers: activeList.length,
+      topListings: Object.entries(listingViewerMap).sort((a, b) => b[1] - a[1]).slice(0, 10),
+      topSearches: Object.entries(searchTrends).sort((a, b) => b[1] - a[1]).slice(0, 10),
+      topCategories: Object.entries(categoryActivity).sort((a, b) => b[1] - a[1]).slice(0, 5),
+      pageDistribution,
+    };
   }
-}, 5 * 60 * 1000);
+
+  setInterval(async () => {
+    try {
+      const db = getDb();
+      const snap = computeSwarmSnapshot();
+      await db.insert(swarmSnapshots).values({
+        snapshotType: "aggregate",
+        data: JSON.stringify({
+          topListings: snap.topListings,
+          topSearches: snap.topSearches,
+          topCategories: snap.topCategories,
+          pageDistribution: snap.pageDistribution,
+        }),
+        activeUsers: snap.activeUsers,
+      });
+    } catch {
+      // Silently fail — DB persistence is best-effort
+    }
+  }, 5 * 60 * 1000);
 
 export const swarmRouter = createRouter({
   // Join or update swarm presence
@@ -114,10 +135,10 @@ export const swarmRouter = createRouter({
   // Who is viewing a specific listing right now
   listingViewers: publicQuery
     .input(z.object({ listingId: z.number() }))
-    .query(async () => {
-      const users = Array.from(swarmState.activeUsers.values());
-      const count = users.filter(u => u.currentListingId === 1).length; // placeholder
-      return { count };
+    .query(async ({ input }) => {
+      const viewers = Array.from(swarmState.activeUsers.values())
+        .filter(u => u.currentListingId === input.listingId).length;
+      return { count: viewers };
     }),
 
   // Collective embeddings - aggregate user interests

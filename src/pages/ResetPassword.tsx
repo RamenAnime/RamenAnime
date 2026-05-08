@@ -35,7 +35,7 @@ export default function ResetPassword() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password !== confirmPassword) { setError("{t("resetPassword.passwordsMatch")}"); return; }
+    if (password !== confirmPassword) { setError(t("resetPassword.passwordsMatch")); return; }
     if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(password)) {
       setError("Password must contain uppercase, lowercase, number, and special character.");

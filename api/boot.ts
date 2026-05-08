@@ -22,6 +22,10 @@ import { Hono } from "hono";
       // Note: IF NOT EXISTS is not universally supported; use try/catch double-attempt
       try { await db.execute(sql`ALTER TABLE forum_posts ADD COLUMN parent_id BIGINT UNSIGNED DEFAULT NULL`); } catch (_) {}
       try { await db.execute(sql`ALTER TABLE forum_comments ADD COLUMN parent_id BIGINT UNSIGNED DEFAULT NULL`); } catch (_) {}
+      // Phase 1b: columns added in later schema versions
+      try { await db.execute(sql`ALTER TABLE forum_posts ADD COLUMN is_locked BOOLEAN NOT NULL DEFAULT FALSE`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE forum_posts ADD COLUMN is_pinned BOOLEAN NOT NULL DEFAULT FALSE`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE forum_posts ADD COLUMN views INT NOT NULL DEFAULT 0`); } catch (_) {}
 
       // ── Phase 2: Add missing columns to marketplace_listings ──────────────
       try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS listing_type ENUM('fixed','auction') NOT NULL DEFAULT 'fixed'`); } catch (_) {}

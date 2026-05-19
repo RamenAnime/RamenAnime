@@ -33,7 +33,9 @@ function CountdownTimer({ endTime }: { endTime: string }) {
       const hours = Math.floor((diff % 86400000) / 3600000);
       const mins = Math.floor((diff % 3600000) / 60000);
       const secs = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${days}d ${hours}h ${mins}m ${secs}s`);
+      setTimeLeft(
+        t("marketplace.countdown", { days, hours, minutes: mins, seconds: secs })
+      );
     };
     update();
     const id = setInterval(update, 1000);

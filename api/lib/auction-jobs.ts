@@ -45,7 +45,7 @@ export async function processEndedAuctions(): Promise<{ closed: number }> {
       await notify({
         userId: listing.sellerId,
         type: "auction_unsold",
-        title: "Auction ended — reserve not met",
+        title: "Auction ended - reserve not met",
         message: `"${listing.title}" ended without meeting reserve.`,
         link: `/marketplace/${listing.id}`,
       });

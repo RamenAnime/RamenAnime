@@ -2,7 +2,7 @@
  * Email HTML Templates for ラーメンアニメ (Ramen Anime)
  *
  * Self-contained template functions for sending transactional emails.
- * No external dependencies — only standard string/template-literal interpolation.
+ * No external dependencies - only standard string/template-literal interpolation.
  *
  * Visual design tokens:
  *   - Header: linear-gradient(135deg, #d4a853, #b8860b)
@@ -101,7 +101,7 @@ export function emailWrapper(
 }
 
 /** ------------------------------------------------------------------ */
-/**  Template 1 – Welcome Email                                          */
+/**  Template 1 - Welcome Email                                          */
 /** ------------------------------------------------------------------ */
 
 /**
@@ -133,14 +133,14 @@ export function welcomeEmailHtml(
     <p>Welcome to <strong class="gold">ラーメンアニメ</strong>! We are thrilled to have you join our community of anime enthusiasts.</p>
     <p>Your account has been successfully created. Here is what you can do now:</p>
     <ul>
-      <li><strong>Shop</strong> – Browse our exclusive collection of custom 3D prints and trading cards</li>
-      <li><strong>Forum</strong> – Connect with fellow fans in our MySpace-style social forum</li>
-      <li><strong>Marketplace</strong> – Buy and sell anime collectibles from other community members</li>
-      <li><strong>Friends</strong> – Build your anime network and make new friends</li>
+      <li><strong>Shop</strong> - Browse our exclusive collection of custom 3D prints and trading cards</li>
+      <li><strong>Forum</strong> - Connect with fellow fans in our MySpace-style social forum</li>
+      <li><strong>Marketplace</strong> - Buy and sell anime collectibles from other community members</li>
+      <li><strong>Friends</strong> - Build your anime network and make new friends</li>
     </ul>
     ${verifySection}
     <p class="fine-print">By using our platform, you agree to our Terms of Service and Privacy Policy.</p>
-    <p>Enjoy your stay!<br/>– The <strong class="gold">ラーメンアニメ</strong> Team</p>
+    <p>Enjoy your stay!<br/>- The <strong class="gold">ラーメンアニメ</strong> Team</p>
   `;
 
   return emailWrapper(
@@ -152,7 +152,7 @@ export function welcomeEmailHtml(
 }
 
 /** ------------------------------------------------------------------ */
-/**  Template 2 – Verify Email                                         */
+/**  Template 2 - Verify Email                                         */
 /** ------------------------------------------------------------------ */
 
 /**
@@ -180,7 +180,7 @@ export function verifyEmailHtml(username: string, link: string): string {
 }
 
 /** ------------------------------------------------------------------ */
-/**  Template 3 – Password Reset                                       */
+/**  Template 3 - Password Reset                                       */
 /** ------------------------------------------------------------------ */
 
 /**

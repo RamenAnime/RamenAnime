@@ -194,6 +194,8 @@ export const kyotoJaOverrides = {
   },
   splash: {
     welcome: "ようこそおこしやす",
+    fromBrand: "Ramen Anime",
+    fromKyoto: "京都より",
     tagline: "アニメとラーメンの世界へ",
     subtagline: "かわいく、ええもん、集まってます",
     skip: "スキップ",

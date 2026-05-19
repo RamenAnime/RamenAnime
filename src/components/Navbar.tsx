@@ -125,7 +125,7 @@ export default function Navbar() {
             {isAuthenticated && (
               <>
                 <Link to="/messages" className="relative">
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" aria-label={t("nav.ariaMessages")}>
                     <Mail className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -133,7 +133,7 @@ export default function Navbar() {
               </>
             )}
             <Link to="/marketplace" className="relative">
-              <Button variant="ghost" size="icon" className="text-foreground hover:text-primary">
+              <Button variant="ghost" size="icon" className="text-foreground hover:text-primary" aria-label={t("nav.ariaMarketplace")}>
                 <ShoppingCart className="h-5 w-5" />
               </Button>
             </Link>
@@ -201,7 +201,7 @@ export default function Navbar() {
             {/* Mobile menu */}
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden text-foreground">
+                <Button variant="ghost" size="icon" className="md:hidden text-foreground" aria-label={t("nav.ariaMenu")}>
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>

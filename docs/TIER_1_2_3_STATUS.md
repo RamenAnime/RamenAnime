@@ -1,8 +1,8 @@
-# Tier 1–3 implementation status
+# Tier 1-3 implementation status
 
 This tracks what was implemented in code vs what you must configure manually. Full setup steps: [MANUAL_SETUP.md](./MANUAL_SETUP.md).
 
-## Tier 1 — Auction core (Yahoo parity basics)
+## Tier 1 - Auction core (Yahoo parity basics)
 
 | Item | Status | Notes |
 |------|--------|--------|
@@ -11,14 +11,14 @@ This tracks what was implemented in code vs what you must configure manually. Fu
 | Anti-snipe (+5 min under 5 min left) | Done | `applyAntiSnipe()` |
 | Reserve price on close | Done | `processEndedAuctions()` |
 | High-value bid deposits | Done | Listings ≥ $5000; `payDeposit` endpoint |
-| Live bid updates (SSE) | Done | `GET /api/auctions/:id/stream` — single-server only; use Redis if you scale horizontally |
+| Live bid updates (SSE) | Done | `GET /api/auctions/:id/stream` - single-server only; use Redis if you scale horizontally |
 | Post-auction orders + 48h pay deadline | Done | `createWinningOrder()` + `processPaymentDeadlines()` |
 | Cron (in-process + HTTP) | Done | 60s interval + `GET /api/cron/auctions` |
 | Shipping estimate matrix | Done | `estimateShipping` on create listing |
 | Stripe checkout | Existing | Configure dashboard (manual) |
 | PayPay / Konbini | Stub | UI shows “coming soon”; integrate via Stripe JP or PayPay API (manual) |
 
-## Tier 2 — Trust and Japan UX
+## Tier 2 - Trust and Japan UX
 
 | Item | Status | Notes |
 |------|--------|--------|
@@ -31,21 +31,21 @@ This tracks what was implemented in code vs what you must configure manually. Fu
 | Image copyright / bootleg scan | Partial | Text scan only; Vision/TinEye (manual) |
 | Real-time messaging | Not done | `message-router` still separate SQL layer; UI stub |
 
-## Tier 3 — Seller tools and PWA
+## Tier 3 - Seller tools and PWA
 
 | Item | Status | Notes |
 |------|--------|--------|
 | Escrow release on delivery | Done | `order.markReceived` → `escrowStatus: released` |
 | Seller analytics API + profile UI | Done | `sellerAnalytics` on Profile earnings |
 | PWA manifest + meta | Done | `public/manifest.json`, `index.html` |
-| Service worker | Existing | `public/sw.js` — verify cache strategy on deploy |
+| Service worker | Existing | `public/sw.js` - verify cache strategy on deploy |
 
 ## Your checklist (highest impact first)
 
 1. **Commit and push** these changes, then confirm GitHub Actions `npm run build` passes.
 2. **Render env:** `STRIPE_*`, `SITE_URL`, `ADMIN_MIGRATION_KEY`, DB URL.
 3. **Stripe Connect** + webhook → `https://ramenanime.com/api/stripe/webhook`.
-4. **External cron:** `GET /api/cron/auctions` with `X-Admin-Key` every 1–5 min (backup if instance sleeps).
+4. **External cron:** `GET /api/cron/auctions` with `X-Admin-Key` every 1-5 min (backup if instance sleeps).
 5. **One-time migration:** `GET /api/run-migration` with admin key after deploy.
 6. **Test auction flow:** create auction → bid → proxy/auto-bid → wait for end or shorten `auctionEnd` in DB → pay within 48h.
 7. **Private main repo** + public portfolio pin (see `GITHUB_PROFILE_SETUP.md`).

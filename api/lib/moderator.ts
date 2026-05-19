@@ -15,7 +15,7 @@ async function isAdmin(userId: number): Promise<boolean> {
     try {
       return await isAdmin(userId);
     } catch {
-      // DB error — do NOT assume non-admin; skip banning when uncertain
+      // DB error - do NOT assume non-admin; skip banning when uncertain
       return true;
     }
   }

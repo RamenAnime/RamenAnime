@@ -65,6 +65,6 @@
   ### Data
 
   - Sensitive query parameters and credentials are never logged.
-  - Reset tokens are hashed with SHA-256 before storage — only the hash is in the database.
+  - Reset tokens are hashed with SHA-256 before storage - only the hash is in the database.
   - Field-level encryption is available for sensitive profile fields.
   

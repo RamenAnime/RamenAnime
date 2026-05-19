@@ -23,9 +23,9 @@ function formatTimeLeft(
   if (diff <= 0) return t("marketplace.ended");
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
-  if (d > 0) return `${d}d ${h}h left`;
+  if (d > 0) return t("marketplace.timeLeftDaysHours", { days: d, hours: h });
   const m = Math.floor((diff % 3600000) / 60000);
-  return `${h}h ${m}m left`;
+  return t("marketplace.timeLeftHoursMinutes", { hours: h, minutes: m });
 }
 
 const categorySlugs = ["All", "trading-cards", "3d-prints", "figures", "apparel", "accessories", "other"] as const;

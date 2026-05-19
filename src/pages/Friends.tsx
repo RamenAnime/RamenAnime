@@ -84,6 +84,7 @@ function FriendsContent() {
                         className="border-border/50 text-muted-foreground"
                         onClick={() => respondRequest.mutate({ requestId: req.id, accept: false })}
                         disabled={respondRequest.isPending}
+                        aria-label={t("a11y.decline")}
                       >
                         <X className="h-4 w-4" />
                       </Button>

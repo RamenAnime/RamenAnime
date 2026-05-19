@@ -154,7 +154,7 @@ import { runAuctionMaintenance } from "./lib/auction-jobs";
 
         console.log("DB migration: all tables and columns verified");
     } catch (err) {
-      console.error("DB migration error:", err, " failed — server continuing anyway");
+      console.error("DB migration error:", err, " failed - server continuing anyway");
     }
   }
   
@@ -264,7 +264,7 @@ const app = new Hono<{ Bindings: HttpBindings }>();
         return c.json({ error: "UNAUTHORIZED", message: "Invalid or missing admin key." }, 401);
       }
       await runMigrations();
-      return c.json({ ok: true, message: "Migration complete — all tables and columns created or already exist." });
+      return c.json({ ok: true, message: "Migration complete - all tables and columns created or already exist." });
     });
 
   // Emergency endpoint: unban a specific user or all admins

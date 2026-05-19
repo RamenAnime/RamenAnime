@@ -230,6 +230,7 @@ try {
                           size="icon"
                           variant="ghost"
                           className="h-6 w-6"
+                          aria-label={t("a11y.copyToClipboard")}
                           onClick={() =>
                             navigator.clipboard.writeText(selectedError.suggestedFix || "")
                           }

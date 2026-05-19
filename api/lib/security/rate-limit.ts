@@ -82,7 +82,7 @@
         await db.delete(rateLimitLogs).where(eq(rateLimitLogs.ipHash, ip));
       }
     } catch {
-      // best-effort — never let this crash the server
+      // best-effort - never let this crash the server
     }
   }
 

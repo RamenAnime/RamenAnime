@@ -146,6 +146,7 @@ export default function Messages() {
                       />
                       <Button
                         size="icon"
+                        aria-label={t("messages.send")}
                         disabled={!draft.trim() || send.isPending}
                         onClick={() => send.mutate({ recipientId: activePartner, body: draft.trim() })}
                       >

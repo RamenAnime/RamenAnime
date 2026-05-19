@@ -112,7 +112,9 @@ export default function BrandSplash({ onComplete }: BrandSplashProps) {
           </svg>
         </div>
         <div className="space-y-2 brand-splash-title-in">
-          <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">{isJa ? "京都より" : "Ramen Anime"}</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-amber-200/80">
+            {isJa ? t("splash.fromKyoto") : t("splash.fromBrand")}
+          </p>
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight bg-gradient-to-r from-amber-200 via-rose-200 to-amber-300 bg-clip-text text-transparent">
             ラーメンアニメ
           </h1>

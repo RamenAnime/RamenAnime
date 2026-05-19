@@ -60,7 +60,7 @@ setInterval(() => {
         activeUsers: snap.activeUsers,
       });
     } catch {
-      // Silently fail — DB persistence is best-effort
+      // Silently fail - DB persistence is best-effort
     }
   }, 5 * 60 * 1000);
 

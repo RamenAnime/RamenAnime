@@ -11,7 +11,7 @@
   <h1 align="center">ラーメンアニメ (Ramen Anime)</h1>
 
   <p align="center">
-    <strong>A global anime merchandise marketplace — live auctions, fraud detection, and support for 35 languages.</strong>
+    <strong>A global anime merchandise marketplace - live auctions, fraud detection, and support for 35 languages.</strong>
   </p>
 
   <p align="center">
@@ -31,7 +31,7 @@
 
   ## What is Ramen Anime?
 
-  Ramen Anime is a production-grade marketplace for anime collectors. It provides a dedicated space for fans to buy, sell, and auction trading cards, action figures, 3D prints, apparel, and accessories — with built-in protections that general-purpose platforms like eBay or Mercari do not offer.
+  Ramen Anime is a production-grade marketplace for anime collectors. It provides a dedicated space for fans to buy, sell, and auction trading cards, action figures, 3D prints, apparel, and accessories - with built-in protections that general-purpose platforms like eBay or Mercari do not offer.
 
   **The problem it solves:** Anime collectibles trading is fragmented across dozens of platforms with no consistent fraud protection, language support, or community standards. Ramen Anime centralizes everything into a single trusted platform with:
 
@@ -208,7 +208,7 @@
   |---|---|
   | `DATABASE_URL` | TiDB Cloud / MySQL connection string |
   | `APP_ID` | Application identifier used in JWT tokens |
-  | `APP_SECRET` | Secret key for JWT signing — minimum 32 characters |
+  | `APP_SECRET` | Secret key for JWT signing - minimum 32 characters |
   | `RESEND_API_KEY` | Resend API key for transactional email |
   | `SITE_URL` | Public URL used in email links |
   | `STRIPE_SECRET_KEY` | Stripe secret key for payments |
@@ -242,7 +242,7 @@
 
   ### Payments
 
-  Marketplace payments use Stripe Connect. The buyer pays 3% and the seller pays 5% — 8% total per transaction collected as the Stripe application fee. Stripe webhooks at `/api/stripe/webhook` update order and transaction status in real time.
+  Marketplace payments use Stripe Connect. The buyer pays 3% and the seller pays 5% - 8% total per transaction collected as the Stripe application fee. Stripe webhooks at `/api/stripe/webhook` update order and transaction status in real time.
 
   ### TOS Acceptance
 

@@ -6,7 +6,7 @@ This document lists integrations and operations that **cannot** be fully automat
 
 ## 1. Payments
 
-### Stripe (done in code — you configure dashboards)
+### Stripe (done in code - you configure dashboards)
 
 | Step | Action |
 |------|--------|
@@ -15,7 +15,7 @@ This document lists integrations and operations that **cannot** be fully automat
 | 3 | Webhook endpoint: `https://ramenanime.com/api/stripe/webhook` |
 | 4 | Events: `checkout.session.completed`, `account.updated`, `payment_intent.succeeded`, `payment_intent.payment_failed` |
 
-### PayPay / Konbini (not implemented — UI shows “coming soon”)
+### PayPay / Konbini (not implemented - UI shows “coming soon”)
 
 To match Yahoo! Auctions in Japan you need one of:
 
@@ -38,7 +38,7 @@ GET https://ramenanime.com/api/cron/auctions
 Header: X-Admin-Key: YOUR_ADMIN_MIGRATION_KEY
 ```
 
-Schedule: every 1–5 minutes.
+Schedule: every 1-5 minutes.
 
 This closes ended auctions, enforces reserve price, creates winner orders with **48h payment deadline**, and cancels unpaid orders after deadline.
 

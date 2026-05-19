@@ -145,9 +145,9 @@ export default function Admin() {
                           <td className="py-2">{u.isBanned ? <Badge variant="destructive" className="text-xs">{t("admin.banned")}</Badge> : <Badge variant="outline" className="text-xs">{t("admin.active")}</Badge>}</td>
                           <td className="py-2 flex gap-1">
                             <Button size="sm" variant="ghost" onClick={() => navigate(`/profile/${u.id}`)}>{t("admin.view")}</Button>
-                            {u.role !== "admin" && <Button size="sm" variant="ghost" onClick={() => updateRole.mutate({ userId: u.id, role: "admin" })}><Crown className="h-3 w-3" /></Button>}
-                            {u.role === "admin" && u.id !== me?.id && <Button size="sm" variant="ghost" onClick={() => updateRole.mutate({ userId: u.id, role: "user" })}><X className="h-3 w-3" /></Button>}
-                            <Button size="sm" variant="ghost" className={u.isBanned ? "text-green-500" : "text-destructive"} onClick={() => banUser.mutate({ userId: u.id, banned: !u.isBanned })}>
+                            {u.role !== "admin" && <Button size="sm" variant="ghost" aria-label={t("admin.ariaPromoteAdmin")} onClick={() => updateRole.mutate({ userId: u.id, role: "admin" })}><Crown className="h-3 w-3" /></Button>}
+                            {u.role === "admin" && u.id !== me?.id && <Button size="sm" variant="ghost" aria-label={t("admin.ariaDemoteAdmin")} onClick={() => updateRole.mutate({ userId: u.id, role: "user" })}><X className="h-3 w-3" /></Button>}
+                            <Button size="sm" variant="ghost" className={u.isBanned ? "text-green-500" : "text-destructive"} aria-label={u.isBanned ? t("admin.ariaUnbanUser") : t("admin.ariaBanUser")} onClick={() => banUser.mutate({ userId: u.id, banned: !u.isBanned })}>
                               {u.isBanned ? <Unlock className="h-3 w-3" /> : <Ban className="h-3 w-3" />}
                             </Button>
                           </td>
@@ -173,7 +173,7 @@ export default function Admin() {
                             <h3 className="font-bold text-sm">{p.title}</h3>
                             <p className="text-xs text-muted-foreground">{t("admin.byAuthor", { name: p.authorName ?? t("admin.unknown"), likes: String(p.likes ?? 0) })}</p>
                           </div>
-                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { if (confirm(t("admin.deleteConfirmShort"))) deletePost.mutate({ postId: p.id ?? 0 }); }}><Trash2 className="h-3 w-3" /></Button>
+                          <Button size="sm" variant="ghost" className="text-destructive" aria-label={t("admin.ariaDeletePost")} onClick={() => { if (confirm(t("admin.deleteConfirmShort"))) deletePost.mutate({ postId: p.id ?? 0 }); }}><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </div>
                     ))}
@@ -196,7 +196,7 @@ export default function Admin() {
                             <h3 className="font-bold text-sm">{l.title}</h3>
                             <p className="text-xs text-muted-foreground">{t("admin.bySeller", { seller: l.sellerName ?? t("admin.unknown"), price: l.price ?? "" })}</p>
                           </div>
-                          <Button size="sm" variant="ghost" onClick={() => toggleListing.mutate({ listingId: l.id ?? 0, active: !l.isActive })}>{l.isActive ? <Ban className="h-3 w-3" /> : <Check className="h-3 w-3" />}</Button>
+                          <Button size="sm" variant="ghost" aria-label={l.isActive ? t("admin.ariaDeactivateListing") : t("admin.ariaActivateListing")} onClick={() => toggleListing.mutate({ listingId: l.id ?? 0, active: !l.isActive })}>{l.isActive ? <Ban className="h-3 w-3" /> : <Check className="h-3 w-3" />}</Button>
                         </div>
                       </div>
                     ))}

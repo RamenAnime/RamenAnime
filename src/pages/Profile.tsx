@@ -157,7 +157,7 @@ function ProfileContent() {
                         </Button>
                       )}
                       {isFriend && <Badge variant="outline" className="border-primary/30 text-primary"><UserCheck className="mr-1 h-4 w-4" />{t("profile.friends")}</Badge>}
-                      <Link to="/messages"><Button size="sm" variant="outline" style={{ borderColor: accentColor + "60", color: accentColor }}><MessageSquare className="mr-1 h-4 w-4" />{t("profile.message", { defaultValue: "Message" })}</Button></Link>
+                      <Link to="/messages"><Button size="sm" variant="outline" style={{ borderColor: accentColor + "60", color: accentColor }}><MessageSquare className="mr-1 h-4 w-4" />{t("profile.message")}</Button></Link>
                     </>
                   )}
                 </div>

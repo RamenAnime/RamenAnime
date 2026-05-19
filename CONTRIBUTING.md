@@ -32,7 +32,7 @@
   2. The solution you have in mind
   3. Alternatives you considered
 
-  Keep proposals focused — one feature per issue.
+  Keep proposals focused - one feature per issue.
 
   ---
 

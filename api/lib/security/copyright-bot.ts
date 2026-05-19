@@ -58,7 +58,7 @@ export async function runCopyrightScan(listingId: number, title: string, descrip
     confidence: textResult.confidence.toString(),
     matchedTerms: JSON.stringify(textResult.matchedTerms),
     reason: textResult.reason,
-    scanDetails: JSON.stringify({ imageCount: imageUrls.length, imageUrls: imageUrls.slice(0, 5), note: "Image scanning not yet implemented — text-only analysis" }),
+    scanDetails: JSON.stringify({ imageCount: imageUrls.length, imageUrls: imageUrls.slice(0, 5), note: "Image scanning not yet implemented - text-only analysis" }),
   });
   const overallStatus = textResult.status;
   await db.update(marketplaceListings)

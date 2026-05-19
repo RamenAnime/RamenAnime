@@ -42,7 +42,7 @@ export async function createAuctionDepositCheckout(input: {
         currency: "usd",
         unit_amount: amountCents,
         product_data: {
-          name: `Auction bid deposit — ${listing.title}`,
+          name: `Auction bid deposit - ${listing.title}`,
           description: "Refundable hold for high-value auctions (5% of start price, min $500)",
         },
       },

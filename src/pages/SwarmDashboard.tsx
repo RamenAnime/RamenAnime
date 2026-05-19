@@ -180,7 +180,7 @@ export default function SwarmDashboard() {
 
             </Badge>
 
-            <Button size="sm" variant="outline" onClick={handleRefresh}>
+            <Button size="sm" variant="outline" onClick={handleRefresh} aria-label={t("swarm.refresh")}>
 
               <RefreshCw className="h-4 w-4" />
 

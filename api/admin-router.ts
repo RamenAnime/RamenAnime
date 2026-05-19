@@ -3,7 +3,7 @@ import { createRouter, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { banUser } from "./queries/users";
 import { users, userProfiles, forumPosts, forumComments, friends, marketplaceListings, donations, geoVerifications, tosAcceptances, siteVisits, orders } from "@db/schema";
-import { eq, desc, count } from "drizzle-orm";
+import { eq, desc, count, sum } from "drizzle-orm";
 
 export const adminRouter = createRouter({
   getStats: adminQuery.query(async () => {
@@ -22,12 +22,19 @@ export const adminRouter = createRouter({
     const [visitCount] = await db.select({ count: count() }).from(siteVisits);
     const [orderCount] = await db.select({ count: count() }).from(orders);
     const [paidOrderCount] = await db.select({ count: count() }).from(orders).where(eq(orders.status, "paid"));
+    const [gmvRow] = await db.select({ total: sum(orders.totalAmount) }).from(orders).where(eq(orders.status, "paid"));
+    const [donationTotal] = await db.select({ total: sum(donations.amount) }).from(donations).where(eq(donations.paymentStatus, "completed"));
+    const [feeRow] = await db.select({ total: sum(orders.feeAmount) }).from(orders).where(eq(orders.status, "paid"));
+    const [activeListingCount] = await db.select({ count: count() }).from(marketplaceListings).where(eq(marketplaceListings.isActive, true));
     return {
       users: userCount.count, admins: adminCount.count, banned: bannedCount.count, visits: visitCount.count, orders: orderCount.count, paidOrders: paidOrderCount.count, posts: postCount.count,
-      comments: commentCount.count, listings: listingCount.count,
+      comments: commentCount.count, listings: listingCount.count, activeListings: activeListingCount.count,
       donations: donationCount.count, friends: friendCount.count,
       geoVerifications: geoCount.count, tosAcceptances: tosCount.count,
       profiles: profileCount.count,
+      gmv: gmvRow.total ?? "0",
+      donationRevenue: donationTotal.total ?? "0",
+      platformFees: feeRow.total ?? "0",
     };
   }),
 

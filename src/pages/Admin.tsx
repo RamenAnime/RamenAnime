@@ -10,7 +10,7 @@ import { useNavigate } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 
-function StatCard({ label, value, icon: Icon, color }: { label: string; value: number; icon: any; color: string }) {
+function StatCard({ label, value, icon: Icon, color }: { label: string; value: number | string; icon: any; color: string }) {
   return (
     <Card className="bg-card border-border">
       <CardContent className="p-4 flex items-center gap-4">
@@ -113,6 +113,10 @@ export default function Admin() {
               <StatCard label="Total Visits" value={stats?.visits ?? 0} icon={Eye} color="#06b6d4" />
               <StatCard label="Orders" value={stats?.orders ?? 0} icon={ShoppingBag} color="#a855f7" />
               <StatCard label="Paid Orders" value={stats?.paidOrders ?? 0} icon={CreditCard} color="#22c55e" />
+              <StatCard label="Active Listings" value={stats?.activeListings ?? 0} icon={ShoppingBag} color="#10b981" />
+              <StatCard label="GMV (paid)" value={`$${parseFloat(stats?.gmv ?? "0").toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={CreditCard} color="#d4a853" />
+              <StatCard label="Platform fees" value={`$${parseFloat(stats?.platformFees ?? "0").toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={CreditCard} color="#f97316" />
+              <StatCard label="Donation revenue" value={`$${parseFloat(stats?.donationRevenue ?? "0").toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={Heart} color="#ec4899" />
             </div>
           </TabsContent>
 

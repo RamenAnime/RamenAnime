@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useSearchParams } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useTranslation } from "react-i18next";
@@ -12,8 +12,8 @@ import {
   Heart, Share2, MessageSquare, Gavel, Tag, Zap,
   Clock, Shield, ChevronDown, ChevronUp, TrendingUp,
   Star, Truck, MapPin, AlertTriangle, Check,
-  ExternalLink, Copy
 } from "lucide-react";
+import { toast } from "sonner";
 
 function CountdownTimer({ endTime }: { endTime: string }) {
   const [timeLeft, setTimeLeft] = useState("");
@@ -56,8 +56,10 @@ function PriceChart({ data }: { data: any[] }) {
 export default function ListingDetail() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const listingId = parseInt(id ?? "0");
   const { format } = useCurrency();
+  const utils = trpc.useUtils();
   const [bidAmount, setBidAmount] = useState("");
   const [showAllBids, setShowAllBids] = useState(false);
   const [isWatching, setIsWatching] = useState(false);
@@ -80,20 +82,29 @@ export default function ListingDetail() {
     { listingId },
     { enabled: listingId > 0 }
   );
-  const { data: sellerStripe } = trpc.stripe.getSellerStatus.useQuery(
-    undefined,
-    { enabled: !!listing?.sellerId }
-  );
+  const sellerCanAcceptPayments = !!(listing as { sellerPaymentReady?: boolean } | undefined)?.sellerPaymentReady;
+
+  useEffect(() => {
+    if (searchParams.get("payment") === "success") {
+      toast.success("Payment received. Thank you for your purchase on Ramen Anime.");
+      utils.order.getByListing.invalidate({ listingId });
+      utils.marketplace.getListing.invalidate({ id: listingId });
+    }
+  }, [searchParams, listingId, utils]);
 
   const placeBid = trpc.marketplace.placeBid.useMutation({
     onSuccess: (data) => {
       setBidAmount("");
       if (data.won && data.orderId) {
         setCreatedOrder({ id: data.orderId, orderNumber: data.orderNumber || "" });
+        utils.marketplace.getListing.invalidate({ id: listingId });
+        utils.order.getByListing.invalidate({ listingId });
       } else {
-        window.location.reload();
+        utils.marketplace.getListing.invalidate({ id: listingId });
+        utils.marketplace.getBidHistory.invalidate({ listingId });
       }
     },
+    onError: (err) => toast.error(err.message),
   });
   const toggleWatch = trpc.marketplace.toggleWatchlist.useMutation({
     onSuccess: () => setIsWatching(!isWatching),
@@ -102,13 +113,25 @@ export default function ListingDetail() {
     onSuccess: () => setDepositPaid(true),
   });
   const markPaid = trpc.order.markPaid.useMutation({
-    onSuccess: () => window.location.reload(),
+    onSuccess: () => {
+      toast.success("Order marked as paid");
+      utils.order.getByListing.invalidate({ listingId });
+    },
   });
   const stripeCheckout = trpc.stripe.createCheckoutSession.useMutation({
     onSuccess: (data) => {
       if (data?.url) window.location.href = data.url;
     },
+    onError: (err) => toast.error(err.message),
   });
+
+  const handleBuyNow = () => {
+    if (!sellerCanAcceptPayments) {
+      toast.error(t("listing.sellerNotReadyBuy", { defaultValue: "This seller has not finished payment setup yet." }));
+      return;
+    }
+    stripeCheckout.mutate({ listingId });
+  };
 
   if (listingId === 0 || listingLoading) {
     return (
@@ -196,7 +219,7 @@ export default function ListingDetail() {
                         {isEnded ? "Final Price" : t("listing.current_bid")}
                       </p>
                       <p className="text-4xl font-black text-primary">
-                        ${format(listing.currentBid || listing.startPrice || "0")}
+                        {format(listing.currentBid || listing.startPrice || "0")}
                       </p>
                       <div className="flex items-center justify-center gap-4 mt-2 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
@@ -253,8 +276,13 @@ export default function ListingDetail() {
                       </div>
                     </>
                   ) : (
-                    <Button className="w-full bg-primary text-lg py-6">
-                      <Tag className="w-5 h-5 mr-2" />Buy Now
+                    <Button
+                      className="w-full bg-primary text-lg py-6"
+                      disabled={stripeCheckout.isPending || !listing.isActive}
+                      onClick={handleBuyNow}
+                    >
+                      <Tag className="w-5 h-5 mr-2" />
+                      {stripeCheckout.isPending ? "Redirecting..." : "Buy Now"}
                     </Button>
                   )}
 
@@ -305,7 +333,7 @@ export default function ListingDetail() {
                                 </p>
                               </div>
                             </div>
-                            {!sellerStripe?.connected ? (
+                            {!sellerCanAcceptPayments ? (
                               <p className="text-xs text-red-500 text-center">
                                 Seller has not set up payment processing yet
                               </p>

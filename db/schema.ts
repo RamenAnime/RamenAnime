@@ -26,6 +26,8 @@ export const users = mysqlTable("users", {
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
   isEmailVerified: boolean("is_email_verified").default(false).notNull(),
+  stripeAccountId: varchar("stripe_account_id", { length: 255 }),
+  stripeOnboardingComplete: boolean("stripe_onboarding_complete").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
   lastSignInAt: timestamp("lastSignInAt").defaultNow().notNull(),

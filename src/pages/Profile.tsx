@@ -216,6 +216,16 @@ function ProfileContent() {
             </Card>
           </div>
         </div>
+
+        {isMyProfile && (
+          <div className="mt-10">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: accentColor }}>
+              <Wallet className="h-5 w-5" />
+              {t("profile.tabEarnings")}
+            </h2>
+            <ProfileEarnings accentColor={accentColor} textColor={textColor} />
+          </div>
+        )}
       </div>
     </div>
   );

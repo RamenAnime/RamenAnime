@@ -4,7 +4,7 @@ import { getDb } from "./queries/connection";
 import {
   marketplaceListings, auctionBids, watchlistItems, listingQuestions,
   sellerRatings, listingViews, priceOffers, auctionDeposits, sellerProfiles,
-  listingMedia, copyrightScans,
+  listingMedia, copyrightScans, orders, transactions, users,
 } from "@db/schema";
 import { eq, and, desc, sql, count, avg } from "drizzle-orm";
 import { runCopyrightScan } from "./lib/copyright-bot";
@@ -19,6 +19,14 @@ function getMinBidIncrement(currentBid: number): number {
 
 function getRequiredDeposit(startPrice: number): number {
   return Math.min(Math.max(Math.round(startPrice * 0.05), 500), 10000);
+}
+
+function generateOrderNumber() {
+  return "ORD-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+}
+
+function generateTransactionNumber() {
+  return "TXN-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
 }
 
 async function ensureSellerProfile(userId: number) {
@@ -104,10 +112,15 @@ export const marketplaceRouter = createRouter({
       });
       const ratings = await db.select({ avg: avg(sellerRatings.rating), count: count() })
         .from(sellerRatings).where(eq(sellerRatings.sellerId, listing.sellerId));
+      const sellerAccount = await db.query.users.findFirst({
+        where: eq(users.id, listing.sellerId),
+        columns: { stripeAccountId: true, stripeOnboardingComplete: true },
+      });
       return {
         ...listing, viewCount: viewCount[0]?.count || 0, sellerProfile,
         sellerAvgRating: ratings[0]?.avg ? parseFloat(ratings[0].avg).toFixed(1) : "0",
         sellerRatingCount: ratings[0]?.count || 0,
+        sellerPaymentReady: !!(sellerAccount?.stripeAccountId && sellerAccount?.stripeOnboardingComplete),
       };
     }),
 
@@ -222,7 +235,28 @@ export const marketplaceRouter = createRouter({
       if (listing.buyNowPrice && bidAmount >= parseFloat(listing.buyNowPrice)) {
         await db.update(marketplaceListings).set({ isActive: false, currentBid: input.amount, bidCount: sql`${marketplaceListings.bidCount} + 1`, auctionEnd: newAuctionEnd }).where(eq(marketplaceListings.id, input.listingId));
         await db.insert(auctionBids).values({ listingId: input.listingId, bidderId: ctx.user.id, amount: input.amount, proxyMax: input.proxyMax || null, isProxy: !!input.proxyMax, isAutoBid: false });
-        return { success: true, won: true, message: "Buy-now price met! You won!" };
+        const orderNumber = generateOrderNumber();
+        const winAmount = parseFloat(input.amount);
+        const [{ id: orderId }] = await db.insert(orders).values({
+          orderNumber,
+          buyerId: ctx.user.id,
+          sellerId: listing.sellerId,
+          listingId: input.listingId,
+          totalAmount: winAmount.toFixed(2),
+          currency: "USD",
+          status: "pending",
+        }).$returningId();
+        await db.insert(transactions).values({
+          transactionNumber: generateTransactionNumber(),
+          orderId,
+          payerId: ctx.user.id,
+          payeeId: listing.sellerId,
+          amount: winAmount.toFixed(2),
+          currency: "USD",
+          paymentMethod: "stripe",
+          status: "pending",
+        });
+        return { success: true, won: true, orderId, orderNumber, message: "Buy-now price met! You won!" };
       }
 
       await db.update(marketplaceListings).set({ currentBid: input.amount, bidCount: sql`${marketplaceListings.bidCount} + 1`, auctionEnd: newAuctionEnd }).where(eq(marketplaceListings.id, input.listingId));

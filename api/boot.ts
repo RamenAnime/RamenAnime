@@ -42,6 +42,8 @@ import { Hono } from "hono";
       // ── Phase 3: Add missing columns to users ─────────────────────────────
       try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE`); } catch (_) {}
       try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN NOT NULL DEFAULT FALSE`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_account_id VARCHAR(255)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS stripe_onboarding_complete BOOLEAN NOT NULL DEFAULT FALSE`); } catch (_) {}
 
       // ── Phase 4: Ensure core tables from original migration exist ─────────
       await db.execute(sql`CREATE TABLE IF NOT EXISTS tax_rates (id VARCHAR(128) PRIMARY KEY, country_code VARCHAR(2) NOT NULL, rate DECIMAL(5,2) NOT NULL, vat_name VARCHAR(50) DEFAULT 'VAT', updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE KEY uq_tax_country (country_code))`);
@@ -219,4 +221,3 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 
         serve({ fetch: app.fetch, port }, () => console.log(`Server running on http://localhost:${port}/`));
   }
-  

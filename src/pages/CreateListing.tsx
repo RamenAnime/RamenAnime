@@ -11,30 +11,22 @@ import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router";
-import { Upload, X, ImageIcon, Sparkles, Camera, Package, Tag, Clock, FileText, ChevronRight, AlertCircle } from "lucide-react";
-  import { useTranslation } from "react-i18next";
+import { Upload, X, ImageIcon, Sparkles, Camera, Package, Tag, Clock, FileText, ChevronRight, AlertCircle, CreditCard } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
-const CATEGORIES = [
-  { id: "anime-figures", name: "Anime Figures", icon: "🎌" },
+const CATEGORY_IDS = [
+  { id: "anime-figures", key: "cat_figures", icon: "🎌" },
   { id: "manga", key: "cat_manga", icon: "📚" },
   { id: "art-cels", key: "cat_art", icon: "🎨" },
   { id: "collectibles", key: "cat_collectibles", icon: "🏆" },
-  { id: "apparel", name: "Apparel / Cosplay", icon: "👕" },
-  { id: "accessories", name: "Accessories", icon: "⌚" },
-  { id: "trading-cards", name: "Trading Cards", icon: "🃏" },
-  { id: "games", name: "Games / Consoles", icon: "🎮" },
-  { id: "dvds", name: "DVDs / Blu-ray", icon: "📀" },
-  { id: "posters", name: "Posters / Prints", icon: "🖼️" },
-  { id: "plush", name: "Plush / Toys", icon: "🧸" },
-  { id: "other", name: "Other Anime Goods", icon: "✨" },
-];
-
-const CONDITIONS = [
-  { id: "new", label: t("createListing.new"), desc: "Unopened, brand new" },
-  { id: "like_new", label: t("createListing.like_new"), desc: "Opened but perfect" },
-  { id: "used", label: t("createListing.used"), desc: "Gently used" },
-  { id: "fair", label: "Fair", desc: "Visible wear" },
-  { id: "poor", label: "Poor", desc: "Heavy wear / parts" },
+  { id: "apparel", key: "cat_apparel", icon: "👕" },
+  { id: "accessories", key: "cat_accessories", icon: "⌚" },
+  { id: "trading-cards", key: "cat_cards", icon: "🃏" },
+  { id: "games", key: "cat_gaming", icon: "🎮" },
+  { id: "dvds", key: "cat_other", icon: "📀" },
+  { id: "posters", key: "cat_other", icon: "🖼️" },
+  { id: "plush", key: "cat_other", icon: "🧸" },
+  { id: "other", key: "cat_other", icon: "✨" },
 ];
 
 const DURATIONS = [
@@ -47,7 +39,14 @@ const DURATIONS = [
 
 export default function CreateListing() {
   const { t } = useTranslation();
-  const CATEGORIES = CATEGORY_IDS.map(c => ({ ...c, name: t(`createListing.${c.key}`) }));
+  const CATEGORIES = CATEGORY_IDS.map((c) => ({ ...c, name: t(`createListing.${c.key}`) }));
+  const CONDITIONS = [
+    { id: "new", label: t("createListing.new"), desc: "Unopened, brand new" },
+    { id: "like_new", label: t("createListing.like_new"), desc: "Opened but perfect" },
+    { id: "used", label: t("createListing.used"), desc: "Gently used" },
+    { id: "fair", label: "Fair", desc: "Visible wear" },
+    { id: "poor", label: "Poor", desc: "Heavy wear / parts" },
+  ];
   const { user } = useAuth();
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
@@ -63,6 +62,14 @@ export default function CreateListing() {
   const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: stripeStatus } = trpc.stripe.getSellerStatus.useQuery(undefined, { enabled: !!user });
+  const connectStripe = trpc.stripe.createOnboardingLink.useMutation({
+    onSuccess: (data) => {
+      if (data?.url) window.location.href = data.url;
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const createMutation = trpc.marketplace.createListing.useMutation({
     onSuccess: () => {
@@ -173,6 +180,29 @@ export default function CreateListing() {
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+
+        {stripeStatus && !stripeStatus.onboardingComplete && (
+          <Card className="border-amber-500/30 bg-amber-500/5">
+            <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+              <div className="flex gap-3">
+                <CreditCard className="h-8 w-8 text-amber-600 shrink-0" />
+                <div>
+                  <p className="font-semibold text-sm">Connect Stripe to get paid</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ramen Anime charges a 5% seller fee and 3% buyer fee on card sales. Connect once to accept payments on all listings.
+                  </p>
+                </div>
+              </div>
+              <Button
+                className="shrink-0"
+                disabled={connectStripe.isPending}
+                onClick={() => connectStripe.mutate()}
+              >
+                {connectStripe.isPending ? "Opening Stripe..." : stripeStatus.connected ? "Finish setup" : "Connect Stripe"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* PHOTOS SECTION */}
         <Card>

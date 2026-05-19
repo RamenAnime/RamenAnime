@@ -34,6 +34,32 @@ export const stripeRouter = createRouter({
     };
   }),
 
+  getSellerStatusByUserId: publicQuery
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const db = getDb();
+      const user = await db.query.users.findFirst({
+        where: eq(users.id, input.userId),
+        columns: { stripeAccountId: true, stripeOnboardingComplete: true },
+      });
+      return {
+        connected: !!user?.stripeAccountId,
+        onboardingComplete: !!user?.stripeOnboardingComplete,
+      };
+    }),
+
+  syncOnboardingStatus: authedQuery.mutation(async ({ ctx }) => {
+    const db = getDb();
+    const user = await db.query.users.findFirst({ where: eq(users.id, ctx.user.id) });
+    if (!user?.stripeAccountId) return { onboardingComplete: false };
+    const account = await stripe.accounts.retrieve(user.stripeAccountId);
+    const complete = account.charges_enabled && account.payouts_enabled;
+    await db.update(users)
+      .set({ stripeOnboardingComplete: complete })
+      .where(eq(users.id, ctx.user.id));
+    return { onboardingComplete: complete };
+  }),
+
   // Create Stripe Connect onboarding link for seller
   createOnboardingLink: authedQuery.mutation(async ({ ctx }) => {
     const db = getDb();
@@ -91,7 +117,10 @@ export const stripeRouter = createRouter({
       if (!listing.seller?.stripeAccountId) throw new Error("Seller has not connected a payment account");
       if (!listing.seller?.stripeOnboardingComplete) throw new Error("Seller payment account is not fully set up");
 
-      const priceCents = Math.round(parseFloat(listing.price || listing.buyNowPrice || "0") * 100);
+      const unitPrice = listing.listingType === "auction"
+        ? (listing.currentBid || listing.price || listing.buyNowPrice || "0")
+        : (listing.price || listing.buyNowPrice || "0");
+      const priceCents = Math.round(parseFloat(unitPrice) * 100);
       if (priceCents <= 0) throw new Error("Invalid listing price");
 
       const sellerFeeCents = Math.round(priceCents * (PLATFORM_FEE_PERCENT / 100));
@@ -108,6 +137,7 @@ export const stripeRouter = createRouter({
         sellerId: listing.sellerId,
         listingId: input.listingId,
         totalAmount: (totalCents / 100).toFixed(2),
+        feeAmount: (applicationFeeCents / 100).toFixed(2),
         currency: "USD",
         status: "pending",
       }).$returningId();
@@ -146,8 +176,8 @@ export const stripeRouter = createRouter({
           },
         },
         mode: "payment",
-        success_url: `${process.env.SITE_URL || "https://ramenanime.com"}/listing/${input.listingId}?payment=success&order=${orderNum}`,
-        cancel_url: `${process.env.SITE_URL || "https://ramenanime.com"}/listing/${input.listingId}?payment=cancel`,
+        success_url: `${process.env.SITE_URL || "https://ramenanime.com"}/marketplace/${input.listingId}?payment=success&order=${orderNum}`,
+        cancel_url: `${process.env.SITE_URL || "https://ramenanime.com"}/marketplace/${input.listingId}?payment=cancel`,
         metadata: {
           orderId: orderId.toString(),
           listingId: input.listingId.toString(),
@@ -184,8 +214,13 @@ export const stripeRouter = createRouter({
         const orderId = session.metadata?.orderId;
         if (!orderId) return { received: true };
 
+        const platformFee = session.metadata?.platformFee;
         await db.update(orders)
-          .set({ status: "paid", updatedAt: new Date() })
+          .set({
+            status: "paid",
+            feeAmount: platformFee || undefined,
+            updatedAt: new Date(),
+          })
           .where(eq(orders.id, parseInt(orderId)));
 
         await db.update(transactions)

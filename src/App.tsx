@@ -34,6 +34,7 @@ const SiteDoctor = lazy(() => import('./pages/SiteDoctor'))
 const SwarmDashboard = lazy(() => import('./pages/SwarmDashboard'))
 const CreateListing = lazy(() => import('./pages/CreateListing'))
 const ListingDetail = lazy(() => import('./pages/ListingDetail'))
+const SellerStripeReturn = lazy(() => import('./pages/SellerStripeReturn'))
 const Messages = lazy(() => import('./pages/Messages'))
 const Orders = lazy(() => import('./pages/Orders'))
 const OrderDetail = lazy(() => import('./pages/OrderDetail'))
@@ -78,6 +79,7 @@ export default function App() {
                 <Route path="/marketplace/new" element={<CreateListing />} />
                 <Route path="/marketplace/create" element={<CreateListing />} />
                 <Route path="/marketplace/:id" element={<ListingDetail />} />
+                <Route path="/seller/stripe-return" element={<SellerStripeReturn />} />
                 
                 {/* Legacy redirects */}
                 <Route path="/shop" element={<Navigate to="/marketplace" replace />} />

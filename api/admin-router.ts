@@ -2,8 +2,8 @@ import { z } from "zod";
 import { createRouter, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { banUser } from "./queries/users";
-import { users, userProfiles, forumPosts, forumComments, friends, marketplaceListings, donations, geoVerifications, tosAcceptances, siteVisits, orders } from "@db/schema";
-import { eq, desc, count, sum } from "drizzle-orm";
+import { users, userProfiles, forumPosts, forumComments, friends, marketplaceListings, donations, geoVerifications, tosAcceptances, siteVisits, orders, copyrightScans } from "@db/schema";
+import { eq, desc, count, sum, inArray } from "drizzle-orm";
 
 export const adminRouter = createRouter({
   getStats: adminQuery.query(async () => {
@@ -102,5 +102,52 @@ export const adminRouter = createRouter({
     const db = getDb();
     return db.select().from(donations).orderBy(desc(donations.createdAt));
   }),
+
+  copyrightQueue: adminQuery.query(async () => {
+    const db = getDb();
+    const flagged = await db.query.marketplaceListings.findMany({
+      where: inArray(marketplaceListings.copyrightStatus, ["flagged", "rejected", "pending"]),
+      orderBy: desc(marketplaceListings.createdAt),
+      limit: 100,
+    });
+    return Promise.all(
+      flagged.map(async (l) => {
+        const scans = await db.query.copyrightScans.findMany({
+          where: eq(copyrightScans.listingId, l.id),
+          orderBy: desc(copyrightScans.scannedAt),
+        });
+        const seller = await db.query.users.findFirst({
+          where: eq(users.id, l.sellerId),
+          columns: { id: true, name: true, email: true },
+        });
+        return { listing: l, scans, seller };
+      })
+    );
+  }),
+
+  reviewCopyright: adminQuery
+    .input(
+      z.object({
+        listingId: z.number(),
+        status: z.enum(["clear", "flagged", "rejected"]),
+        note: z.string().max(500).optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      await db
+        .update(marketplaceListings)
+        .set({ copyrightStatus: input.status })
+        .where(eq(marketplaceListings.id, input.listingId));
+      await db.insert(copyrightScans).values({
+        listingId: input.listingId,
+        scanType: "text",
+        status: input.status,
+        confidence: "1.00",
+        matchedTerms: JSON.stringify([]),
+        reason: input.note || `Manual admin review: ${input.status}`,
+      });
+      return { success: true };
+    }),
 });
 

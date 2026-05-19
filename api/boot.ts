@@ -9,6 +9,8 @@ import { Hono } from "hono";
   import { sql } from "drizzle-orm";
   import type { Context as HonoContext } from "hono";
   import { handleStripeWebhook } from "./stripe-webhook";
+import { auctionStreamHandler } from "./routes/auction-stream";
+import { runAuctionMaintenance } from "./lib/auction-jobs";
 
   // OFAC and internationally sanctioned countries blocked at the server level
   const BLOCKED_COUNTRIES = ["IR", "KP", "SY", "CU", "MM"];
@@ -38,6 +40,11 @@ import { Hono } from "hono";
       try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS videos TEXT`); } catch (_) {}
       try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS copyright_status ENUM('pending','clear','flagged','rejected') NOT NULL DEFAULT 'pending'`); } catch (_) {}
       try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS scan_details TEXT`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS shipping_payer ENUM('buyer','seller') NOT NULL DEFAULT 'buyer'`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS shipping_cost VARCHAR(50)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS package_size VARCHAR(32) DEFAULT 'small'`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS item_specifics TEXT`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE marketplace_listings ADD COLUMN IF NOT EXISTS authenticity_declared BOOLEAN NOT NULL DEFAULT FALSE`); } catch (_) {}
 
       // ── Phase 3: Add missing columns to users ─────────────────────────────
       try { await db.execute(sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS is_banned BOOLEAN NOT NULL DEFAULT FALSE`); } catch (_) {}
@@ -62,7 +69,10 @@ import { Hono } from "hono";
       await db.execute(sql`CREATE TABLE IF NOT EXISTS seller_profiles (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, user_id BIGINT UNSIGNED NOT NULL UNIQUE, level ENUM('bronze','silver','gold','platinum','diamond') NOT NULL DEFAULT 'bronze', total_sales INT NOT NULL DEFAULT 0, total_revenue DECIMAL(12,2) NOT NULL DEFAULT 0, avg_rating DECIMAL(3,2), rating_count INT NOT NULL DEFAULT 0, successful_auctions INT NOT NULL DEFAULT 0, verified_seller BOOLEAN NOT NULL DEFAULT FALSE, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, updatedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP)`);
       await db.execute(sql`CREATE TABLE IF NOT EXISTS copyright_scans (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, listing_id BIGINT UNSIGNED NOT NULL, scan_type ENUM('text','image','video') NOT NULL, status ENUM('pending','clear','flagged','rejected') NOT NULL DEFAULT 'pending', confidence DECIMAL(5,2), matched_terms TEXT, reason TEXT, scannedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
       await db.execute(sql`CREATE TABLE IF NOT EXISTS price_offers (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, listing_id BIGINT UNSIGNED NOT NULL, buyer_id BIGINT UNSIGNED NOT NULL, amount DECIMAL(10,2) NOT NULL, status ENUM('pending','accepted','rejected','expired') NOT NULL DEFAULT 'pending', message TEXT, respondedAt TIMESTAMP, expiresAt TIMESTAMP, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
-      await db.execute(sql`CREATE TABLE IF NOT EXISTS auction_deposits (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, listing_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL, amount DECIMAL(10,2) NOT NULL, status ENUM('held','released','forfeited') NOT NULL DEFAULT 'held', stripe_payment_intent_id VARCHAR(255), createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+      await db.execute(sql`CREATE TABLE IF NOT EXISTS auction_deposits (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, listing_id BIGINT UNSIGNED NOT NULL, bidder_id BIGINT UNSIGNED NOT NULL, amount DECIMAL(10,2) NOT NULL, status ENUM('pending','held','returned','forfeited','applied') NOT NULL DEFAULT 'pending', stripe_payment_intent_id VARCHAR(255), createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+      try { await db.execute(sql`ALTER TABLE auction_deposits CHANGE COLUMN user_id bidder_id BIGINT UNSIGNED NOT NULL`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE auction_deposits ADD COLUMN stripe_payment_intent_id VARCHAR(255)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE auction_deposits MODIFY COLUMN status ENUM('pending','held','returned','forfeited','applied') NOT NULL DEFAULT 'pending'`); } catch (_) {}
       await db.execute(sql`CREATE TABLE IF NOT EXISTS sniper_bids (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, listing_id BIGINT UNSIGNED NOT NULL, user_id BIGINT UNSIGNED NOT NULL, max_amount DECIMAL(10,2) NOT NULL, is_active BOOLEAN NOT NULL DEFAULT TRUE, triggered_at TIMESTAMP, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
       await db.execute(sql`CREATE TABLE IF NOT EXISTS price_history (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, listing_id BIGINT UNSIGNED NOT NULL, price DECIMAL(10,2) NOT NULL, source VARCHAR(50), createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
       await db.execute(sql`CREATE TABLE IF NOT EXISTS prohibited_scans (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, listing_id BIGINT UNSIGNED NOT NULL, status ENUM('pending','clear','flagged','rejected') NOT NULL DEFAULT 'pending', confidence DECIMAL(5,2), matched_terms TEXT, reason TEXT, scannedAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
@@ -141,7 +151,7 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 
   app.use("/api/*", async (c, next) => {
     const path = c.req.path;
-    if (path === "/api/ping" || path.includes("geo.checkAccess")) return next();
+    if (path === "/api/ping" || path.includes("geo.checkAccess") || path.startsWith("/api/auctions/") || path === "/api/cron/auctions") return next();
     const geo = getClientCountry(c);
     if (geo.country && BLOCKED_COUNTRIES.includes(geo.country)) {
       return c.json({
@@ -168,6 +178,21 @@ const app = new Hono<{ Bindings: HttpBindings }>();
 
   // Stripe webhook must be mounted BEFORE tRPC so it receives the raw request body
   app.post("/api/stripe/webhook", handleStripeWebhook);
+
+  app.get("/api/auctions/:id/stream", (c) => {
+    const id = parseInt(c.req.param("id"), 10);
+    if (!id || Number.isNaN(id)) return c.json({ error: "Invalid listing id" }, 400);
+    return auctionStreamHandler(id)(c);
+  });
+
+  app.get("/api/cron/auctions", async (c) => {
+    const key = c.req.header("X-Admin-Key") || c.req.query("key");
+    if (key !== process.env.ADMIN_MIGRATION_KEY) {
+      return c.json({ error: "UNAUTHORIZED" }, 401);
+    }
+    const result = await runAuctionMaintenance();
+    return c.json({ ok: true, ...result });
+  });
 
   app.use("/api/trpc", async (c) =>
     fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext })
@@ -218,6 +243,11 @@ const app = new Hono<{ Bindings: HttpBindings }>();
     const port = parseInt(process.env.PORT || "3000");
     // Run schema migration on startup
     await runMigrations();
+
+    // Close ended auctions and expire unpaid orders every 60s
+    setInterval(() => {
+      runAuctionMaintenance().catch((err) => console.error("[auction-cron]", err));
+    }, 60_000);
 
         serve({ fetch: app.fetch, port }, () => console.log(`Server running on http://localhost:${port}/`));
   }

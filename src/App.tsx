@@ -18,6 +18,7 @@ const TradingCards = lazy(() => import('./pages/TradingCards'))
 const Contact = lazy(() => import('./pages/Contact'))
 const Terms = lazy(() => import('./pages/Terms'))
 const Privacy = lazy(() => import('./pages/Privacy'))
+const Tokushoho = lazy(() => import('./pages/Tokushoho'))
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'))
 const Social = lazy(() => import('./pages/Social'))
 const ForumPost = lazy(() => import('./pages/ForumPost'))
@@ -99,6 +100,7 @@ export default function App() {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/terms" element={<Terms />} />
                 <Route path="/privacy" element={<Privacy />} />
+                <Route path="/legal/tokushoho" element={<Tokushoho />} />
                 <Route path="/verify-email" element={<VerifyEmail />} />
                 <Route path="/donate" element={<Donations />} />
                 

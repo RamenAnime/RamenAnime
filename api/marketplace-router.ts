@@ -8,26 +8,9 @@ import {
 } from "@db/schema";
 import { eq, and, desc, sql, count, avg } from "drizzle-orm";
 import { runCopyrightScan } from "./lib/copyright-bot";
-
-function getMinBidIncrement(currentBid: number): number {
-  if (currentBid < 1000) return 10;
-  if (currentBid < 5000) return 100;
-  if (currentBid < 10000) return 250;
-  if (currentBid < 50000) return 500;
-  return 1000;
-}
-
-function getRequiredDeposit(startPrice: number): number {
-  return Math.min(Math.max(Math.round(startPrice * 0.05), 500), 10000);
-}
-
-function generateOrderNumber() {
-  return "ORD-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
-}
-
-function generateTransactionNumber() {
-  return "TXN-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
-}
+import { processBid, setAutoBidMax, getRequiredDeposit } from "./lib/auction-engine";
+import { createAuctionDepositCheckout } from "./lib/stripe-deposit";
+import { estimateShipping, PACKAGE_SIZES } from "./lib/shipping-calculator";
 
 async function ensureSellerProfile(userId: number) {
   const db = getDb();
@@ -139,6 +122,11 @@ export const marketplaceRouter = createRouter({
       images: z.array(z.string()).optional(),
       videos: z.array(z.string()).optional(),
       contactMethod: z.string().max(255).optional(),
+      shippingPayer: z.enum(["buyer", "seller"]).optional(),
+      packageSize: z.enum(["envelope", "small", "medium", "large", "oversize"]).optional(),
+      shippingCost: z.string().optional(),
+      itemSpecifics: z.record(z.string()).optional(),
+      authenticityDeclared: z.boolean().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = getDb();
@@ -148,7 +136,19 @@ export const marketplaceRouter = createRouter({
         listingType: input.listingType, contactMethod: input.contactMethod,
         images: input.images ? JSON.stringify(input.images) : null,
         videos: input.videos ? JSON.stringify(input.videos) : null,
+        shippingPayer: input.shippingPayer ?? "buyer",
+        packageSize: input.packageSize ?? "small",
+        shippingCost: input.shippingCost,
+        itemSpecifics: input.itemSpecifics ? JSON.stringify(input.itemSpecifics) : null,
+        authenticityDeclared: input.authenticityDeclared ?? false,
       };
+      if (!input.shippingCost && input.packageSize) {
+        const est = estimateShipping({
+          packageSize: input.packageSize,
+          payer: input.shippingPayer ?? "buyer",
+        });
+        values.shippingCost = est.cost.toFixed(2);
+      }
       if (input.listingType === "auction") {
         values.startPrice = input.startPrice || input.price;
         values.currentBid = input.startPrice || input.price;
@@ -201,68 +201,62 @@ export const marketplaceRouter = createRouter({
 
   placeBid: authedQuery
     .input(z.object({ listingId: z.number(), amount: z.string().min(1), proxyMax: z.string().optional() }))
-    .mutation(async ({ ctx, input }) => {
-      const db = getDb();
-      const listing = await db.query.marketplaceListings.findFirst({ where: eq(marketplaceListings.id, input.listingId) });
-      if (!listing) throw new Error("Listing not found");
-      if (listing.listingType !== "auction") throw new Error("Not an auction");
-      if (listing.sellerId === ctx.user.id) throw new Error("Cannot bid on own listing");
-      if (listing.auctionEnd && new Date(listing.auctionEnd) < new Date()) throw new Error("Auction ended");
-      const bidAmount = parseFloat(input.amount);
-      const currentBid = parseFloat(listing.currentBid || "0");
-      const minIncrement = getMinBidIncrement(currentBid);
-      const minBid = currentBid + minIncrement;
-      if (bidAmount < minBid) throw new Error(`Minimum bid is $${minBid} (+$${minIncrement})`);
+    .mutation(async ({ ctx, input }) =>
+      processBid({
+        listingId: input.listingId,
+        bidderId: ctx.user.id,
+        amount: input.amount,
+        proxyMax: input.proxyMax,
+      })
+    ),
 
-      const depositRequired = parseFloat(listing.startPrice || "0") >= 5000;
-      if (depositRequired) {
-        const deposit = await db.query.auctionDeposits.findFirst({
-          where: and(eq(auctionDeposits.listingId, input.listingId), eq(auctionDeposits.bidderId, ctx.user.id), eq(auctionDeposits.status, "held")),
-        });
-        if (!deposit) {
-          const required = getRequiredDeposit(parseFloat(listing.startPrice || "0"));
-          throw new Error(`Deposit required: $${required}. Use the deposit endpoint first.`);
-        }
-      }
+  setAutoBid: authedQuery
+    .input(z.object({ listingId: z.number(), maxAmount: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) =>
+      setAutoBidMax({
+        listingId: input.listingId,
+        bidderId: ctx.user.id,
+        maxAmount: input.maxAmount,
+      })
+    ),
 
-      const now = new Date();
-      const auctionEnd = listing.auctionEnd ? new Date(listing.auctionEnd) : null;
-      let newAuctionEnd = listing.auctionEnd;
-      if (auctionEnd && auctionEnd.getTime() - now.getTime() < 5 * 60 * 1000) {
-        newAuctionEnd = new Date(auctionEnd.getTime() + 5 * 60 * 1000);
-      }
+  estimateShipping: publicQuery
+    .input(
+      z.object({
+        packageSize: z.enum(["envelope", "small", "medium", "large", "oversize"]),
+        sellerCountry: z.string().optional(),
+        buyerCountry: z.string().optional(),
+        payer: z.enum(["buyer", "seller"]).optional(),
+      })
+    )
+    .query(async ({ input }) => ({
+      ...estimateShipping(input),
+      sizes: PACKAGE_SIZES,
+    })),
 
-      if (listing.buyNowPrice && bidAmount >= parseFloat(listing.buyNowPrice)) {
-        await db.update(marketplaceListings).set({ isActive: false, currentBid: input.amount, bidCount: sql`${marketplaceListings.bidCount} + 1`, auctionEnd: newAuctionEnd }).where(eq(marketplaceListings.id, input.listingId));
-        await db.insert(auctionBids).values({ listingId: input.listingId, bidderId: ctx.user.id, amount: input.amount, proxyMax: input.proxyMax || null, isProxy: !!input.proxyMax, isAutoBid: false });
-        const orderNumber = generateOrderNumber();
-        const winAmount = parseFloat(input.amount);
-        const [{ id: orderId }] = await db.insert(orders).values({
-          orderNumber,
-          buyerId: ctx.user.id,
-          sellerId: listing.sellerId,
-          listingId: input.listingId,
-          totalAmount: winAmount.toFixed(2),
-          currency: "USD",
-          status: "pending",
-        }).$returningId();
-        await db.insert(transactions).values({
-          transactionNumber: generateTransactionNumber(),
-          orderId,
-          payerId: ctx.user.id,
-          payeeId: listing.sellerId,
-          amount: winAmount.toFixed(2),
-          currency: "USD",
-          paymentMethod: "stripe",
-          status: "pending",
-        });
-        return { success: true, won: true, orderId, orderNumber, message: "Buy-now price met! You won!" };
-      }
-
-      await db.update(marketplaceListings).set({ currentBid: input.amount, bidCount: sql`${marketplaceListings.bidCount} + 1`, auctionEnd: newAuctionEnd }).where(eq(marketplaceListings.id, input.listingId));
-      await db.insert(auctionBids).values({ listingId: input.listingId, bidderId: ctx.user.id, amount: input.amount, proxyMax: input.proxyMax || null, isProxy: !!input.proxyMax, isAutoBid: false });
-      return { success: true, won: false, currentBid: input.amount };
-    }),
+  sellerAnalytics: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const listings = await db.query.marketplaceListings.findMany({
+      where: eq(marketplaceListings.sellerId, ctx.user.id),
+    });
+    const sales = await db.query.orders.findMany({
+      where: eq(orders.sellerId, ctx.user.id),
+    });
+    const paid = sales.filter((o) => o.status === "paid" || o.status === "delivered");
+    let totalViews = 0;
+    for (const l of listings) {
+      const v = await db.select({ count: count() }).from(listingViews).where(eq(listingViews.listingId, l.id));
+      totalViews += v[0]?.count || 0;
+    }
+    return {
+      activeListings: listings.filter((l) => l.isActive).length,
+      totalListings: listings.length,
+      totalSales: paid.length,
+      revenue: paid.reduce((s, o) => s + parseFloat(String(o.totalAmount)), 0).toFixed(2),
+      totalViews,
+      auctionListings: listings.filter((l) => l.listingType === "auction").length,
+    };
+  }),
 
   getBidHistory: publicQuery.input(z.object({ listingId: z.number() })).query(async ({ input }) => {
     const db = getDb();
@@ -274,25 +268,34 @@ export const marketplaceRouter = createRouter({
     return { bids, priceHistory };
   }),
 
-  getDepositInfo: publicQuery.input(z.object({ listingId: z.number() })).query(async ({ input }) => {
+  getDepositInfo: authedQuery.input(z.object({ listingId: z.number() })).query(async ({ ctx, input }) => {
     const db = getDb();
     const listing = await db.query.marketplaceListings.findFirst({ where: eq(marketplaceListings.id, input.listingId) });
     if (!listing) throw new Error("Listing not found");
     const required = getRequiredDeposit(parseFloat(listing.startPrice || "0"));
-    return { required, isRequired: parseFloat(listing.startPrice || "0") >= 5000 };
-  }),
-
-  payDeposit: authedQuery.input(z.object({ listingId: z.number() })).mutation(async ({ ctx, input }) => {
-    const db = getDb();
-    const listing = await db.query.marketplaceListings.findFirst({ where: eq(marketplaceListings.id, input.listingId) });
-    if (!listing) throw new Error("Listing not found");
-    const amount = getRequiredDeposit(parseFloat(listing.startPrice || "0"));
     const existing = await db.query.auctionDeposits.findFirst({
       where: and(eq(auctionDeposits.listingId, input.listingId), eq(auctionDeposits.bidderId, ctx.user.id)),
     });
-    if (existing) return { success: true, alreadyPaid: true, amount };
-    await db.insert(auctionDeposits).values({ listingId: input.listingId, bidderId: ctx.user.id, amount: amount.toString() });
-    return { success: true, alreadyPaid: false, amount };
+    return {
+      required,
+      isRequired: parseFloat(listing.startPrice || "0") >= 5000,
+      status: existing?.status ?? null,
+      held: existing?.status === "held",
+    };
+  }),
+
+  payDeposit: authedQuery.input(z.object({ listingId: z.number() })).mutation(async ({ ctx, input }) => {
+    const result = await createAuctionDepositCheckout({
+      listingId: input.listingId,
+      bidderId: ctx.user.id,
+      bidderEmail: ctx.user.email,
+    });
+    return {
+      success: true,
+      alreadyPaid: result.alreadyPaid,
+      amount: result.amount,
+      checkoutUrl: result.checkoutUrl || undefined,
+    };
   }),
 
   makeOffer: authedQuery.input(z.object({ listingId: z.number(), offeredPrice: z.string().min(1), message: z.string().max(500).optional() })).mutation(async ({ ctx, input }) => {

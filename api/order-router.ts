@@ -166,7 +166,11 @@ export const orderRouter = createRouter({
       const order = await db.query.orders.findFirst({ where: eq(orders.id, input.orderId) });
       if (!order || order.buyerId !== ctx.user.id) throw new Error("Unauthorized");
 
-      await db.update(orders).set({ status: "delivered", updatedAt: new Date() }).where(eq(orders.id, input.orderId));
-      return { success: true };
+      await db.update(orders).set({
+        status: "delivered",
+        escrowStatus: "released",
+        updatedAt: new Date(),
+      }).where(eq(orders.id, input.orderId));
+      return { success: true, escrowReleased: true };
     }),
 });

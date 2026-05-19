@@ -17,6 +17,7 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
   const { data: sales } = trpc.stripe.mySales.useQuery();
   const { data: purchases } = trpc.stripe.myOrders.useQuery();
   const { data: stripeStatus } = trpc.stripe.getSellerStatus.useQuery();
+  const { data: analytics } = trpc.marketplace.sellerAnalytics.useQuery();
   const connectStripe = trpc.stripe.createOnboardingLink.useMutation({
     onSuccess: (data) => {
       if (data?.url) window.location.href = data.url;
@@ -46,6 +47,27 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {analytics && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-sm mb-4">
+          <div className="rounded-lg border border-white/10 p-3">
+            <p className="text-lg font-bold" style={{ color: accentColor }}>{analytics.activeListings}</p>
+            <p className="opacity-70" style={{ color: textColor }}>Active</p>
+          </div>
+          <div className="rounded-lg border border-white/10 p-3">
+            <p className="text-lg font-bold" style={{ color: accentColor }}>{analytics.totalViews}</p>
+            <p className="opacity-70" style={{ color: textColor }}>Views</p>
+          </div>
+          <div className="rounded-lg border border-white/10 p-3">
+            <p className="text-lg font-bold" style={{ color: accentColor }}>{analytics.totalSales}</p>
+            <p className="opacity-70" style={{ color: textColor }}>Sales</p>
+          </div>
+          <div className="rounded-lg border border-white/10 p-3">
+            <p className="text-lg font-bold" style={{ color: accentColor }}>${analytics.revenue}</p>
+            <p className="opacity-70" style={{ color: textColor }}>Revenue</p>
+          </div>
+        </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

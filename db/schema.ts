@@ -139,6 +139,11 @@ export const marketplaceListings = mysqlTable("marketplace_listings", {
   videos: text("videos"),
   copyrightStatus: mysqlEnum("copyright_status", ["pending", "clear", "flagged", "rejected"]).default("pending").notNull(),
   scanDetails: text("scan_details"),
+  shippingPayer: mysqlEnum("shipping_payer", ["buyer", "seller"]).default("buyer").notNull(),
+  shippingCost: varchar("shipping_cost", { length: 50 }),
+  packageSize: varchar("package_size", { length: 32 }).default("small"),
+  itemSpecifics: text("item_specifics"),
+  authenticityDeclared: boolean("authenticity_declared").default(false).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
 });
@@ -420,7 +425,8 @@ export const auctionDeposits = mysqlTable("auction_deposits", {
   listingId: bigint("listing_id", { mode: "number", unsigned: true }).notNull(),
   bidderId: bigint("bidder_id", { mode: "number", unsigned: true }).notNull(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  status: mysqlEnum("status", ["held", "returned", "forfeited", "applied"]).default("held").notNull(),
+  status: mysqlEnum("status", ["pending", "held", "returned", "forfeited", "applied"]).default("pending").notNull(),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

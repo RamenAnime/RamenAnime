@@ -38,6 +38,7 @@ export default function Admin() {
   const { data: postList } = trpc.admin.listPosts.useQuery(undefined, { enabled: isAuthenticated && me?.role === "admin" });
   const { data: listingList } = trpc.admin.listListings.useQuery(undefined, { enabled: isAuthenticated && me?.role === "admin" });
   const { data: donationList } = trpc.admin.listDonations.useQuery(undefined, { enabled: isAuthenticated && me?.role === "admin" });
+  const { data: copyrightQueue } = trpc.admin.copyrightQueue.useQuery(undefined, { enabled: isAuthenticated && me?.role === "admin" });
 
   const utils = trpc.useUtils();
   const deletePost = trpc.admin.deletePost.useMutation({
@@ -49,6 +50,13 @@ export default function Admin() {
   });
   const updateRole = trpc.admin.updateUserRole.useMutation({
     onSuccess: () => { utils.admin.listUsers.invalidate(); toast.success(t("admin.roleUpdated")); },
+  });
+  const reviewCopyright = trpc.admin.reviewCopyright.useMutation({
+    onSuccess: () => {
+      utils.admin.copyrightQueue.invalidate();
+      toast.success("Copyright status updated");
+    },
+    onError: (err) => toast.error(err.message),
   });
   const banUser = trpc.admin.banUser.useMutation({
     onSuccess: (data) => {
@@ -84,6 +92,7 @@ export default function Admin() {
             <TabsTrigger value="posts"><MessageSquare className="h-4 w-4 mr-1" /> {t("admin.forum")}</TabsTrigger>
             <TabsTrigger value="listings"><ShoppingBag className="h-4 w-4 mr-1" /> {t("admin.marketplaceTab")}</TabsTrigger>
             <TabsTrigger value="donations"><Heart className="h-4 w-4 mr-1" /> {t("admin.donations")}</TabsTrigger>
+            <TabsTrigger value="copyright"><Shield className="h-4 w-4 mr-1" /> Copyright</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -201,6 +210,34 @@ export default function Admin() {
                       ))}
                     </tbody>
                   </table>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="copyright">
+            <Card className="bg-card border-border">
+              <CardContent className="p-4">
+                <h2 className="text-lg font-bold mb-4">Copyright review queue</h2>
+                <ScrollArea className="h-[60vh]">
+                  {copyrightQueue?.map((row: any) => (
+                    <div key={row.listing.id} className="border border-border rounded-lg p-4 mb-3">
+                      <div className="flex justify-between items-start gap-2 mb-2">
+                        <p className="font-medium">{row.listing.title}</p>
+                        <p className="text-xs text-muted-foreground">Seller: {row.seller?.name || row.seller?.email} · Status: {row.listing.copyrightStatus}</p>
+                      </div>
+                      <ul className="text-xs text-muted-foreground mb-3 list-disc pl-4">
+                        {row.scans?.slice(0, 3).map((s: any) => (
+                          <li key={s.id}>{s.scanType}: {s.reason}</li>
+                        ))}
+                      </ul>
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={() => reviewCopyright.mutate({ listingId: row.listing.id, status: "clear" })}>Approve</Button>
+                        <Button size="sm" variant="destructive" onClick={() => reviewCopyright.mutate({ listingId: row.listing.id, status: "rejected" })}>Reject</Button>
+                      </div>
+                    </div>
+                  ))}
+                  {!copyrightQueue?.length && <p className="text-muted-foreground text-sm">No flagged listings.</p>}
                 </ScrollArea>
               </CardContent>
             </Card>

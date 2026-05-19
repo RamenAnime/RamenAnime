@@ -1,13 +1,7 @@
-/**
- * Copyright & Prohibited Content Scanner
- *
- * CURRENT LIMITATION: This scanner only performs TEXT-BASED analysis on the
- * listing title and description. Image copyright enforcement is NOT implemented.
- * The `imageUrls` parameter is accepted and logged for future expansion but the
- * images themselves are not analyzed (no reverse-image-search, OCR, or watermark
- * detection). To add image scanning, integrate a service like Google Vision API
- * or TinEye and call it here.
- */
+import { getDb } from "../queries/connection";
+import { marketplaceListings, copyrightScans } from "@db/schema";
+import { eq } from "drizzle-orm";
+import { scanListingImages } from "./image-copyright";
 
 const PROHIBITED_TERMS = [
   "bootleg", "knockoff", "replica", "fake", "counterfeit", "unofficial copy",
@@ -30,9 +24,7 @@ const COPYRIGHT_FLAGS = [
   "copyright", "trademark", "TM", "(C)", "All Rights Reserved",
 ];
 
-import { getDb } from "../queries/connection";
-import { marketplaceListings, copyrightScans } from "@db/schema";
-import { eq } from "drizzle-orm";
+const SEVERITY_RANK = { clear: 0, pending: 1, flagged: 2, rejected: 3 } as const;
 
 function scanText(title: string, description: string) {
   const combined = `${title} ${description}`.toLowerCase();
@@ -46,23 +38,65 @@ function scanText(title: string, description: string) {
   if (matched.length === 0) {
     return { status: "clear" as const, confidence: 0.95, matchedTerms: [], reason: "No prohibited content detected" };
   }
-  const severity = matched.some(m => PROHIBITED_TERMS.slice(0, 10).some(p => p.toLowerCase() === m.toLowerCase())) ? "rejected" : "flagged";
-  return { status: severity, confidence: Math.min(0.99, 0.6 + matched.length * 0.08), matchedTerms: matched, reason: `Matched: ${matched.slice(0, 5).join(", ")}${matched.length > 5 ? ` +${matched.length - 5} more` : ""}` };
+  const severity = matched.some((m) =>
+    PROHIBITED_TERMS.slice(0, 10).some((p) => p.toLowerCase() === m.toLowerCase())
+  )
+    ? "rejected"
+    : "flagged";
+  return {
+    status: severity as "flagged" | "rejected",
+    confidence: Math.min(0.99, 0.6 + matched.length * 0.08),
+    matchedTerms: matched,
+    reason: `Matched: ${matched.slice(0, 5).join(", ")}${matched.length > 5 ? ` +${matched.length - 5} more` : ""}`,
+  };
 }
 
-export async function runCopyrightScan(listingId: number, title: string, description: string, imageUrls: string[]) {
+function mergeStatus(
+  a: keyof typeof SEVERITY_RANK,
+  b: keyof typeof SEVERITY_RANK
+): keyof typeof SEVERITY_RANK {
+  return SEVERITY_RANK[a] >= SEVERITY_RANK[b] ? a : b;
+}
+
+export async function runCopyrightScan(
+  listingId: number,
+  title: string,
+  description: string,
+  imageUrls: string[]
+) {
   const db = getDb();
   const textResult = scanText(title, description);
+
   await db.insert(copyrightScans).values({
-    listingId, scanType: "text", status: textResult.status,
+    listingId,
+    scanType: "text",
+    status: textResult.status,
     confidence: textResult.confidence.toString(),
     matchedTerms: JSON.stringify(textResult.matchedTerms),
     reason: textResult.reason,
-    scanDetails: JSON.stringify({ imageCount: imageUrls.length, imageUrls: imageUrls.slice(0, 5), note: "Image scanning not yet implemented — text-only analysis" }),
   });
-  const overallStatus = textResult.status;
-  await db.update(marketplaceListings)
+
+  let overallStatus: keyof typeof SEVERITY_RANK = textResult.status;
+
+  const imageResult = await scanListingImages(imageUrls);
+  if (imageResult.provider !== "none") {
+    await db.insert(copyrightScans).values({
+      listingId,
+      scanType: "image",
+      status: imageResult.status === "pending" ? "flagged" : imageResult.status,
+      confidence: imageResult.confidence.toString(),
+      matchedTerms: JSON.stringify(imageResult.matchedTerms),
+      reason: `[${imageResult.provider}] ${imageResult.reason}`,
+    });
+    if (imageResult.status !== "pending") {
+      overallStatus = mergeStatus(overallStatus, imageResult.status);
+    }
+  }
+
+  await db
+    .update(marketplaceListings)
     .set({ copyrightStatus: overallStatus })
     .where(eq(marketplaceListings.id, listingId));
+
   return overallStatus;
 }

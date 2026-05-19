@@ -59,9 +59,23 @@ export default function CreateListing() {
   const [duration, setDuration] = useState(168);
   const [isAuction, setIsAuction] = useState(true);
   const [images, setImages] = useState<string[]>([]);
-  const [aiAnalysis, setAiAnalysis] = useState<string | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const [packageSize, setPackageSize] = useState<"envelope" | "small" | "medium" | "large" | "oversize">("small");
+  const [shippingPayer, setShippingPayer] = useState<"buyer" | "seller">("buyer");
+  const [authenticityDeclared, setAuthenticityDeclared] = useState(false);
+  const [cardSet, setCardSet] = useState("");
+  const [cardGrade, setCardGrade] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const shippingEstimate = trpc.marketplace.estimateShipping.useQuery({
+    packageSize,
+    payer: shippingPayer,
+  });
+
+  const listingPriceNum = parseFloat(startPrice || "0");
+  const jpTaxPreview = trpc.tax.calculate.useQuery(
+    { subtotal: listingPriceNum, countryCode: "JP" },
+    { enabled: listingPriceNum > 0 }
+  );
 
   const { data: stripeStatus } = trpc.stripe.getSellerStatus.useQuery(undefined, { enabled: !!user });
   const connectStripe = trpc.stripe.createOnboardingLink.useMutation({
@@ -77,17 +91,6 @@ export default function CreateListing() {
       navigate("/marketplace");
     },
     onError: (err) => toast.error(err.message),
-  });
-
-  const analyzePrice = trpc.marketplace.analyzePrice.useMutation({
-    onSuccess: (data) => {
-      setAiAnalysis(data.analysis);
-      setAiLoading(false);
-    },
-    onError: () => {
-      toast.error("Price analysis failed");
-      setAiLoading(false);
-    },
   });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -121,6 +124,11 @@ export default function CreateListing() {
       return;
     }
     const endTime = new Date(Date.now() + duration * 3600000).toISOString();
+    const itemSpecifics =
+      category === "trading-cards" && (cardSet || cardGrade)
+        ? { set: cardSet, grade: cardGrade }
+        : undefined;
+
     createMutation.mutate({
       title,
       description,
@@ -133,6 +141,11 @@ export default function CreateListing() {
       images: images.slice(0, 5),
       listingType: isAuction ? "auction" : "fixed",
       auctionEnd: endTime,
+      packageSize,
+      shippingPayer,
+      shippingCost: shippingEstimate.data?.cost?.toFixed(2),
+      authenticityDeclared,
+      itemSpecifics,
     });
   };
 
@@ -447,6 +460,10 @@ export default function CreateListing() {
               )}
             </div>
 
+            {listingPriceNum > 0 && jpTaxPreview.data && (
+              <div className="rounded-lg border border-border p-3 text-sm bg-muted/30"><p className="font-medium">Japan tax preview (10%)</p><p className="text-sm text-muted-foreground">VAT {jpTaxPreview.data.vatAmount.toFixed(2)} on {listingPriceNum.toFixed(2)}</p></div>
+            )}
+
             {isAuction && (
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Auction Duration</Label>
@@ -470,38 +487,37 @@ export default function CreateListing() {
           </CardContent>
         </Card>
 
-        {/* AI PRICE ANALYSIS */}
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-full h-12 text-base gap-2"
-              onClick={() => {
-                if (!title || !category) {
-                  toast.error("Enter a title and category first");
-                  return;
-                }
-                setAiLoading(true);
-                analyzePrice.mutate({ title, category });
-              }}
-              disabled={aiLoading}
-            >
-              <Sparkles className="h-5 w-5 text-amber-500" />
-              {aiLoading ? "Analyzing market data..." : "Get AI Price Analysis"}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-amber-500" />
-                Price Analysis
-              </DialogTitle>
-            </DialogHeader>
-            <div className="text-sm leading-relaxed whitespace-pre-line">
-              {aiAnalysis || "No analysis yet. Click the button to analyze."}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Shipping & authenticity</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {(["envelope", "small", "medium", "large", "oversize"] as const).map((s) => (
+                <button key={s} type="button" onClick={() => setPackageSize(s)} className={`px-3 py-1.5 rounded-lg text-sm border ${packageSize === s ? "border-primary bg-primary/10" : "border-border"}`}>
+                  {s}
+                </button>
+              ))}
             </div>
-          </DialogContent>
-        </Dialog>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setShippingPayer("buyer")} className={`flex-1 py-2 rounded-lg border text-sm ${shippingPayer === "buyer" ? "border-primary" : ""}`}>Buyer pays shipping</button>
+              <button type="button" onClick={() => setShippingPayer("seller")} className={`flex-1 py-2 rounded-lg border text-sm ${shippingPayer === "seller" ? "border-primary" : ""}`}>Free shipping</button>
+            </div>
+            {shippingEstimate.data && (
+              <p className="text-sm text-muted-foreground">Estimated shipping: ${shippingEstimate.data.cost.toFixed(2)} ({shippingEstimate.data.carrierHint})</p>
+            )}
+            {category === "trading-cards" && (
+              <div className="grid grid-cols-2 gap-2">
+                <Input placeholder="Set / series" value={cardSet} onChange={(e) => setCardSet(e.target.value)} />
+                <Input placeholder="Grade (PSA 10, raw, etc.)" value={cardGrade} onChange={(e) => setCardGrade(e.target.value)} />
+              </div>
+            )}
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={authenticityDeclared} onChange={(e) => setAuthenticityDeclared(e.target.checked)} />
+              I declare this item is authentic (not bootleg / counterfeit)
+            </label>
+          </CardContent>
+        </Card>
 
         {/* SUMMARY + SUBMIT */}
         <Card className="bg-muted/30">

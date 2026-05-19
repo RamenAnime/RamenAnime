@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useAuctionStream } from "@/hooks/useAuctionStream";
+import { useAuth } from "@/hooks/useAuth";
 
 const isDev = import.meta.env.DEV;
 
@@ -61,12 +63,14 @@ export default function ListingDetail() {
   const listingId = parseInt(id ?? "0");
   const { format } = useCurrency();
   const { t } = useTranslation();
+  const { user } = useAuth();
   const utils = trpc.useUtils();
   const [bidAmount, setBidAmount] = useState("");
   const [showAllBids, setShowAllBids] = useState(false);
   const [isWatching, setIsWatching] = useState(false);
   const [depositPaid, setDepositPaid] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<{id: number; orderNumber: string} | null>(null);
+  const [proxyMax, setProxyMax] = useState("");
 
   const { data: listing } = trpc.marketplace.getListing.useQuery(
     { id: listingId },
@@ -86,13 +90,47 @@ export default function ListingDetail() {
   );
   const sellerCanAcceptPayments = !!(listing as { sellerPaymentReady?: boolean } | undefined)?.sellerPaymentReady;
 
+  const isAuctionListing = listing?.listingType === "auction";
+  const stream = useAuctionStream(listingId, !!listing && isAuctionListing && !!listing.isActive);
+
+  const displayBid = stream.currentBid ?? listing?.currentBid ?? listing?.startPrice ?? "0";
+  const displayBidCount = stream.bidCount ?? listing?.bidCount ?? 0;
+  const displayAuctionEnd = stream.auctionEnd ?? listing?.auctionEnd;
+
+  const { data: depositInfo } = trpc.marketplace.getDepositInfo.useQuery(
+    { listingId },
+    { enabled: !!user && listingId > 0 && isAuctionListing }
+  );
+
+  const setAutoBid = trpc.marketplace.setAutoBid.useMutation({
+    onSuccess: (data) => {
+      setProxyMax("");
+      if (data.won && data.orderId) {
+        setCreatedOrder({ id: data.orderId, orderNumber: data.orderNumber || "" });
+      }
+      utils.marketplace.getListing.invalidate({ id: listingId });
+      utils.marketplace.getBidHistory.invalidate({ listingId });
+      toast.success(data.won ? data.message || t("listing.paymentSuccess") : t("listing.autoBidSet"));
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
       toast.success(t("listing.paymentSuccess"));
       utils.order.getByListing.invalidate({ listingId });
       utils.marketplace.getListing.invalidate({ id: listingId });
     }
+    if (searchParams.get("deposit") === "success") {
+      toast.success("Bid deposit secured");
+      setDepositPaid(true);
+      utils.marketplace.getDepositInfo.invalidate({ listingId });
+    }
   }, [searchParams, listingId, utils]);
+
+  useEffect(() => {
+    if (depositInfo?.held) setDepositPaid(true);
+  }, [depositInfo?.held]);
 
   const placeBid = trpc.marketplace.placeBid.useMutation({
     onSuccess: (data) => {
@@ -112,7 +150,14 @@ export default function ListingDetail() {
     onSuccess: () => setIsWatching(!isWatching),
   });
   const payDeposit = trpc.marketplace.payDeposit.useMutation({
-    onSuccess: () => setDepositPaid(true),
+    onSuccess: (data) => {
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl;
+        return;
+      }
+      if (data.alreadyPaid) setDepositPaid(true);
+    },
+    onError: (err) => toast.error(err.message),
   });
   const markPaid = trpc.order.markPaid.useMutation({
     onSuccess: () => {
@@ -144,7 +189,18 @@ export default function ListingDetail() {
   }
 
   const isAuction = listing.listingType === "auction";
-  const isEnded = listing.auctionEnd ? new Date(listing.auctionEnd) < new Date() : false;
+  const isEnded = displayAuctionEnd ? new Date(displayAuctionEnd) < new Date() : false;
+  let itemSpecifics: Record<string, string> | null = null;
+  if (listing.itemSpecifics) {
+    try {
+      itemSpecifics =
+        typeof listing.itemSpecifics === "string"
+          ? JSON.parse(listing.itemSpecifics)
+          : (listing.itemSpecifics as Record<string, string>);
+    } catch {
+      itemSpecifics = null;
+    }
+  }
   const priceHistory = (bids?.bids || []).map((b: any, i: number) => ({ price: parseFloat(b.amount), time: i }));
 
   return (
@@ -194,6 +250,18 @@ export default function ListingDetail() {
                 <span>{listing.bidCount || 0} bids</span>
               </div>
               <p className="mt-4 text-foreground whitespace-pre-wrap">{listing.description}</p>
+              {listing.authenticityDeclared && (
+                <p className="mt-2 text-sm text-green-600 flex items-center gap-1">
+                  <Shield className="w-4 h-4" /> {t("listing.authenticityDeclared")}
+                </p>
+              )}
+              {itemSpecifics && Object.keys(itemSpecifics).length > 0 && (
+                <div className="mt-3 text-sm border border-border/50 rounded-lg p-3 space-y-1">
+                  {Object.entries(itemSpecifics).map(([k, v]) => (
+                    <p key={k}><span className="text-muted-foreground">{k}:</span> {v}</p>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -209,18 +277,21 @@ export default function ListingDetail() {
                         {isEnded ? "Final Price" : "Current Bid"}
                       </p>
                       <p className="text-4xl font-black text-primary">
-                        {format(listing.currentBid || listing.startPrice || "0")}
+                        {format(displayBid)}
                       </p>
+                      {stream.connected && (
+                        <p className="text-[10px] text-green-600 mt-1">{t("listing.liveUpdates")}</p>
+                      )}
                       <div className="flex items-center justify-center gap-4 mt-2 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Zap className="w-3 h-3" />{listing.bidCount || 0} bids
+                          <Zap className="w-3 h-3" />{displayBidCount} bids
                         </span>
                         {listing.reservePrice && <span>Reserve: ${listing.reservePrice}</span>}
                       </div>
                       {isAuction && !isEnded && (
                         <div className="mt-2 text-sm">
                           <Clock className="w-3 h-3 inline mr-1" />
-                          Ends in: <CountdownTimer endTime={listing.auctionEnd || new Date().toISOString()} />
+                          Ends in: <CountdownTimer endTime={String(displayAuctionEnd || new Date().toISOString())} />
                         </div>
                       )}
                       <PriceChart data={priceHistory} />
@@ -237,7 +308,7 @@ export default function ListingDetail() {
                 <div className="p-4 space-y-2">
                   {isAuction && !isEnded ? (
                     <>
-                      {parseFloat(listing.startPrice || "0") >= 5000 && !depositPaid && (
+                      {depositInfo?.isRequired && !depositPaid && !depositInfo?.held && (
                         <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 mb-2">
                           <p className="text-xs text-yellow-600 mb-1">Deposit Required (5%)</p>
                           <Button className="w-full" size="sm" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ listingId })}>
@@ -253,13 +324,17 @@ export default function ListingDetail() {
                           placeholder="Enter bid"
                           className="flex-1"
                         />
-                        <Button onClick={() => placeBid.mutate({ listingId, amount: bidAmount })} disabled={!bidAmount || placeBid.isPending}>
+                        <Button onClick={() => placeBid.mutate({ listingId, amount: bidAmount, proxyMax: proxyMax || undefined })} disabled={!bidAmount || placeBid.isPending}>
                           {placeBid.isPending ? "Bidding..." : <><Gavel className="w-4 h-4 mr-1" />Bid</>}
                         </Button>
                       </div>
+                      <div className="flex gap-2 items-center">
+                        <Input type="number" value={proxyMax} onChange={(e) => setProxyMax(e.target.value)} placeholder={t("listing.autoBidMaxPlaceholder")} className="flex-1 text-sm" />
+                        <Button variant="secondary" size="sm" disabled={!proxyMax || setAutoBid.isPending} onClick={() => setAutoBid.mutate({ listingId, maxAmount: proxyMax })}>{t("listing.autoBid")}</Button>
+                      </div>
                       <div className="flex gap-1">
                         {[10, 50, 100, 500].map((inc) => (
-                          <Button key={inc} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setBidAmount((parseFloat(listing.currentBid || listing.startPrice || "0") + inc).toString())}>
+                          <Button key={inc} variant="outline" size="sm" className="flex-1 text-xs" onClick={() => setBidAmount((parseFloat(displayBid) + inc).toString())}>
                             +${inc}
                           </Button>
                         ))}
@@ -392,21 +467,28 @@ export default function ListingDetail() {
                   </div>
                 </div>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  <p className="flex items-center gap-1"><Truck className="w-3 h-3" />Free shipping on orders over $50</p>
-                  <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />Ships worldwide</p>
-                  <p className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" />Verified seller</p>
+                  {listing.shippingCost && (
+                    <p className="flex items-center gap-1">
+                      <Truck className="w-3 h-3" />
+                      {t("listing.shippingEstimate")}: {format(listing.shippingCost)}
+                    </p>
+                  )}
+                  {listing.packageSize && <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />{listing.packageSize}</p>}
+                  <p className="flex items-center gap-1"><Check className="w-3 h-3 text-green-500" />{t("listing.verified_seller")}</p>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Shipping Info */}
             <Card className="border-border/50">
               <CardContent className="p-4">
-                <h3 className="font-medium text-sm mb-2">Shipping</h3>
+                <h3 className="font-medium text-sm mb-2">{t("listing.shipping")}</h3>
                 <div className="space-y-1 text-xs text-muted-foreground">
-                  <p>Standard: 5-10 business days</p>
-                  <p>Express: 2-3 business days</p>
-                  <p>Returns accepted within 14 days</p>
+                  {listing.shippingCost ? (
+                    <p>{format(listing.shippingCost)} — {listing.shippingPayer === "seller" ? "Seller pays" : "Buyer pays"}</p>
+                  ) : (
+                    <p>Contact seller for quote</p>
+                  )}
+                  <p>{t("listing.paymentDeadline")}</p>
                 </div>
               </CardContent>
             </Card>

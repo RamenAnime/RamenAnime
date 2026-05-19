@@ -28,11 +28,11 @@ export const paymentRouter = createRouter({
     }),
 
   getPaymentMethods: publicQuery.query(async () => [
-    { id: "stripe", name: "Credit Card (Visa/Mastercard/Amex)", icon: "credit-card", regions: ["global"], feePercent: 2.9, feeFixed: 0.30 },
-    { id: "paypay", name: "PayPay", icon: "paypay", regions: ["JP"], feePercent: 1.5, feeFixed: 0 },
-    { id: "konbini", name: "Konbini (Lawson / FamilyMart / 7-Eleven)", icon: "store", regions: ["JP"], feePercent: 2.0, feeFixed: 0 },
-    { id: "bank_transfer", name: "Bank Transfer (Japan domestic)", icon: "landmark", regions: ["JP"], feePercent: 0, feeFixed: 0 },
-    { id: "escrow", name: "Escrow Protection", icon: "shield", regions: ["global"], feePercent: 3.5, feeFixed: 0 },
+    { id: "stripe", name: "Credit Card (Visa/Mastercard/Amex)", icon: "credit-card", regions: ["global"], feePercent: 2.9, feeFixed: 0.30, available: true },
+    { id: "paypay", name: "PayPay (coming soon)", icon: "paypay", regions: ["JP"], feePercent: 1.5, feeFixed: 0, available: false },
+    { id: "konbini", name: "Konbini (coming soon)", icon: "store", regions: ["JP"], feePercent: 2.0, feeFixed: 0, available: false },
+    { id: "bank_transfer", name: "Bank transfer (coming soon)", icon: "landmark", regions: ["JP"], feePercent: 0, feeFixed: 0, available: false },
+    { id: "escrow", name: "Escrow (held until delivery)", icon: "shield", regions: ["global"], feePercent: 0, feeFixed: 0, available: true },
   ]),
 
   getAvailableMethods: publicQuery.input(z.object({ countryCode: z.string().default("US") })).query(async ({ input }) => {
@@ -43,7 +43,8 @@ export const paymentRouter = createRouter({
       { id: "bank_transfer", name: "Bank Transfer", icon: "landmark", regions: ["JP"], feePercent: 0, feeFixed: 0 },
       { id: "escrow", name: "Escrow", icon: "shield", regions: ["global"], feePercent: 3.5, feeFixed: 0 },
     ];
-    return input.countryCode === "JP" ? all : all.filter(m => m.regions.includes("global"));
+    const filtered = input.countryCode === "JP" ? all : all.filter((m) => m.regions.includes("global"));
+    return filtered.map((m) => ({ ...m, available: m.id === "stripe" || m.id === "escrow" }));
   }),
 
   refundRequest: authedQuery.input(z.object({ transactionNumber: z.string(), reason: z.string().min(1).max(1000) })).mutation(async ({ ctx, input }) => {

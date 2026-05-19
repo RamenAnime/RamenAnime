@@ -1,9 +1,10 @@
 import type { Context } from "hono";
   import Stripe from "stripe";
   import { getDb } from "./queries/connection";
-  import { orders, transactions, users } from "@db/schema";
-  import { eq } from "drizzle-orm";
-  import { logger } from "./lib/utils/logger";
+import { orders, transactions, users } from "@db/schema";
+import { eq } from "drizzle-orm";
+import { logger } from "./lib/utils/logger";
+import { markDepositHeld } from "./lib/stripe-deposit";
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
     apiVersion: "2025-04-30.basil",
@@ -64,6 +65,19 @@ import type { Context } from "hono";
 
         case "checkout.session.completed": {
           const session = event.data.object as Stripe.Checkout.Session;
+          if (session.metadata?.type === "auction_deposit") {
+            const listingId = parseInt(session.metadata.listingId || "0", 10);
+            const bidderId = parseInt(session.metadata.bidderId || "0", 10);
+            const intentId =
+              typeof session.payment_intent === "string"
+                ? session.payment_intent
+                : session.payment_intent?.id || session.id;
+            if (listingId && bidderId) {
+              await markDepositHeld(listingId, bidderId, intentId);
+              logger.info("Auction deposit held", { listingId, bidderId, intentId });
+            }
+            break;
+          }
           if (session.payment_intent) {
             const intentId =
               typeof session.payment_intent === "string"

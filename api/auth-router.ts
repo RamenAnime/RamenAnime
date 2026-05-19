@@ -1,6 +1,6 @@
 import { randomBytes, scrypt, createHash } from "crypto";
-import { createTransport } from "nodemailer";
 import { promisify } from "util";
+import { sendEmail } from "./lib/mailer";
 import * as cookie from "cookie";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
@@ -46,29 +46,6 @@ async function verifyPassword(stored: string, supplied: string): Promise<boolean
 // Hash reset token with SHA-256 for DB storage (raw token only sent to user email)
 function hashResetToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
-}
-
-async function sendEmail(to: string, subject: string, html: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    logger.info("No RESEND_API_KEY set, skipping email", { to, subject });
-    return;
-  }
-  try {
-    const resp = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: "ラーメンアニメ <noreply@ramenanime.com>", to, subject, html }),
-    });
-    if (!resp.ok) {
-      const text = await resp.text();
-      logger.error("Resend email error", { status: resp.status, text, to });
-    } else {
-      logger.info("Email sent", { to, subject });
-    }
-  } catch (err) {
-    logger.error("Email send failed", { to, subject, error: (err as Error).message });
-  }
 }
 
 const baseUrl = () => process.env.SITE_URL || "https://ramenanime.com";

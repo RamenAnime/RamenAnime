@@ -74,7 +74,7 @@ export default function Messages() {
             {threads?.map((th) => (
               <Card
                 key={th.partnerId}
-                className={\`cursor-pointer transition-colors \${activePartner === th.partnerId ? "border-primary" : "hover:bg-muted/50"}\`}
+                className={`cursor-pointer transition-colors ${activePartner === th.partnerId ? "border-primary" : "hover:bg-muted/50"}`}
                 onClick={() => setActivePartner(th.partnerId)}
               >
                 <CardContent className="p-3 flex gap-3 items-start">
@@ -109,7 +109,7 @@ export default function Messages() {
                       </Avatar>
                       <div>
                         <p className="font-medium text-sm">{activeThread?.partnerName}</p>
-                        <Link to={\`/profile/\${activePartner}\`} className="text-xs text-primary hover:underline">
+                        <Link to={`/profile/${activePartner}`} className="text-xs text-primary hover:underline">
                           View profile
                         </Link>
                       </div>
@@ -120,10 +120,10 @@ export default function Messages() {
                         return (
                           <div
                             key={m.id}
-                            className={\`max-w-[85%] rounded-lg px-3 py-2 text-sm \${mine ? "ml-auto bg-primary text-primary-foreground" : "bg-muted"}\`}
+                            className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${mine ? "ml-auto bg-primary text-primary-foreground" : "bg-muted"}`}
                           >
                             <p className="whitespace-pre-wrap">{m.body}</p>
-                            <p className={\`text-[10px] mt-1 \${mine ? "opacity-80" : "text-muted-foreground"}\`}>
+                            <p className={`text-[10px] mt-1 ${mine ? "opacity-80" : "text-muted-foreground"}`}>
                               {new Date(m.createdAt).toLocaleString()}
                             </p>
                           </div>

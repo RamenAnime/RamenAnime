@@ -13,6 +13,7 @@ import i18n from 'i18next';
   import { kyotoJaOverrides } from './i18n/kyoto-ja';
   import { extendedJaKyoto } from './i18n/extended-ja-kyoto';
   import { applyKyotoDialectDeep } from './i18n/kyoto-transform';
+  import { resolveExtendedForLocale } from './i18n/extended-resolve';
 
   const JA_KYOTO_BASE_KEYS = [
     'nav', 'hero', 'home', 'features', 'products', 'about', 'contact', 'footer',
@@ -256,6 +257,8 @@ import i18n from 'i18next';
     }},
   };
 
+  const enBaseCore = JSON.parse(JSON.stringify(resources.en.translation)) as Record<string, unknown>;
+
   resources.en.translation = deepMerge(resources.en.translation, extendedEn);
   resources.en.translation = deepMerge(resources.en.translation, legalEn);
 
@@ -270,7 +273,18 @@ import i18n from 'i18next';
 
   for (const [lng, legalBundle] of Object.entries(LEGAL_LOCALE_BUNDLES)) {
     if (!resources[lng]) continue;
-    const uiBundle = lng === 'ja' ? extendedJaKyoto : extendedEn;
+    const baseBeforeExtended = JSON.parse(JSON.stringify(resources[lng].translation)) as Record<
+      string,
+      unknown
+    >;
+    const uiBundle =
+      lng === 'ja'
+        ? extendedJaKyoto
+        : (resolveExtendedForLocale(
+            extendedEn as Record<string, unknown>,
+            enBaseCore,
+            baseBeforeExtended
+          ) as typeof extendedEn);
     resources[lng].translation = deepMerge(resources[lng].translation, uiBundle);
     resources[lng].translation = deepMerge(resources[lng].translation, legalBundle);
     const tokushoho = tokushohoByLocale[lng];
@@ -281,57 +295,103 @@ import i18n from 'i18next';
 
   applyKyotoJaBundle();
 
-  const { legalPrivacy: _legalPrivacy, legalTerms: _legalTerms, ...enTranslationWithoutLegal } =
-    resources.en.translation;
+  const cloneTranslation = (lng: string) =>
+    JSON.parse(JSON.stringify(resources[lng].translation)) as Record<string, unknown>;
 
-  // All remaining languages use English as fallback - add abbreviated translations for each
-  const makeSimple = (nav: Record<string,string>, hero_sub: string, signin: string, join: string) => ({
-    ...enTranslationWithoutLegal,
-    nav: { ...resources.en.translation.nav, ...nav },
-    hero: { ...resources.en.translation.hero, subtitle: hero_sub },
-    login: {
-      ...resources.en.translation.login,
-      welcomeBack: signin,
-      signInDesc: signin,
-      joinDesc: join,
-      welcomeToast: `${signin}!`,
-      registerToast: `${join}!`,
-    },
-  });
+  /** Inherit a fully localized parent locale; only nav/hero/login overrides differ. */
+  const makeSimple = (
+    parentLng: string,
+    nav: Record<string, string>,
+    hero_sub: string,
+    signin: string,
+    join: string
+  ) => {
+    const parent = cloneTranslation(parentLng);
+    return {
+      ...parent,
+      nav: { ...(parent.nav as Record<string, string>), ...nav },
+      hero: { ...(parent.hero as Record<string, string>), subtitle: hero_sub },
+      login: {
+        ...(parent.login as Record<string, string>),
+        welcomeBack: signin,
+        signInDesc: signin,
+        joinDesc: join,
+        welcomeToast: `${signin}!`,
+        registerToast: `${join}!`,
+      },
+    };
+  };
 
   const extraLangs: Record<string, any> = {
-    'zh-TW': { translation: { ...resources['zh-CN'].translation, hero: { ...resources['zh-CN'].translation.hero, subtitle: '您一站式的動漫3D列印商品和卡牌收藏店。用心製作，用心發貨。' }, nav: { ...resources['zh-CN'].translation.nav, prints3d:'3D列印', myProfile:'我的檔案' } } },
-    hi: { translation: { ...makeSimple({ home:'होम', brand:'Ramen Anime', shop:'दुकान', prints3d:'3D प्रिंट', cards:'कार्ड', contact:'संपर्क', social:'फोरम', login:'लॉगिन', terms:'नियम', friends:'मित्र', profile:'प्रोफाइल', marketplace:'बाज़ार', myProfile:'मेरी प्रोफाइल', admin:'एडमिन', logout:'लॉगआउट', menu:'मेनू', language:'भाषा', donate:'दान' }, 'कस्टम 3D प्रिंटेड एनिमे गुड्स और ट्रेडिंग कार्ड्स की आपकी एकमात्र दुकान।', 'वापसी पर स्वागत है', 'खाता बनाएं') } },
-    id: { translation: { ...makeSimple({ home:'Beranda', brand:'Ramen Anime', shop:'Toko', prints3d:'Cetak 3D', cards:'Kartu', contact:'Kontak', social:'Forum', login:'Masuk', terms:'Syarat', friends:'Teman', profile:'Profil', marketplace:'Pasar', myProfile:'Profil Saya', admin:'Admin', logout:'Keluar', menu:'Menu', language:'Bahasa', donate:'Donasi' }, 'Toko serba ada untuk barang anime cetak 3D dan kartu koleksi.', 'Selamat datang kembali', 'Buat akun') } },
-    ms: { translation: { ...makeSimple({ home:'Utama', brand:'Ramen Anime', shop:'Kedai', prints3d:'Cetak 3D', cards:'Kad', contact:'Hubungi', social:'Forum', login:'Log Masuk', terms:'Terma', friends:'Rakan', profile:'Profil', marketplace:'Pasaran', myProfile:'Profil Saya', admin:'Admin', logout:'Log Keluar', menu:'Menu', language:'Bahasa', donate:'Derma' }, 'Kedai serba lengkap untuk barangan anime cetak 3D dan kad koleksi.', 'Selamat kembali', 'Buat akaun') } },
-    tl: { translation: { ...makeSimple({ home:'Tahanan', brand:'Ramen Anime', shop:'Tindahan', prints3d:'3D Print', cards:'Kard', contact:'Makipag-ugnayan', social:'Forum', login:'Mag-login', terms:'Mga Tuntunin', friends:'Mga Kaibigan', profile:'Profile', marketplace:'Palengke', myProfile:'Aking Profile', admin:'Admin', logout:'Mag-logout', menu:'Menu', language:'Wika', donate:'Mag-donate' }, 'Ang iyong one-stop shop para sa custom anime goods at trading cards.', 'Maligayang pagbabalik', 'Lumikha ng account') } },
-    vi: { translation: { ...makeSimple({ home:'Trang chủ', brand:'Ramen Anime', shop:'Cửa hàng', prints3d:'In 3D', cards:'Thẻ bài', contact:'Liên hệ', social:'Diễn đàn', login:'Đăng nhập', terms:'Điều khoản', friends:'Bạn bè', profile:'Hồ sơ', marketplace:'Chợ', myProfile:'Hồ sơ của tôi', admin:'Quản trị', logout:'Đăng xuất', menu:'Menu', language:'Ngôn ngữ', donate:'Ủng hộ' }, 'Cửa hàng một cửa cho đồ anime in 3D và thẻ bài sưu tập.', 'Chào mừng trở lại', 'Tạo tài khoản') } },
-    th: { translation: { ...makeSimple({ home:'หน้าแรก', brand:'Ramen Anime', shop:'ร้านค้า', prints3d:'พิมพ์ 3D', cards:'การ์ด', contact:'ติดต่อ', social:'ฟอรัม', login:'เข้าสู่ระบบ', terms:'เงื่อนไข', friends:'เพื่อน', profile:'โปรไฟล์', marketplace:'ตลาด', myProfile:'โปรไฟล์ของฉัน', admin:'ผู้ดูแล', logout:'ออกจากระบบ', menu:'เมนู', language:'ภาษา', donate:'บริจาค' }, 'ร้านครบวงจรสำหรับสินค้าอนิเมะพิมพ์ 3D และการ์ดสะสม', 'ยินดีต้อนรับกลับ', 'สร้างบัญชี') } },
-    ar: { translation: { ...makeSimple({ home:'الرئيسية', brand:'Ramen Anime', shop:'المتجر', prints3d:'طباعة ثلاثية الأبعاد', cards:'بطاقات', contact:'اتصل بنا', social:'المنتدى', login:'تسجيل الدخول', terms:'الشروط', friends:'الأصدقاء', profile:'الملف الشخصي', marketplace:'السوق', myProfile:'ملفي الشخصي', admin:'المشرف', logout:'تسجيل الخروج', menu:'القائمة', language:'اللغة', donate:'تبرع' }, 'متجرك الشامل للبضائع الأنيمي المطبوعة ثلاثية الأبعاد وبطاقات التداول.', 'مرحباً بعودتك', 'إنشاء حساب') } },
-    he: { translation: { ...makeSimple({ home:'דף הבית', brand:'Ramen Anime', shop:'חנות', prints3d:'הדפסת תלת-מימד', cards:'קלפים', contact:'צור קשר', social:'פורום', login:'התחברות', terms:'תנאים', friends:'חברים', profile:'פרופיל', marketplace:'שוק', myProfile:'הפרופיל שלי', admin:'מנהל', logout:'התנתקות', menu:'תפריט', language:'שפה', donate:'תרומה' }, 'חנות one-stop לדמויות אנימה מודפסות ב-3D וקלפי אספנות.', 'ברוך שובך', 'צור חשבון') } },
-    tr: { translation: { ...makeSimple({ home:'Ana Sayfa', brand:'Ramen Anime', shop:'Mağaza', prints3d:'3D Baskı', cards:'Kartlar', contact:'İletişim', social:'Forum', login:'Giriş', terms:'Şartlar', friends:'Arkadaşlar', profile:'Profil', marketplace:'Pazar', myProfile:'Profilim', admin:'Yönetici', logout:'Çıkış', menu:'Menü', language:'Dil', donate:'Bağış' }, 'Özel 3D baskılı anime ürünleri ve koleksiyon kartları için tek durak mağazanız.', 'Tekrar hoş geldiniz', 'Hesap oluştur') } },
-    it: { translation: { ...makeSimple({ home:'Home', brand:'Ramen Anime', shop:'Negozio', prints3d:'Stampe 3D', cards:'Carte', contact:'Contatti', social:'Forum', login:'Accedi', terms:'Termini', friends:'Amici', profile:'Profilo', marketplace:'Mercato', myProfile:'Il mio profilo', admin:'Admin', logout:'Esci', menu:'Menu', language:'Lingua', donate:'Donare' }, 'Il tuo negozio per articoli anime stampati in 3D e carte collezionabili.', 'Bentornato', 'Crea account') } },
-    nl: { translation: { ...makeSimple({ home:'Home', brand:'Ramen Anime', shop:'Winkel', prints3d:'3D-prints', cards:'Kaarten', contact:'Contact', social:'Forum', login:'Inloggen', terms:'Voorwaarden', friends:'Vrienden', profile:'Profiel', marketplace:'Markt', myProfile:'Mijn profiel', admin:'Admin', logout:'Uitloggen', menu:'Menu', language:'Taal', donate:'Doneren' }, 'Uw one-stop-shop voor op maat gemaakte 3D-geprinte anime-artikelen en verzamelkaarten.', 'Welkom terug', 'Account aanmaken') } },
-    pt: { translation: { ...makeSimple({ home:'Início', brand:'Ramen Anime', shop:'Loja', prints3d:'Impressões 3D', cards:'Cartas', contact:'Contato', social:'Fórum', login:'Entrar', terms:'Termos', friends:'Amigos', profile:'Perfil', marketplace:'Mercado', myProfile:'Meu Perfil', admin:'Admin', logout:'Sair', menu:'Menu', language:'Idioma', donate:'Doar' }, 'Sua loja completa para artigos anime impressos em 3D e cartas colecionáveis.', 'Bem-vindo de volta', 'Criar conta') } },
-    pl: { translation: { ...makeSimple({ home:'Strona główna', brand:'Ramen Anime', shop:'Sklep', prints3d:'Druki 3D', cards:'Karty', contact:'Kontakt', social:'Forum', login:'Zaloguj', terms:'Warunki', friends:'Znajomi', profile:'Profil', marketplace:'Rynek', myProfile:'Mój profil', admin:'Admin', logout:'Wyloguj', menu:'Menu', language:'Język', donate:'Wspomóż' }, 'Twój sklep z niestandardowymi drukowanymi 3D artykułami anime i kartami kolekcjonerskimi.', 'Witamy ponownie', 'Utwórz konto') } },
-    ro: { translation: { ...makeSimple({ home:'Acasă', brand:'Ramen Anime', shop:'Magazin', prints3d:'Imprimare 3D', cards:'Cărți', contact:'Contact', social:'Forum', login:'Autentificare', terms:'Termeni', friends:'Prieteni', profile:'Profil', marketplace:'Piață', myProfile:'Profilul meu', admin:'Admin', logout:'Deconectare', menu:'Meniu', language:'Limbă', donate:'Donează' }, 'Magazinul tău complet pentru articole anime imprimate 3D și cărți de colecție.', 'Bine ai revenit', 'Creează cont') } },
-    el: { translation: { ...makeSimple({ home:'Αρχική', brand:'Ramen Anime', shop:'Κατάστημα', prints3d:'3D Εκτυπώσεις', cards:'Κάρτες', contact:'Επικοινωνία', social:'Φόρουμ', login:'Σύνδεση', terms:'Όροι', friends:'Φίλοι', profile:'Προφίλ', marketplace:'Αγορά', myProfile:'Το προφίλ μου', admin:'Admin', logout:'Αποσύνδεση', menu:'Μενού', language:'Γλώσσα', donate:'Δωρεά' }, 'Το ολοκληρωμένο κατάστημα για εξατομικευμένα προϊόντα anime και συλλεκτικές κάρτες.', 'Καλώς ήρθατε πίσω', 'Δημιουργία λογαριασμού') } },
-    sv: { translation: { ...makeSimple({ home:'Hem', brand:'Ramen Anime', shop:'Butik', prints3d:'3D-tryck', cards:'Kort', contact:'Kontakt', social:'Forum', login:'Logga in', terms:'Villkor', friends:'Vänner', profile:'Profil', marketplace:'Marknad', myProfile:'Min profil', admin:'Admin', logout:'Logga ut', menu:'Meny', language:'Språk', donate:'Donera' }, 'Din allt-i-ett-butik för anpassade 3D-tryckta anime-varor och samlingskort.', 'Välkommen tillbaka', 'Skapa konto') } },
-    cs: { translation: { ...makeSimple({ home:'Domů', brand:'Ramen Anime', shop:'Obchod', prints3d:'3D tisky', cards:'Karty', contact:'Kontakt', social:'Fórum', login:'Přihlásit', terms:'Podmínky', friends:'Přátelé', profile:'Profil', marketplace:'Tržiště', myProfile:'Můj profil', admin:'Admin', logout:'Odhlásit', menu:'Menu', language:'Jazyk', donate:'Přispět' }, 'Váš all-in-one obchod s vlastními 3D tisknutými anime předměty a sběratelskými kartami.', 'Vítejte zpět', 'Vytvořit účet') } },
-    hu: { translation: { ...makeSimple({ home:'Főoldal', brand:'Ramen Anime', shop:'Bolt', prints3d:'3D nyomtatás', cards:'Kártyák', contact:'Kapcsolat', social:'Fórum', login:'Bejelentkezés', terms:'Feltételek', friends:'Barátok', profile:'Profil', marketplace:'Piac', myProfile:'Profilom', admin:'Admin', logout:'Kijelentkezés', menu:'Menü', language:'Nyelv', donate:'Adományozás' }, 'Mindent egy helyen az egyedi 3D nyomtatott anime árukért és gyűjtőkártyákért.', 'Üdvözöljük újra', 'Fiók létrehozása') } },
-    bg: { translation: { ...makeSimple({ home:'Начало', brand:'Ramen Anime', shop:'Магазин', prints3d:'3D печат', cards:'Карти', contact:'Контакт', social:'Форум', login:'Вход', terms:'Условия', friends:'Приятели', profile:'Профил', marketplace:'Пазар', myProfile:'Моят профил', admin:'Админ', logout:'Изход', menu:'Меню', language:'Език', donate:'Дарение' }, 'Вашият универсален магазин за персонализирани 3D аниме стоки и колекционерски карти.', 'Добре дошли отново', 'Създай акаунт') } },
-    da: { translation: { ...makeSimple({ home:'Hjem', brand:'Ramen Anime', shop:'Butik', prints3d:'3D-print', cards:'Kort', contact:'Kontakt', social:'Forum', login:'Log ind', terms:'Vilkår', friends:'Venner', profile:'Profil', marketplace:'Marked', myProfile:'Min profil', admin:'Admin', logout:'Log ud', menu:'Menu', language:'Sprog', donate:'Donér' }, 'Din alt-i-en butik for brugerdefinerede 3D-printede anime-varer og samlerkort.', 'Velkommen tilbage', 'Opret konto') } },
-    fi: { translation: { ...makeSimple({ home:'Etusivu', brand:'Ramen Anime', shop:'Kauppa', prints3d:'3D-tulosteet', cards:'Kortit', contact:'Yhteystiedot', social:'Foorumi', login:'Kirjaudu', terms:'Ehdot', friends:'Ystävät', profile:'Profiili', marketplace:'Markkinapaikka', myProfile:'Oma profiili', admin:'Admin', logout:'Kirjaudu ulos', menu:'Valikko', language:'Kieli', donate:'Lahjoita' }, 'Kertaostospaikkasi mukautetuille 3D-tulostetuille anime-tavaroille ja keräilykorteille.', 'Tervetuloa takaisin', 'Luo tili') } },
+    'zh-TW': {
+      translation: {
+        ...cloneTranslation('zh-CN'),
+        hero: {
+          ...(cloneTranslation('zh-CN').hero as Record<string, string>),
+          subtitle: '您一站式的動漫3D列印商品和卡牌收藏店。用心製作，用心發貨。',
+        },
+        nav: {
+          ...(cloneTranslation('zh-CN').nav as Record<string, string>),
+          prints3d: '3D列印',
+          myProfile: '我的檔案',
+        },
+      },
+    },
+    hi: { translation: makeSimple('ko', { home:'होम', brand:'Ramen Anime', shop:'दुकान', prints3d:'3D प्रिंट', cards:'कार्ड', contact:'संपर्क', social:'फोरम', login:'लॉगिन', terms:'नियम', friends:'मित्र', profile:'प्रोफाइल', marketplace:'बाज़ार', myProfile:'मेरी प्रोफाइल', admin:'एडमिन', logout:'लॉगआउट', menu:'मेनू', language:'भाषा', donate:'दान' }, 'कस्टम 3D प्रिंटेड एनिमे गुड्स और ट्रेडिंग कार्ड्स की आपकी एकमात्र दुकान।', 'वापसी पर स्वागत है', 'खाता बनाएं') },
+    id: { translation: makeSimple('ko', { home:'Beranda', brand:'Ramen Anime', shop:'Toko', prints3d:'Cetak 3D', cards:'Kartu', contact:'Kontak', social:'Forum', login:'Masuk', terms:'Syarat', friends:'Teman', profile:'Profil', marketplace:'Pasar', myProfile:'Profil Saya', admin:'Admin', logout:'Keluar', menu:'Menu', language:'Bahasa', donate:'Donasi' }, 'Toko serba ada untuk barang anime cetak 3D dan kartu koleksi.', 'Selamat datang kembali', 'Buat akun') },
+    ms: { translation: makeSimple('ko', { home:'Utama', brand:'Ramen Anime', shop:'Kedai', prints3d:'Cetak 3D', cards:'Kad', contact:'Hubungi', social:'Forum', login:'Log Masuk', terms:'Terma', friends:'Rakan', profile:'Profil', marketplace:'Pasaran', myProfile:'Profil Saya', admin:'Admin', logout:'Log Keluar', menu:'Menu', language:'Bahasa', donate:'Derma' }, 'Kedai serba lengkap untuk barangan anime cetak 3D dan kad koleksi.', 'Selamat kembali', 'Buat akaun') },
+    tl: { translation: makeSimple('ko', { home:'Tahanan', brand:'Ramen Anime', shop:'Tindahan', prints3d:'3D Print', cards:'Kard', contact:'Makipag-ugnayan', social:'Forum', login:'Mag-login', terms:'Mga Tuntunin', friends:'Mga Kaibigan', profile:'Profile', marketplace:'Palengke', myProfile:'Aking Profile', admin:'Admin', logout:'Mag-logout', menu:'Menu', language:'Wika', donate:'Mag-donate' }, 'Ang iyong one-stop shop para sa custom anime goods at trading cards.', 'Maligayang pagbabalik', 'Lumikha ng account') },
+    vi: { translation: makeSimple('ko', { home:'Trang chủ', brand:'Ramen Anime', shop:'Cửa hàng', prints3d:'In 3D', cards:'Thẻ bài', contact:'Liên hệ', social:'Diễn đàn', login:'Đăng nhập', terms:'Điều khoản', friends:'Bạn bè', profile:'Hồ sơ', marketplace:'Chợ', myProfile:'Hồ sơ của tôi', admin:'Quản trị', logout:'Đăng xuất', menu:'Menu', language:'Ngôn ngữ', donate:'Ủng hộ' }, 'Cửa hàng một cửa cho đồ anime in 3D và thẻ bài sưu tập.', 'Chào mừng trở lại', 'Tạo tài khoản') },
+    th: { translation: makeSimple('ko', { home:'หน้าแรก', brand:'Ramen Anime', shop:'ร้านค้า', prints3d:'พิมพ์ 3D', cards:'การ์ด', contact:'ติดต่อ', social:'ฟอรัม', login:'เข้าสู่ระบบ', terms:'เงื่อนไข', friends:'เพื่อน', profile:'โปรไฟล์', marketplace:'ตลาด', myProfile:'โปรไฟล์ของฉัน', admin:'ผู้ดูแล', logout:'ออกจากระบบ', menu:'เมนู', language:'ภาษา', donate:'บริจาค' }, 'ร้านครบวงจรสำหรับสินค้าอนิเมะพิมพ์ 3D และการ์ดสะสม', 'ยินดีต้อนรับกลับ', 'สร้างบัญชี') },
+    ar: { translation: makeSimple('fr', { home:'الرئيسية', brand:'Ramen Anime', shop:'المتجر', prints3d:'طباعة ثلاثية الأبعاد', cards:'بطاقات', contact:'اتصل بنا', social:'المنتدى', login:'تسجيل الدخول', terms:'الشروط', friends:'الأصدقاء', profile:'الملف الشخصي', marketplace:'السوق', myProfile:'ملفي الشخصي', admin:'المشرف', logout:'تسجيل الخروج', menu:'القائمة', language:'اللغة', donate:'تبرع' }, 'متجرك الشامل للبضائع الأنيمي المطبوعة ثلاثية الأبعاد وبطاقات التداول.', 'مرحباً بعودتك', 'إنشاء حساب') },
+    he: { translation: makeSimple('fr', { home:'דף הבית', brand:'Ramen Anime', shop:'חנות', prints3d:'הדפסת תלת-מימד', cards:'קלפים', contact:'צור קשר', social:'פורום', login:'התחברות', terms:'תנאים', friends:'חברים', profile:'פרופיל', marketplace:'שוק', myProfile:'הפרופיל שלי', admin:'מנהל', logout:'התנתקות', menu:'תפריט', language:'שפה', donate:'תרומה' }, 'חנות one-stop לדמויות אנימה מודפסות ב-3D וקלפי אספנות.', 'ברוך שובך', 'צור חשבון') },
+    tr: { translation: makeSimple('de', { home:'Ana Sayfa', brand:'Ramen Anime', shop:'Mağaza', prints3d:'3D Baskı', cards:'Kartlar', contact:'İletişim', social:'Forum', login:'Giriş', terms:'Şartlar', friends:'Arkadaşlar', profile:'Profil', marketplace:'Pazar', myProfile:'Profilim', admin:'Yönetici', logout:'Çıkış', menu:'Menü', language:'Dil', donate:'Bağış' }, 'Özel 3D baskılı anime ürünleri ve koleksiyon kartları için tek durak mağazanız.', 'Tekrar hoş geldiniz', 'Hesap oluştur') },
+    it: { translation: makeSimple('es', { home:'Home', brand:'Ramen Anime', shop:'Negozio', prints3d:'Stampe 3D', cards:'Carte', contact:'Contatti', social:'Forum', login:'Accedi', terms:'Termini', friends:'Amici', profile:'Profilo', marketplace:'Mercato', myProfile:'Il mio profilo', admin:'Admin', logout:'Esci', menu:'Menu', language:'Lingua', donate:'Donare' }, 'Il tuo negozio per articoli anime stampati in 3D e carte collezionabili.', 'Bentornato', 'Crea account') },
+    nl: { translation: makeSimple('de', { home:'Home', brand:'Ramen Anime', shop:'Winkel', prints3d:'3D-prints', cards:'Kaarten', contact:'Contact', social:'Forum', login:'Inloggen', terms:'Voorwaarden', friends:'Vrienden', profile:'Profiel', marketplace:'Markt', myProfile:'Mijn profiel', admin:'Admin', logout:'Uitloggen', menu:'Menu', language:'Taal', donate:'Doneren' }, 'Uw one-stop-shop voor op maat gemaakte 3D-geprinte anime-artikelen en verzamelkaarten.', 'Welkom terug', 'Account aanmaken') },
+    pt: { translation: makeSimple('es', { home:'Início', brand:'Ramen Anime', shop:'Loja', prints3d:'Impressões 3D', cards:'Cartas', contact:'Contato', social:'Fórum', login:'Entrar', terms:'Termos', friends:'Amigos', profile:'Perfil', marketplace:'Mercado', myProfile:'Meu Perfil', admin:'Admin', logout:'Sair', menu:'Menu', language:'Idioma', donate:'Doar' }, 'Sua loja completa para artigos anime impressos em 3D e cartas colecionáveis.', 'Bem-vindo de volta', 'Criar conta') },
+    pl: { translation: makeSimple('de', { home:'Strona główna', brand:'Ramen Anime', shop:'Sklep', prints3d:'Druki 3D', cards:'Karty', contact:'Kontakt', social:'Forum', login:'Zaloguj', terms:'Warunki', friends:'Znajomi', profile:'Profil', marketplace:'Rynek', myProfile:'Mój profil', admin:'Admin', logout:'Wyloguj', menu:'Menu', language:'Język', donate:'Wspomóż' }, 'Twój sklep z niestandardowymi drukowanymi 3D artykułami anime i kartami kolekcjonerskimi.', 'Witamy ponownie', 'Utwórz konto') },
+    ro: { translation: makeSimple('es', { home:'Acasă', brand:'Ramen Anime', shop:'Magazin', prints3d:'Imprimare 3D', cards:'Cărți', contact:'Contact', social:'Forum', login:'Autentificare', terms:'Termeni', friends:'Prieteni', profile:'Profil', marketplace:'Piață', myProfile:'Profilul meu', admin:'Admin', logout:'Deconectare', menu:'Meniu', language:'Limbă', donate:'Donează' }, 'Magazinul tău complet pentru articole anime imprimate 3D și cărți de colecție.', 'Bine ai revenit', 'Creează cont') },
+    el: { translation: makeSimple('es', { home:'Αρχική', brand:'Ramen Anime', shop:'Κατάστημα', prints3d:'3D Εκτυπώσεις', cards:'Κάρτες', contact:'Επικοινωνία', social:'Φόρουμ', login:'Σύνδεση', terms:'Όροι', friends:'Φίλοι', profile:'Προφίλ', marketplace:'Αγορά', myProfile:'Το προφίλ μου', admin:'Admin', logout:'Αποσύνδεση', menu:'Μενού', language:'Γλώσσα', donate:'Δωρεά' }, 'Το ολοκληρωμένο κατάστημα για εξατομικευμένα προϊόντα anime και συλλεκτικές κάρτες.', 'Καλώς ήρθατε πίσω', 'Δημιουργία λογαριασμού') },
+    sv: { translation: makeSimple('de', { home:'Hem', brand:'Ramen Anime', shop:'Butik', prints3d:'3D-tryck', cards:'Kort', contact:'Kontakt', social:'Forum', login:'Logga in', terms:'Villkor', friends:'Vänner', profile:'Profil', marketplace:'Marknad', myProfile:'Min profil', admin:'Admin', logout:'Logga ut', menu:'Meny', language:'Språk', donate:'Donera' }, 'Din allt-i-ett-butik för anpassade 3D-tryckta anime-varor och samlingskort.', 'Välkommen tillbaka', 'Skapa konto') },
+    cs: { translation: makeSimple('de', { home:'Domů', brand:'Ramen Anime', shop:'Obchod', prints3d:'3D tisky', cards:'Karty', contact:'Kontakt', social:'Fórum', login:'Přihlásit', terms:'Podmínky', friends:'Přátelé', profile:'Profil', marketplace:'Tržiště', myProfile:'Můj profil', admin:'Admin', logout:'Odhlásit', menu:'Menu', language:'Jazyk', donate:'Přispět' }, 'Váš all-in-one obchod s vlastními 3D tisknutými anime předměty a sběratelskými kartami.', 'Vítejte zpět', 'Vytvořit účet') },
+    hu: { translation: makeSimple('de', { home:'Főoldal', brand:'Ramen Anime', shop:'Bolt', prints3d:'3D nyomtatás', cards:'Kártyák', contact:'Kapcsolat', social:'Fórum', login:'Bejelentkezés', terms:'Feltételek', friends:'Barátok', profile:'Profil', marketplace:'Piac', myProfile:'Profilom', admin:'Admin', logout:'Kijelentkezés', menu:'Menü', language:'Nyelv', donate:'Adományozás' }, 'Mindent egy helyen az egyedi 3D nyomtatott anime árukért és gyűjtőkártyákért.', 'Üdvözöljük újra', 'Fiók létrehozása') },
+    bg: { translation: makeSimple('de', { home:'Начало', brand:'Ramen Anime', shop:'Магазин', prints3d:'3D печат', cards:'Карти', contact:'Контакт', social:'Форум', login:'Вход', terms:'Условия', friends:'Приятели', profile:'Профил', marketplace:'Пазар', myProfile:'Моят профил', admin:'Админ', logout:'Изход', menu:'Меню', language:'Език', donate:'Дарение' }, 'Вашият универсален магазин за персонализирани 3D аниме стоки и колекционерски карти.', 'Добре дошли отново', 'Създай акаунт') },
+    da: { translation: makeSimple('de', { home:'Hjem', brand:'Ramen Anime', shop:'Butik', prints3d:'3D-print', cards:'Kort', contact:'Kontakt', social:'Forum', login:'Log ind', terms:'Vilkår', friends:'Venner', profile:'Profil', marketplace:'Marked', myProfile:'Min profil', admin:'Admin', logout:'Log ud', menu:'Menu', language:'Sprog', donate:'Donér' }, 'Din alt-i-en butik for brugerdefinerede 3D-printede anime-varer og samlerkort.', 'Velkommen tilbage', 'Opret konto') },
+    fi: { translation: makeSimple('de', { home:'Etusivu', brand:'Ramen Anime', shop:'Kauppa', prints3d:'3D-tulosteet', cards:'Kortit', contact:'Yhteystiedot', social:'Foorumi', login:'Kirjaudu', terms:'Ehdot', friends:'Ystävät', profile:'Profiili', marketplace:'Markkinapaikka', myProfile:'Oma profiili', admin:'Admin', logout:'Kirjaudu ulos', menu:'Valikko', language:'Kieli', donate:'Lahjoita' }, 'Kertaostospaikkasi mukautetuille 3D-tulostetuille anime-tavaroille ja keräilykorteille.', 'Tervetuloa takaisin', 'Luo tili') },
+    sk: { translation: makeSimple('de', { home:'Domov', brand:'Ramen Anime', shop:'Obchod', prints3d:'3D tlač', cards:'Karty', contact:'Kontakt', social:'Fórum', login:'Prihlásiť', terms:'Podmienky', friends:'Priatelia', profile:'Profil', marketplace:'Trhovisko', myProfile:'Môj profil', admin:'Admin', logout:'Odhlásiť', menu:'Menu', language:'Jazyk', donate:'Prispieť' }, 'Váš obchod s anime a zberateľskými kartami.', 'Vitajte späť', 'Vytvoriť účet') },
+    hr: { translation: makeSimple('de', { home:'Početna', brand:'Ramen Anime', shop:'Trgovina', prints3d:'3D ispis', cards:'Karte', contact:'Kontakt', social:'Forum', login:'Prijava', terms:'Uvjeti', friends:'Prijatelji', profile:'Profil', marketplace:'Tržnica', myProfile:'Moj profil', admin:'Admin', logout:'Odjava', menu:'Izbornik', language:'Jezik', donate:'Doniraj' }, 'Vaša trgovina za anime i kolekcionarske karte.', 'Dobrodošli natrag', 'Stvori račun') },
+    lt: { translation: makeSimple('de', { home:'Pradžia', brand:'Ramen Anime', shop:'Parduotuvė', prints3d:'3D spausdinimas', cards:'Kortos', contact:'Kontaktai', social:'Forumas', login:'Prisijungti', terms:'Sąlygos', friends:'Draugai', profile:'Profilis', marketplace:'Turgus', myProfile:'Mano profilis', admin:'Admin', logout:'Atsijungti', menu:'Meniu', language:'Kalba', donate:'Paaukoti' }, 'Jūsų anime ir kolekcinių kortelių parduotuvė.', 'Sveiki sugrįžę', 'Sukurti paskyrą') },
+    lv: { translation: makeSimple('de', { home:'Sākums', brand:'Ramen Anime', shop:'Veikals', prints3d:'3D druka', cards:'Kartes', contact:'Kontakti', social:'Forums', login:'Pieslēgties', terms:'Noteikumi', friends:'Draugi', profile:'Profils', marketplace:'Tirgus', myProfile:'Mans profils', admin:'Admin', logout:'Iziet', menu:'Izvēlne', language:'Valoda', donate:'Ziedot' }, 'Jūsu anime un kolekcionāro karšu veikals.', 'Laipni lūdzam atpakaļ', 'Izveidot kontu') },
+    sl: { translation: makeSimple('de', { home:'Domov', brand:'Ramen Anime', shop:'Trgovina', prints3d:'3D tisk', cards:'Karte', contact:'Kontakt', social:'Forum', login:'Prijava', terms:'Pogoji', friends:'Prijatelji', profile:'Profil', marketplace:'Tržnica', myProfile:'Moj profil', admin:'Admin', logout:'Odjava', menu:'Meni', language:'Jezik', donate:'Doniraj' }, 'Vaša trgovina za anime in zbirateljske karte.', 'Dobrodošli nazaj', 'Ustvari račun') },
+    et: { translation: makeSimple('de', { home:'Avaleht', brand:'Ramen Anime', shop:'Pood', prints3d:'3D print', cards:'Kaardid', contact:'Kontakt', social:'Foorum', login:'Logi sisse', terms:'Tingimused', friends:'Sõbrad', profile:'Profiil', marketplace:'Turg', myProfile:'Minu profiil', admin:'Admin', logout:'Logi välja', menu:'Menüü', language:'Keel', donate:'Anneta' }, 'Teie anime ja kollektsioonikaartide pood.', 'Tere tulemast tagasi', 'Loo konto') },
   };
 
   Object.assign(resources, extraLangs);
+
+  const fullyMerged = new Set(['en', 'ja', ...Object.keys(LEGAL_LOCALE_BUNDLES)]);
+  for (const lng of Object.keys(resources)) {
+    if (fullyMerged.has(lng)) continue;
+    const base = JSON.parse(JSON.stringify(resources[lng].translation)) as Record<string, unknown>;
+    const resolved = resolveExtendedForLocale(
+      extendedEn as Record<string, unknown>,
+      enBaseCore,
+      base
+    );
+    resources[lng].translation = deepMerge(resources[lng].translation, resolved);
+  }
 
   i18n
     .use(LanguageDetector)
     .use(initReactI18next)
     .init({
       resources,
-      fallbackLng: 'en',
+      fallbackLng: (code: string) => {
+        if (!code || code === 'en') return ['en'];
+        const base = code.split('-')[0];
+        const chain = [code];
+        if (base !== code) chain.push(base);
+        return chain;
+      },
       supportedLngs: Object.keys(resources),
       nonExplicitSupportedLngs: true,
       interpolation: { escapeValue: false },

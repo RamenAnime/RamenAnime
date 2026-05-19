@@ -32,6 +32,15 @@ export const extendedEn = {
     pinned: "Pinned",
     locked: "Locked",
     auto: "auto",
+    notAvailable: "N/A",
+  },
+  errors: {
+    generic: "Something went wrong. Please try again.",
+  },
+  footer: {
+    donate: "Donate",
+    privacy: "Privacy Policy",
+    verifiedSeller: "Verified Seller",
   },
   notFound: {
     code: "404",
@@ -81,6 +90,7 @@ export const extendedEn = {
     loginToReply: "Login to reply",
     postReply: "Post Reply",
     threadLocked: "This thread is locked. No new replies can be posted.",
+    bbcodeHint: "BBCode: [b] [i] [u] [url] [code] [spoiler]",
     joined: "Joined {{date}}",
     postsCount: "{{count}} posts",
     contentPlaceholder: "Tell the community more… Use [b]bold[/b], [i]italic[/i], [url=https://…]link[/url]",
@@ -218,6 +228,13 @@ export const extendedEn = {
     relatedItems: "Related Items",
     viewingNow: "{{count}} viewing now",
     bidHistoryTitle: "Bid History ({{count}})",
+    conditions: {
+      new: "New",
+      like_new: "Like New",
+      used: "Used",
+      fair: "Fair",
+      poor: "Poor",
+    },
   },
   orders: {
     title: "Orders",
@@ -379,6 +396,17 @@ export const extendedEn = {
     ariaDeletePost: "Delete post",
     ariaDeactivateListing: "Deactivate listing",
     ariaActivateListing: "Activate listing",
+    roles: {
+      admin: "Admin",
+      user: "User",
+      moderator: "Moderator",
+    },
+    copyrightStatus: {
+      pending: "Pending",
+      clear: "Clear",
+      rejected: "Rejected",
+      flagged: "Flagged",
+    },
   },
   swarm: {
     title: "Swarm Intelligence",
@@ -416,6 +444,12 @@ export const extendedEn = {
     interested: "{{count}} interested",
     needMoreUsers: "Need more active users (open the site in another tab to feed live swarm data)",
     itemLabel: "Item #{{id}}",
+    severity: {
+      critical: "Critical",
+      warning: "Warning",
+      info: "Info",
+      low: "Low",
+    },
   },
   analytics: {
     accessDenied: "Access denied. Admin only.",
@@ -528,6 +562,13 @@ export const extendedEn = {
     suggestion2: "How do I sell on Ramen Anime?",
     suggestion3: "Tips for bidding on cards",
   },
+  donations: {
+    methods: {
+      paypal: "PayPal",
+      revolut: "Revolut",
+      stripe: "Stripe",
+    },
+  },
   notifications: {
     title: "Notifications",
     markAllRead: "Mark all read",
@@ -551,6 +592,9 @@ export const extendedEn = {
     footer: "Report bugs in Site Doctor (admin) or via Contact.",
     dismiss: "Dismiss",
     dismissAria: "Dismiss beta banner",
+    mailtoSubject: "Beta Tester Application",
+    mailtoBody:
+      "Hi! I would love to beta test Ramen Anime.\n\nUsername:\nCountry:\nWhat I collect:\n",
   },
   errorBoundary: {
     title: "Something went wrong",
@@ -677,5 +721,7 @@ export const extendedEn = {
     sidebar: "Sidebar",
     sidebarDesc: "Displays the mobile sidebar.",
     more: "More",
+    commandPalette: "Command Palette",
+    commandPaletteDesc: "Search for a command to run…",
   },
 };

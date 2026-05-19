@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number | string; icon: any; color: string }) {
   return (
@@ -29,6 +30,7 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: n
 
 export default function Admin() {
   const { t } = useTranslation();
+  const { roleLabel, paymentMethodLabel, copyrightStatusLabel, genericError } = useLocalizedLabels();
   const navigate = useNavigate();
   const { user: me, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
@@ -43,7 +45,7 @@ export default function Admin() {
   const utils = trpc.useUtils();
   const deletePost = trpc.admin.deletePost.useMutation({
     onSuccess: () => { utils.admin.listPosts.invalidate(); toast.success(t("admin.postDeleted")); },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
   const toggleListing = trpc.admin.toggleListing.useMutation({
     onSuccess: () => { utils.admin.listListings.invalidate(); toast.success(t("admin.listingUpdated")); },
@@ -56,7 +58,7 @@ export default function Admin() {
       utils.admin.copyrightQueue.invalidate();
       toast.success(t("admin.copyrightUpdated"));
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
   const banUser = trpc.admin.banUser.useMutation({
     onSuccess: (data) => {
@@ -140,7 +142,7 @@ export default function Admin() {
                         <tr key={u.id} className={`border-b border-border/50 ${u.isBanned ? "opacity-50" : ""}`}>
                           <td className="py-2 text-muted-foreground">{u.id}</td>
                           <td className="py-2 font-medium">{u.username ?? "-"}</td>
-                          <td className="py-2"><Badge variant={u.role === "admin" ? "default" : "secondary"} className="text-xs">{u.role}</Badge></td>
+                          <td className="py-2"><Badge variant={u.role === "admin" ? "default" : "secondary"} className="text-xs">{roleLabel(u.role)}</Badge></td>
                           <td className="py-2">{u.hasAcceptedTos ? <Check className="h-4 w-4 text-green-500" /> : <span className="text-muted-foreground text-xs">-</span>}</td>
                           <td className="py-2">{u.isBanned ? <Badge variant="destructive" className="text-xs">{t("admin.banned")}</Badge> : <Badge variant="outline" className="text-xs">{t("admin.active")}</Badge>}</td>
                           <td className="py-2 flex gap-1">
@@ -218,7 +220,7 @@ export default function Admin() {
                         <tr key={d.id} className="border-b border-border/50">
                           <td className="py-2">{d.donorName ?? t("admin.anonymous")}</td>
                           <td className="py-2 font-medium">{d.amount} {d.currency}</td>
-                          <td className="py-2 text-muted-foreground">{d.paymentMethod}</td>
+                          <td className="py-2 text-muted-foreground">{paymentMethodLabel(d.paymentMethod)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -237,7 +239,7 @@ export default function Admin() {
                     <div key={row.listing.id} className="border border-border rounded-lg p-4 mb-3">
                       <div className="flex justify-between items-start gap-2 mb-2">
                         <p className="font-medium">{row.listing.title}</p>
-                        <p className="text-xs text-muted-foreground">{t("admin.sellerLabel")}: {row.seller?.name || row.seller?.email} · {t("admin.status")}: {row.listing.copyrightStatus}</p>
+                        <p className="text-xs text-muted-foreground">{t("admin.sellerLabel")}: {row.seller?.name || row.seller?.email} · {t("admin.status")}: {copyrightStatusLabel(row.listing.copyrightStatus)}</p>
                       </div>
                       <ul className="text-xs text-muted-foreground mb-3 list-disc pl-4">
                         {row.scans?.slice(0, 3).map((s: any) => (

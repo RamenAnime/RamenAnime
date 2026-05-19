@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 
 import { trpc } from "@/providers/trpc";
 
@@ -37,6 +38,7 @@ const COLORS = ["#fbbf24", "#38bdf8", "#34d399", "#a78bfa", "#f87171", "#fb923c"
 export default function SwarmDashboard() {
 
   const { t } = useTranslation();
+  const { severityLabel } = useLocalizedLabels();
 
   const utils = trpc.useUtils();
 
@@ -572,7 +574,7 @@ export default function SwarmDashboard() {
 
                           <Badge variant={a.severity === "critical" ? "destructive" : a.severity === "warning" ? "default" : "secondary"} className="text-xs">
 
-                            {a.severity}
+                            {severityLabel(a.severity)}
 
                           </Badge>
 

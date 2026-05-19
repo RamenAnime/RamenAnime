@@ -59,7 +59,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/donate" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Donate
+                  {t("footer.donate")}
                 </Link>
               </li>
             </ul>
@@ -81,7 +81,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Privacy Policy
+                  {t("footer.privacy")}
                 </Link>
               </li>
               <li>
@@ -102,7 +102,7 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <ShoppingBag className="h-4 w-4 text-primary" />
-                Verified Seller
+                {t("footer.verifiedSeller")}
               </li>
             </ul>
           </div>

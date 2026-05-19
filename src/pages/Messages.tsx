@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 import { toast } from "sonner";
 
 export default function Messages() {
@@ -35,7 +36,7 @@ export default function Messages() {
       refetchMessages();
       refetchThreads();
     },
-    onError: (e) => toast.error(e.message),
+    onError: (e) => toast.error(genericError(e)),
   });
 
   useEffect(() => {

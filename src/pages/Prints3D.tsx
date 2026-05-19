@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
 
 export default function Prints3D() {
   const { t } = useTranslation();
+  const { conditionLabel } = useLocalizedLabels();
   const { isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
 
@@ -90,7 +92,7 @@ export default function Prints3D() {
                     )}
                     <CardContent className="p-4 space-y-3">
                       <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-xs capitalize">{listing.condition}</Badge>
+                        <Badge variant="outline" className="text-xs">{conditionLabel(listing.condition)}</Badge>
                         {listing.copyrightStatus === "clear" && (
                           <Badge variant="outline" className="text-xs text-green-600 border-green-300">{t("common.verified")}</Badge>
                         )}

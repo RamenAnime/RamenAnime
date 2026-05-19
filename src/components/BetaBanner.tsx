@@ -66,7 +66,7 @@ export default function BetaBanner() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <a
-              href="mailto:ramenanime@protonmail.com?subject=Beta%20Tester%20Application&body=Hi!%20I%20would%20love%20to%20beta%20test%20ラーメンアニメ.%0A%0AUsername%3A%20%0ACountry%3A%20%0ABrowser%2FDevice%3A%20%0A%0AWhat%20I%20want%20to%20test%3A%20"
+              href={`mailto:ramenanime@protonmail.com?subject=${encodeURIComponent(t("beta.mailtoSubject"))}&body=${encodeURIComponent(t("beta.mailtoBody"))}`}
               className="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-400 text-black font-bold px-6 py-2.5 rounded-lg transition-colors text-sm"
             >
               <Mail className="h-4 w-4" />

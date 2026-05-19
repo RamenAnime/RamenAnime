@@ -4,6 +4,7 @@ import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "@/hooks/useCurrency";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ const categorySlugs = ["All", "trading-cards", "3d-prints", "figures", "apparel"
 
 export default function Marketplace() {
   const { t } = useTranslation();
+  const { categoryLabel, conditionLabel } = useLocalizedLabels();
   const { isAuthenticated } = useAuth();
   const { format } = useCurrency();
   const [activeCategory, setActiveCategory] = useState<string>("All");
@@ -75,8 +77,8 @@ export default function Marketplace() {
     return () => clearTimeout(timer);
   }, [searchQuery, activeCategory, listings?.length]);
 
-  const categoryLabel = (cat: string) =>
-    cat === "All" ? t("marketplace.categories.all") : t(`marketplace.categories.${cat}`, { defaultValue: cat });
+  const filterCategoryLabel = (cat: string) =>
+    cat === "All" ? t("marketplace.categories.all") : categoryLabel(cat);
 
   return (
     <div className="min-h-screen py-12">
@@ -177,8 +179,8 @@ export default function Marketplace() {
 
                   <CardContent className="p-5 space-y-3">
                     <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs border-primary/30 text-primary capitalize">{listing.category}</Badge>
-                      <Badge variant="outline" className="text-xs border-border/50 text-muted-foreground">{listing.condition}</Badge>
+                      <Badge variant="outline" className="text-xs border-primary/30 text-primary">{categoryLabel(listing.category)}</Badge>
+                      <Badge variant="outline" className="text-xs border-border/50 text-muted-foreground">{conditionLabel(listing.condition)}</Badge>
                     </div>
 
                     <Link to={`/marketplace/${listing.id}`}>

@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 import { trpc } from "@/providers/trpc";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ type ProfileEarningsProps = {
 
 export default function ProfileEarnings({ accentColor, textColor }: ProfileEarningsProps) {
   const { t } = useTranslation();
+  const { orderStatusLabel, genericError } = useLocalizedLabels();
   const { data: sales } = trpc.stripe.mySales.useQuery();
   const { data: purchases } = trpc.stripe.myOrders.useQuery();
   const { data: stripeStatus } = trpc.stripe.getSellerStatus.useQuery();
@@ -22,7 +24,7 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
     onSuccess: (data) => {
       if (data?.url) window.location.href = data.url;
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
 
   return (
@@ -85,7 +87,7 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
                   <li key={order.id} className="text-sm border-b border-white/10 pb-2 last:border-0">
                     <div className="flex justify-between gap-2">
                       <span style={{ color: textColor }}>{order.listing?.title ?? t("admin.unknown")}</span>
-                      <Badge variant="outline" className="text-xs capitalize">{order.status}</Badge>
+                      <Badge variant="outline" className="text-xs">{orderStatusLabel(order.status)}</Badge>
                     </div>
                     <p className="text-xs opacity-60 mt-1" style={{ color: textColor }}>
                       {t("profile.orderNumber")} {order.orderNumber} · ${order.totalAmount}
@@ -116,7 +118,7 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
                   <li key={order.id} className="text-sm border-b border-white/10 pb-2 last:border-0">
                     <div className="flex justify-between gap-2">
                       <span style={{ color: textColor }}>{order.listing?.title ?? t("admin.unknown")}</span>
-                      <Badge variant="outline" className="text-xs capitalize">{order.status}</Badge>
+                      <Badge variant="outline" className="text-xs">{orderStatusLabel(order.status)}</Badge>
                     </div>
                     <p className="text-xs opacity-60 mt-1" style={{ color: textColor }}>
                       {t("profile.orderNumber")} {order.orderNumber} · ${order.totalAmount}

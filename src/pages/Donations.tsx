@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Heart, ExternalLink, Copy, CheckCircle } from "lucide-react";
 import { trpc } from "@/providers/trpc";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 import { toast } from "sonner";
 
 const REVOLUT_USERNAME =
@@ -108,6 +109,7 @@ function PayPalDonateButton({
 
 export default function Donations() {
   const { t } = useTranslation();
+  const { genericError } = useLocalizedLabels();
   const utils = trpc.useUtils();
   const [amount, setAmount] = useState("");
   const [donorName, setDonorName] = useState("");
@@ -151,7 +153,7 @@ export default function Donations() {
       });
       toast.success(t("donations.paypalRecorded"));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("donations.recordFailed"));
+      toast.error(genericError(err));
     }
   };
 
@@ -173,7 +175,7 @@ export default function Donations() {
       setAmount("");
       setMessage("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("donations.recordFailed"));
+      toast.error(genericError(err));
     }
   };
 

@@ -32,6 +32,15 @@ export const extendedJaKyoto = {
     pinned: "ピン留め",
     locked: "ロック中",
     auto: "自動",
+    notAvailable: "なし",
+  },
+  errors: {
+    generic: "問題が起きたみたい。もう一回試してな。",
+  },
+  footer: {
+    donate: "寄付",
+    privacy: "プライバシーポリシー",
+    verifiedSeller: "認証済み出品者",
   },
   notFound: {
     code: "404",
@@ -81,6 +90,7 @@ export const extendedJaKyoto = {
     loginToReply: "返信するにはログインしてな",
     postReply: "返信を投稿",
     threadLocked: "このスレはロックされとる。新しい返信はできへん。",
+    bbcodeHint: "BBCode: [b] [i] [u] [url] [code] [spoiler]",
     joined: "{{date}} 参加",
     postsCount: "投稿 {{count}}",
     contentPlaceholder: "もっと詳しく書いてな… [b]太字[/b]、[i]斜体[/i]、[url=https://…]リンク[/url] が使えるで",
@@ -218,6 +228,13 @@ export const extendedJaKyoto = {
     relatedItems: "関連商品",
     viewingNow: "今 {{count}}人が見とる",
     bidHistoryTitle: "入札履歴 ({{count}})",
+    conditions: {
+      new: "新品",
+      like_new: "ほぼ新品",
+      used: "中古",
+      fair: "傷あり",
+      poor: "状態悪し",
+    },
   },
   orders: {
     title: "注文",
@@ -379,6 +396,13 @@ export const extendedJaKyoto = {
     ariaDeletePost: "投稿を削除",
     ariaDeactivateListing: "出品を非公開にする",
     ariaActivateListing: "出品を公開する",
+    roles: { admin: "管理者", user: "ユーザー", moderator: "モデレーター" },
+    copyrightStatus: {
+      pending: "保留",
+      clear: "問題なし",
+      rejected: "却下",
+      flagged: "フラグ",
+    },
   },
   swarm: {
     title: "スワーム・インテリジェンス",
@@ -528,6 +552,9 @@ export const extendedJaKyoto = {
     suggestion2: "Ramen Animeで売るにはどうすればええ？",
     suggestion3: "カード入札のコツ",
   },
+  donations: {
+    methods: { paypal: "PayPal", revolut: "Revolut", stripe: "Stripe" },
+  },
   notifications: {
     title: "通知",
     markAllRead: "すべて既読",
@@ -551,6 +578,9 @@ export const extendedJaKyoto = {
     footer: "バグはサイトドクター（管理者）かお問い合わせから報告してな。",
     dismiss: "閉じる",
     dismissAria: "ベータバナーを閉じる",
+    mailtoSubject: "ベータテスター応募",
+    mailtoBody:
+      "ベータテスト参加希望です。\n\nユーザー名:\n国:\nブラウザ/端末:\nテストしたい内容:\n",
   },
   errorBoundary: {
     title: "なんかおかしなった",

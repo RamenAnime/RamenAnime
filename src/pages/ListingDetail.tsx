@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 import { useAuctionStream } from "@/hooks/useAuctionStream";
 import { useAuth } from "@/hooks/useAuth";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 
 const isDev = import.meta.env.DEV;
 
@@ -67,6 +68,7 @@ export default function ListingDetail() {
   const listingId = parseInt(id ?? "0");
   const { format } = useCurrency();
   const { t } = useTranslation();
+  const { categoryLabel, conditionLabel, genericError } = useLocalizedLabels();
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const [bidAmount, setBidAmount] = useState("");
@@ -121,7 +123,7 @@ export default function ListingDetail() {
       utils.marketplace.getBidHistory.invalidate({ listingId });
       toast.success(data.won ? data.message || t("listing.paymentSuccess") : t("listing.autoBidSet"));
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
 
   useEffect(() => {
@@ -153,7 +155,7 @@ export default function ListingDetail() {
         utils.marketplace.getBidHistory.invalidate({ listingId });
       }
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
   const toggleWatch = trpc.marketplace.toggleWatchlist.useMutation({
     onSuccess: () => setIsWatching(!isWatching),
@@ -166,7 +168,7 @@ export default function ListingDetail() {
       }
       if (data.alreadyPaid) setDepositPaid(true);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
   const markPaid = trpc.order.markPaid.useMutation({
     onSuccess: () => {
@@ -178,7 +180,7 @@ export default function ListingDetail() {
     onSuccess: (data) => {
       if (data?.url) window.location.href = data.url;
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
 
   const handleBuyNow = () => {
@@ -219,7 +221,7 @@ export default function ListingDetail() {
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
           <Link to="/marketplace" className="hover:text-primary">{t("listing.marketplaceBreadcrumb")}</Link>
           <span>/</span>
-          <span className="capitalize">{listing.category}</span>
+          <span>{categoryLabel(listing.category)}</span>
           <span>/</span>
           <span className="truncate max-w-xs">{listing.title}</span>
         </div>
@@ -243,8 +245,8 @@ export default function ListingDetail() {
             {/* Title & Description */}
             <div className="mt-6">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <Badge variant="outline" className="capitalize">{listing.category}</Badge>
-                <Badge variant="outline" className="capitalize">{listing.condition}</Badge>
+                <Badge variant="outline">{categoryLabel(listing.category)}</Badge>
+                <Badge variant="outline">{conditionLabel(listing.condition)}</Badge>
                 {listing.copyrightStatus === "clear" && (
                   <Badge variant="outline" className="border-green-500/30 text-green-500"><Shield className="w-3 h-3 mr-1" />{t("common.verified")}</Badge>
                 )}

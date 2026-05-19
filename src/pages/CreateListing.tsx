@@ -13,6 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, Link } from "react-router";
 import { Upload, X, ImageIcon, Sparkles, Camera, Package, Tag, Clock, FileText, ChevronRight, AlertCircle, CreditCard } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 
 const CATEGORY_IDS = [
   { id: "anime-figures", key: "cat_figures", icon: "🎌" },
@@ -47,6 +48,7 @@ const PACKAGE_SIZE_KEYS = {
 
 export default function CreateListing() {
   const { t } = useTranslation();
+  const { genericError } = useLocalizedLabels();
   const CATEGORIES = CATEGORY_IDS.map((c) => ({ ...c, name: t(`createListing.${c.key}`) }));
   const CONDITIONS = [
     { id: "new", label: t("createListing.new"), desc: t("createListing.conditionNewDesc") },
@@ -90,7 +92,7 @@ export default function CreateListing() {
     onSuccess: (data) => {
       if (data?.url) window.location.href = data.url;
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
 
   const createMutation = trpc.marketplace.createListing.useMutation({
@@ -98,7 +100,7 @@ export default function CreateListing() {
       toast.success(t("createListing.success"));
       navigate("/marketplace");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

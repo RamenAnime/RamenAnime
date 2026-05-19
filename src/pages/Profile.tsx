@@ -15,12 +15,14 @@ import {
 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 import ProfileEarnings from "@/components/profile/ProfileEarnings";
 import TosGate from "@/components/TosGate";
 import { toast } from "sonner";
 
 function ProfileContent() {
   const { t } = useTranslation();
+  const { genericError } = useLocalizedLabels();
   const { id } = useParams<{ id: string }>();
   const profileUserId = parseInt(id ?? "0");
   
@@ -65,7 +67,7 @@ function ProfileContent() {
 
   const sendFriendRequest = trpc.social.sendFriendRequest.useMutation({
     onSuccess: () => { utils.social.listFriends.invalidate(); toast.success(t("profile.friendRequestSent")); },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => toast.error(genericError(err)),
   });
 
   const isFriend = friendsList?.some((f: any) => f.id === profileUserId);

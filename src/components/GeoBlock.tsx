@@ -3,18 +3,9 @@ import { useState, useEffect } from "react";
   import { Button } from "@/components/ui/button";
   import { Card, CardContent } from "@/components/ui/card";
   import { Globe, Ban, Loader2 } from "lucide-react";
+  import { countryDisplayName } from "@/lib/label-i18n";
 
   const ALLOWED_COUNTRIES = ["US","CA","JP","KR","CN","HK","AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE","SG","MY","GB","TW","MO","MN","VN","PH","ID","BN","KH","LA","TL","IN","BD","PK","LK","NP","BH","MV","AF","KZ","UZ","TM","TJ","KG","TR","GE","AM","AZ","IL","JO","LB","IQ","KW","SA","AE","QA","OM","YE","PS","AU","NZ","ZA","NG","GH","KE","ET","TZ","UG","RW","SN","CI","CM","ZW","ZM","MZ","MG","NA","BW"];
-  const COUNTRY_NAMES: Record<string, string> = {
-    US: "United States", CA: "Canada", JP: "Japan", KR: "South Korea", CN: "China", HK: "Hong Kong",
-    FR: "France", DE: "Germany", GB: "United Kingdom", SG: "Singapore", MY: "Malaysia", AT: "Austria",
-    BE: "Belgium", BG: "Bulgaria", HR: "Croatia", CY: "Cyprus", CZ: "Czech Republic", DK: "Denmark",
-    EE: "Estonia", FI: "Finland", GR: "Greece", HU: "Hungary", IE: "Ireland", IT: "Italy",
-    LV: "Latvia", LT: "Lithuania", LU: "Luxembourg", MT: "Malta", NL: "Netherlands", PL: "Poland",
-    PT: "Portugal", RO: "Romania", SK: "Slovakia", SI: "Slovenia", ES: "Spain", SE: "Sweden",
-    TW: "Taiwan", AU: "Australia", NZ: "New Zealand", IN: "India", TR: "Turkey", VN: "Vietnam",
-    ID: "Indonesia", PH: "Philippines", TH: "Thailand", SA: "Saudi Arabia", AE: "United Arab Emirates",
-  };
 
   const GEO_KEY = "ramen_anime_geo_verified";
   const GEO_COUNTRY_KEY = "ramen_anime_country";
@@ -89,7 +80,7 @@ import { useState, useEffect } from "react";
   }
 
   export default function GeoBlock({ children }: GeoBlockProps) {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const [status, setStatus] = useState<"checking" | "allowed" | "blocked">(
       "checking"
     );
@@ -127,7 +118,7 @@ import { useState, useEffect } from "react";
     }, []);
 
     const handleManualSelect = (code: string) => {
-      const name = COUNTRY_NAMES[code] || code;
+      const name = countryDisplayName(code, i18n.language);
       const c = { code, name };
       const allowed = ALLOWED_COUNTRIES.includes(code);
       setCountry(c);
@@ -160,7 +151,7 @@ import { useState, useEffect } from "react";
           <div className="text-center space-y-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
             <p className="text-foreground text-sm font-medium">
-              Loadingラーメンアニメ…
+              {t("geoBlock.loadingSite")}
             </p>
           </div>
         </div>
@@ -188,7 +179,7 @@ import { useState, useEffect } from "react";
                   {t("geoBlock.detected")}{" "}
                 </span>
                 <span className="font-semibold text-foreground">
-                  {country.name} ({country.code})
+                  {countryDisplayName(country.code, i18n.language)} ({country.code})
                 </span>
               </div>
             )}
@@ -219,7 +210,7 @@ import { useState, useEffect } from "react";
                       onClick={() => handleManualSelect(code)}
                       className="text-xs px-2 py-1 rounded hover:bg-muted text-left transition-colors text-foreground"
                     >
-                      {COUNTRY_NAMES[code] || code}
+                      {countryDisplayName(code, i18n.language)}
                     </button>
                   ))}
                 </div>

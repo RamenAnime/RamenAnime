@@ -22,6 +22,7 @@ import {
   Award,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 
 const REACTION_EMOJIS = ["👍", "❤️", "🔥", "😂", "🤔", "👏"];
 
@@ -97,7 +98,7 @@ function UserCard({
         month: "short",
         year: "numeric",
       })
-    : "N/A";
+    : t("common.notAvailable");
   return (
     <div className="flex items-center gap-3">
       <Link to={`/profile/${user.id}`}>
@@ -145,6 +146,7 @@ function UserCard({
 
 function PostContent() {
   const { t } = useTranslation();
+  const { forumCategoryLabel } = useLocalizedLabels();
   const { id } = useParams<{ id: string }>();
   const postId = parseInt(id ?? "0");
   const navigate = useNavigate();
@@ -502,7 +504,7 @@ function PostContent() {
                 />
                 <div className="flex items-center justify-between">
                   <div className="text-xs text-muted-foreground">
-                    BBCode: [b] [i] [u] [url] [code] [spoiler]
+                    {t("forum.bbcodeHint")}
                   </div>
                   <Button
                     className="bg-primary text-primary-foreground hover:bg-primary/90"

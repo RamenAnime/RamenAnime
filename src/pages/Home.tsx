@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import { useTranslation } from "react-i18next";
+import { useLocalizedLabels } from "@/lib/label-i18n";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +53,7 @@ const whySellIcons = {
 
 export default function Home() {
   const { t } = useTranslation();
+  const { conditionLabel } = useLocalizedLabels();
   const { format } = useCurrency();
 
   const formatAuctionPrice = (amount: string | number | null | undefined) =>
@@ -272,7 +274,7 @@ export default function Home() {
                     </div>
                     <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition">{item.title}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="outline" className="text-[10px] capitalize">{item.condition}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{conditionLabel(item.condition)}</Badge>
                       <span className="text-sm text-primary font-bold">{priceLabel}</span>
                     </div>
                   </Link>

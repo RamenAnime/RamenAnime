@@ -89,7 +89,9 @@ export default function App() {
                 
                 {/* Category pages */}
                 <Route path="/3d-prints" element={<Prints3D />} />
+                <Route path="/prints3d" element={<Navigate to="/3d-prints" replace />} />
                 <Route path="/trading-cards" element={<TradingCards />} />
+                <Route path="/cards" element={<Navigate to="/trading-cards" replace />} />
                 
                 {/* Info pages */}
                 <Route path="/contact" element={<Contact />} />

@@ -11,10 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   Music, Heart, MapPin, Link as LinkIcon, Edit3, UserPlus, UserCheck,
-  MessageSquare, Globe, Gamepad2, Tv, Smile, Send, Loader2,
+  MessageSquare, Globe, Gamepad2, Tv, Smile, Send, Loader2, Wallet,
 } from "lucide-react";
 import { useState, useCallback } from "react";
-  import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
+import ProfileEarnings from "@/components/profile/ProfileEarnings";
 import TosGate from "@/components/TosGate";
 import { toast } from "sonner";
 
@@ -40,38 +41,30 @@ function ProfileContent() {
   const utils = trpc.useUtils();
 
   const updateProfile = trpc.social.createOrUpdateProfile.useMutation({
-    onMutate: () => {
-      console.log("[Profile] Saving...");
-    },
     onSuccess: (result) => {
-      console.log("[Profile] Save success:", result);
-      toast.success(t("profile.saveBtn"));
+      toast.success(t("profile.saveSuccess"));
       setEditOpen(false);
       utils.social.getProfile.setData({ userId: profileUserId }, result);
       utils.social.getMyProfile.setData(undefined, result);
-      setTimeout(() => window.location.reload(), 500);
+      void utils.social.getProfile.invalidate({ userId: profileUserId });
     },
     onError: (err) => {
-      console.error("[Profile] Save error:", err);
-      toast.error("Save failed: " + err.message);
+      toast.error(t("profile.saveFailed", { message: err.message }));
     },
   });
 
-  const handleSave = useCallback((data: any) => {
-    console.log("[Profile] handleSave called with:", data);
-    // Filter out empty strings to reduce payload
-    const payload: any = {};
+  const handleSave = useCallback((data: Record<string, string>) => {
+    const payload: Record<string, string> = {};
     for (const [key, value] of Object.entries(data)) {
       if (value !== "" && value !== undefined) {
         payload[key] = value;
       }
     }
-    console.log("[Profile] Filtered payload:", payload);
     updateProfile.mutate(payload);
   }, [updateProfile]);
 
   const sendFriendRequest = trpc.social.sendFriendRequest.useMutation({
-    onSuccess: () => { utils.social.listFriends.invalidate(); toast.success(t("profile.addFriend")); },
+    onSuccess: () => { utils.social.listFriends.invalidate(); toast.success(t("profile.friendRequestSent")); },
     onError: (err) => toast.error(err.message),
   });
 
@@ -90,21 +83,21 @@ function ProfileContent() {
       <div className="min-h-screen py-12">
         <div className="container px-4 md:px-6 max-w-3xl mx-auto text-center">
           <h1 className="text-2xl font-bold text-foreground mb-4">
-            {isMyProfile ? "Welcome! Set up your profile" : t("profile.notFound")}
+            {isMyProfile ? t("profile.welcome") : t("profile.notFound")}
           </h1>
           <p className="text-muted-foreground mb-6">
-            {isMyProfile ? "Set up your profile to connect with the community." : t("profile.noProfile")}
+            {isMyProfile ? t("profile.createProfile") : t("profile.noProfile")}
           </p>
           {isMyProfile && (
             <Dialog open={editOpen} onOpenChange={setEditOpen}>
               <DialogTrigger asChild>
                 <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <Edit3 className="mr-2 h-5 w-5" />
-                  Set Up Profile
+                  {t("profile.setupBtn")}
                 </Button>
               </DialogTrigger>
               <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Create Your Profile</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{t("profile.createTitle")}</DialogTitle></DialogHeader>
                 <ProfileEditForm onSave={handleSave} isPending={updateProfile.isPending} />
               </DialogContent>
             </Dialog>
@@ -148,11 +141,11 @@ function ProfileContent() {
                     <Dialog open={editOpen} onOpenChange={setEditOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm" variant="outline" style={{ borderColor: accentColor + "60", color: accentColor }}>
-                          <Edit3 className="mr-1 h-4 w-4" />Edit Profile
+                          <Edit3 className="mr-1 h-4 w-4" />{t("profile.editBtn")}
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
-                        <DialogHeader><DialogTitle>Edit Your Profile</DialogTitle></DialogHeader>
+                        <DialogHeader><DialogTitle>{t("profile.editTitle")}</DialogTitle></DialogHeader>
                         <ProfileEditForm profile={profile} onSave={handleSave} isPending={updateProfile.isPending} />
                       </DialogContent>
                     </Dialog>
@@ -160,11 +153,11 @@ function ProfileContent() {
                     <>
                       {isAuthenticated && !isFriend && (
                         <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => sendFriendRequest.mutate({ addresseeId: profileUserId })} disabled={sendFriendRequest.isPending}>
-                          <UserPlus className="mr-1 h-4 w-4" />Add Friend
+                          <UserPlus className="mr-1 h-4 w-4" />{t("profile.addFriend")}
                         </Button>
                       )}
-                      {isFriend && <Badge variant="outline" className="border-primary/30 text-primary"><UserCheck className="mr-1 h-4 w-4" />Friends</Badge>}
-                      <Link to="/social"><Button size="sm" variant="outline" style={{ borderColor: accentColor + "60", color: accentColor }}><MessageSquare className="mr-1 h-4 w-4" />Message</Button></Link>
+                      {isFriend && <Badge variant="outline" className="border-primary/30 text-primary"><UserCheck className="mr-1 h-4 w-4" />{t("profile.friends")}</Badge>}
+                      <Link to="/messages"><Button size="sm" variant="outline" style={{ borderColor: accentColor + "60", color: accentColor }}><MessageSquare className="mr-1 h-4 w-4" />{t("profile.message", { defaultValue: "Message" })}</Button></Link>
                     </>
                   )}
                 </div>
@@ -177,22 +170,22 @@ function ProfileContent() {
           <div className="space-y-6">
             <Card className="border-0 shadow-lg" style={{ backgroundColor: "#111", borderColor: accentColor + "30" }}>
               <CardContent className="p-5">
-                <h3 className="font-bold text-lg mb-3 flex items-center gap-2" style={{ color: accentColor }}><Heart className="h-5 w-5" />About Me</h3>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>{profile.aboutMe ?? "No bio yet."}</p>
+                <h3 className="font-bold text-lg mb-3 flex items-center gap-2" style={{ color: accentColor }}><Heart className="h-5 w-5" />{t("profile.aboutMe")}</h3>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>{profile.aboutMe ?? t("profile.noBio")}</p>
               </CardContent>
             </Card>
             <Card className="border-0 shadow-lg" style={{ backgroundColor: "#111", borderColor: accentColor + "30" }}>
               <CardContent className="p-5">
-                <h3 className="font-bold text-lg mb-3 flex items-center gap-2" style={{ color: accentColor }}><Globe className="h-5 w-5" />Interests</h3>
-                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>{profile.interests ?? "No interests listed yet."}</p>
+                <h3 className="font-bold text-lg mb-3 flex items-center gap-2" style={{ color: accentColor }}><Globe className="h-5 w-5" />{t("profile.interests")}</h3>
+                <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>{profile.interests ?? t("profile.noInterests")}</p>
               </CardContent>
             </Card>
             {profile.profileSong && (
               <Card className="border-0 shadow-lg" style={{ backgroundColor: "#111", borderColor: accentColor + "30" }}>
                 <CardContent className="p-5">
-                  <h3 className="font-bold text-lg mb-3 flex items-center gap-2" style={{ color: accentColor }}><Music className="h-5 w-5" />Profile Song</h3>
+                  <h3 className="font-bold text-lg mb-3 flex items-center gap-2" style={{ color: accentColor }}><Music className="h-5 w-5" />{t("profile.profileSong")}</h3>
                   <p className="text-sm font-medium" style={{ color: textColor }}>{profile.profileSong}</p>
-                  {profile.profileSongUrl && <a href={profile.profileSongUrl} target="_blank" rel="noopener noreferrer" className="text-sm mt-2 inline-block hover:underline" style={{ color: accentColor }}>Listen →</a>}
+                  {profile.profileSongUrl && <a href={profile.profileSongUrl} target="_blank" rel="noopener noreferrer" className="text-sm mt-2 inline-block hover:underline" style={{ color: accentColor }}>{t("profile.listen")} →</a>}
                 </CardContent>
               </Card>
             )}
@@ -201,23 +194,23 @@ function ProfileContent() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Card className="border-0 shadow-lg" style={{ backgroundColor: "#111", borderColor: accentColor + "30" }}>
                 <CardContent className="p-5">
-                  <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: accentColor }}><Tv className="h-5 w-5" />Favorite Anime</h3>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>{profile.favoriteAnime ?? "No favorites yet."}</p>
+                  <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: accentColor }}><Tv className="h-5 w-5" />{t("profile.favAnime")}</h3>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>{profile.favoriteAnime ?? t("profile.noFavorites")}</p>
                 </CardContent>
               </Card>
               <Card className="border-0 shadow-lg" style={{ backgroundColor: "#111", borderColor: accentColor + "30" }}>
                 <CardContent className="p-5">
-                  <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: accentColor }}><Gamepad2 className="h-5 w-5" />Favorite Games</h3>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>{profile.favoriteGames ?? "No favorites yet."}</p>
+                  <h3 className="font-bold mb-3 flex items-center gap-2" style={{ color: accentColor }}><Gamepad2 className="h-5 w-5" />{t("profile.favGames")}</h3>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: textColor + "cc" }}>{profile.favoriteGames ?? t("profile.noFavorites")}</p>
                 </CardContent>
               </Card>
             </div>
             <Card className="border-0 shadow-lg" style={{ backgroundColor: "#111", borderColor: accentColor + "30" }}>
               <CardContent className="p-5">
-                <h3 className="font-bold text-lg mb-4 flex items-center gap-2" style={{ color: accentColor }}><MessageSquare className="h-5 w-5" />Recent Forum Posts</h3>
+                <h3 className="font-bold text-lg mb-4 flex items-center gap-2" style={{ color: accentColor }}><MessageSquare className="h-5 w-5" />{t("profile.recentPosts")}</h3>
                 <div className="text-center py-8">
-                  <p className="text-sm" style={{ color: textColor + "80" }}>Forum posts will appear here.</p>
-                  <Link to="/social"><Button size="sm" className="mt-3 bg-primary text-primary-foreground hover:bg-primary/90">View Forum</Button></Link>
+                  <p className="text-sm" style={{ color: textColor + "80" }}>{t("profile.forumPostsPlaceholder")}</p>
+                  <Link to="/social"><Button size="sm" className="mt-3 bg-primary text-primary-foreground hover:bg-primary/90">{t("profile.viewForum")}</Button></Link>
                 </div>
               </CardContent>
             </Card>
@@ -228,8 +221,8 @@ function ProfileContent() {
   );
 }
 
-function ProfileEditForm({ profile, onSave, isPending }: { profile?: any; onSave: (data: any) => void; isPending: boolean }) {
-  
+function ProfileEditForm({ profile, onSave, isPending }: { profile?: Record<string, string>; onSave: (data: Record<string, string>) => void; isPending: boolean }) {
+  const { t } = useTranslation();
   const defaults = profile ?? {};
   const [form, setForm] = useState({
     displayName: defaults.displayName ?? "",
@@ -251,10 +244,7 @@ function ProfileEditForm({ profile, onSave, isPending }: { profile?: any; onSave
 
   const update = (key: string, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
-  const onSubmit = () => {
-    console.log("[ProfileEditForm] Submit clicked, form:", form);
-    onSave(form);
-  };
+  const onSubmit = () => onSave(form);
 
   return (
     <div className="space-y-4 pt-2">

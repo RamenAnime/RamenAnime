@@ -167,7 +167,7 @@ export const stripeRouter = createRouter({
       };
     }),
 
-  // Handle Stripe webhook — called when payment succeeds
+  // Handle Stripe webhook: called when payment succeeds
   webhook: publicQuery
     .input(z.object({
       type: z.string(),

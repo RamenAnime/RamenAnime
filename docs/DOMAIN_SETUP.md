@@ -30,7 +30,7 @@ If you haven't already, buy your domain at [godaddy.com](https://godaddy.com).
 1. Log in to [dashboard.render.com](https://dashboard.render.com)
 2. Click your **ramen-anime** service
 3. Copy the current URL (looks like `https://ramenanime.com`)
-4. Keep this tab open — you'll need it
+4. Keep this tab open: you'll need it
 
 ---
 
@@ -42,7 +42,7 @@ If you haven't already, buy your domain at [godaddy.com](https://godaddy.com).
 4. Enter your domain:
    - For root domain: `ramenanime.com`
    - For www subdomain: `www.ramenanime.com`
-5. Render will show you DNS records to add — **copy these values**
+5. Render will show you DNS records to add: **copy these values**
 
 **Example of what Render shows:**
 ```
@@ -103,7 +103,7 @@ Render automatically provides free SSL certificates for custom domains.
 **Test your site:**
 - Open `https://ramenanime.com` in a browser
 - You should see a lock icon next to the URL
-- If you get a security warning, the SSL certificate is still being issued — just wait
+- If you get a security warning, the SSL certificate is still being issued: just wait
 
 ---
 
@@ -161,11 +161,11 @@ Render handles this automatically once both DNS records are set up.
 ### SSL certificate stuck on "Pending"
 - Make sure your DNS records are correct
 - Try removing and re-adding the custom domain in Render
-- Wait up to 24 hours — SSL issuance can be slow
+- Wait up to 24 hours: SSL issuance can be slow
 
 ### Domain shows old site
 - Clear your browser cache (Ctrl+Shift+R)
-- DNS may still be propagating — wait and try again
+- DNS may still be propagating: wait and try again
 
 ### Emails stopped working
 - If you had email set up with GoDaddy, adding new DNS records might affect it

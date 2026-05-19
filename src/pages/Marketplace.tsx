@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { useCurrency } from "@/hooks/useCurrency";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -10,13 +11,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Store, Search, Plus, Tag, Clock, ArrowRight, Gavel,
-  ShieldCheck, ImageIcon, Filter, Loader2,
+  ShieldCheck, ImageIcon, Filter,
 } from "lucide-react";
 
-function getTimeLeft(endDate: string | null): string {
+function formatTimeLeft(
+  endDate: string | null,
+  t: (key: string) => string
+): string {
   if (!endDate) return "";
   const diff = new Date(endDate).getTime() - Date.now();
-  if (diff <= 0) return "Ended";
+  if (diff <= 0) return t("marketplace.ended");
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
   if (d > 0) return `${d}d ${h}h left`;
@@ -24,14 +28,18 @@ function getTimeLeft(endDate: string | null): string {
   return `${h}h ${m}m left`;
 }
 
-const categories = ["All", "trading-cards", "3d-prints", "figures", "apparel", "accessories", "other"];
+const categorySlugs = ["All", "trading-cards", "3d-prints", "figures", "apparel", "accessories", "other"] as const;
 
 export default function Marketplace() {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
-  const [activeCategory, setActiveCategory] = useState("All");
+  const { format } = useCurrency();
+  const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [listingType, setListingType] = useState<"all" | "fixed" | "auction">("all");
+
+  const formatPrice = (amount: string | number | null | undefined) =>
+    format(parseFloat(String(amount ?? "0")));
 
   const { data: listings, isLoading } = trpc.marketplace.listListings.useQuery({
     category: activeCategory === "All" ? undefined : activeCategory,
@@ -40,6 +48,9 @@ export default function Marketplace() {
     limit: 50,
     offset: 0,
   });
+
+  const categoryLabel = (cat: string) =>
+    cat === "All" ? t("marketplace.categories.all") : t(`marketplace.categories.${cat}`, { defaultValue: cat });
 
   return (
     <div className="min-h-screen py-12">
@@ -52,14 +63,14 @@ export default function Marketplace() {
           </h1>
           <div className="max-w-md mx-auto relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={t("marketplace.search", { defaultValue: "Search listings..." })} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 bg-muted/50 border-border/50" />
+            <Input placeholder={t("marketplace.search")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 bg-muted/50 border-border/50" />
           </div>
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-          {categories.map((cat) => (
-            <Button key={cat} variant={activeCategory === cat ? "default" : "outline"} size="sm" onClick={() => setActiveCategory(cat)} className={`capitalize ${activeCategory === cat ? "" : "border-border/50 text-muted-foreground hover:text-foreground"}`}>
-              {cat}
+          {categorySlugs.map((cat) => (
+            <Button key={cat} variant={activeCategory === cat ? "default" : "outline"} size="sm" onClick={() => setActiveCategory(cat)} className={activeCategory === cat ? "" : "border-border/50 text-muted-foreground hover:text-foreground"}>
+              {categoryLabel(cat)}
             </Button>
           ))}
         </div>
@@ -69,12 +80,12 @@ export default function Marketplace() {
             {(["all", "fixed", "auction"] as const).map((type) => (
               <button key={type} onClick={() => setListingType(type)} className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${listingType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
                 {type === "all" ? <Filter className="w-3 h-3 inline mr-1" /> : type === "fixed" ? <Tag className="w-3 h-3 inline mr-1" /> : <Gavel className="w-3 h-3 inline mr-1" />}
-                {type === "all" ? "All" : type === "fixed" ? "Buy Now" : "Auctions"}
+                {type === "all" ? t("marketplace.filterAll") : type === "fixed" ? t("marketplace.buyNow") : t("marketplace.auctions")}
               </button>
             ))}
           </div>
           {isAuthenticated && (
-            <Link to="/marketplace/create">
+            <Link to="/marketplace/new">
               <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Plus className="mr-1 h-4 w-4" />
                 {t("marketplace.sellItem")}
@@ -86,7 +97,7 @@ export default function Marketplace() {
         {!isAuthenticated && (
           <Card className="bg-card/50 border-border/50 mb-6">
             <CardContent className="p-4 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">{t("marketplace.loginToSell", { defaultValue: "Log in to list your own items for sale." })}</p>
+              <p className="text-sm text-muted-foreground">{t("marketplace.loginToSell")}</p>
               <Link to="/login">
                 <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
                   <ArrowRight className="mr-1 h-4 w-4" />
@@ -107,9 +118,9 @@ export default function Marketplace() {
           </div>
         ) : listings && listings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {listings.map((listing: any) => {
+            {listings.map((listing) => {
               const imgs: string[] = listing.images ? JSON.parse(listing.images) : [];
-              const timeLeft = getTimeLeft(listing.auctionEnd);
+              const timeLeft = formatTimeLeft(listing.auctionEnd ?? null, t);
               const isAuction = listing.listingType === "auction";
               return (
                 <Card key={listing.id} className="bg-card/50 border-border/50 hover:border-primary/30 transition-all duration-300 card-glow overflow-hidden">
@@ -123,7 +134,7 @@ export default function Marketplace() {
                       )}
                       {isAuction && (
                         <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                          <Gavel className="w-3 h-3" /> Auction
+                          <Gavel className="w-3 h-3" /> {t("marketplace.auction")}
                         </div>
                       )}
                       {listing.copyrightStatus === "clear" && (
@@ -153,9 +164,11 @@ export default function Marketplace() {
                       {isAuction ? (
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-bold text-primary text-lg">{listing.currentBid ? `$${listing.currentBid}` : `$${listing.startPrice}`}</span>
+                            <span className="font-bold text-primary text-lg">
+                              {formatPrice(listing.currentBid || listing.startPrice)}
+                            </span>
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Gavel className="w-3 h-3" /> {listing.bidCount || 0} bids
+                              <Gavel className="w-3 h-3" /> {t("marketplace.bids", { count: listing.bidCount || 0 })}
                             </span>
                           </div>
                           {timeLeft && (
@@ -164,12 +177,14 @@ export default function Marketplace() {
                             </div>
                           )}
                           {listing.buyNowPrice && (
-                            <p className="text-xs text-muted-foreground">Buy-Now: ${listing.buyNowPrice}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {t("marketplace.buyNowPrice", { price: formatPrice(listing.buyNowPrice) })}
+                            </p>
                           )}
                         </div>
                       ) : (
                         <div className="flex items-center justify-between">
-                          <span className="font-bold text-primary text-lg">{listing.price}</span>
+                          <span className="font-bold text-primary text-lg">{formatPrice(listing.price)}</span>
                         </div>
                       )}
                     </div>
@@ -178,7 +193,7 @@ export default function Marketplace() {
                       <Avatar className="h-5 w-5">
                         <AvatarFallback className="bg-primary/10 text-primary text-[10px]">{listing.seller?.name?.charAt(0) ?? "U"}</AvatarFallback>
                       </Avatar>
-                      <span>{listing.seller?.name ?? "User"}</span>
+                      <span>{listing.seller?.name ?? t("marketplace.seller")}</span>
                       <span>&middot;</span>
                       <span>{new Date(listing.createdAt).toLocaleDateString()}</span>
                     </div>
@@ -191,9 +206,9 @@ export default function Marketplace() {
           <Card className="bg-card/50 border-border/50">
             <CardContent className="p-12 text-center">
               <Search className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-foreground mb-2">No listings found</h3>
+              <h3 className="text-lg font-medium text-foreground mb-2">{t("marketplace.noListings")}</h3>
               <p className="text-sm text-muted-foreground">
-                {isAuthenticated ? "Be the first to list an item for sale!" : "Log in to start selling your anime goods."}
+                {isAuthenticated ? t("marketplace.noListingsAuth") : t("marketplace.noListingsGuest")}
               </p>
             </CardContent>
           </Card>

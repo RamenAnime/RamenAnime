@@ -473,6 +473,15 @@ export const extendedEn = {
     statusInvestigating: "investigating",
     statusFixed: "fixed",
   },
+  splash: {
+    welcome: "Welcome",
+    tagline: "Anime, ramen, and collectibles in one place",
+    subtagline: "Cute finds, rare cards, and community vibes",
+    skip: "Skip intro",
+    soundOn: "Play sound",
+    soundOff: "Mute",
+    loading: "Getting ready...",
+  },
   ageGate: {
     mustBe18: "You must be 18 or older to enter this site.",
     enterAge: "Enter your age",

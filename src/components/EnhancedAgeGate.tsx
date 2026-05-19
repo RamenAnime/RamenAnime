@@ -9,7 +9,8 @@ import { AlertTriangle, Shield } from "lucide-react";
 const AGE_KEY = "ramen_anime_age_verified_v2";
 
 export default function EnhancedAgeGate({ children }: { children: React.ReactNode }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const isJa = i18n.language?.startsWith("ja");
   const [age, setAge] = useState("");
   const [error, setError] = useState("");
   const [verified, setVerified] = useState(() => {
@@ -37,7 +38,9 @@ export default function EnhancedAgeGate({ children }: { children: React.ReactNod
   if (verified) return <>{children}</>;
 
   return (
-    <div className="fixed inset-0 z-[150] bg-background flex items-center justify-center p-4">
+    <div
+      className={`fixed inset-0 z-[150] flex items-center justify-center p-4 ${isJa ? "age-gate-kyoto" : "bg-background"}`}
+    >
       <div className="w-full max-w-md">
         <Card className="bg-card/90 border-border/50 backdrop-blur-sm shadow-2xl">
           <CardContent className="p-6 space-y-6">

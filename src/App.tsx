@@ -4,7 +4,7 @@ import TosGate from './components/TosGate'
 import AdminRoute from './components/AdminRoute'
 import ErrorBoundary from './components/ErrorBoundary'
 import GeoBlock from '@/components/GeoBlock'
-import EnhancedAgeGate from '@/components/EnhancedAgeGate'
+import WelcomeFlow from '@/components/WelcomeFlow'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
 import AIAssistant from './components/AIAssistant'
@@ -61,7 +61,7 @@ function PageLoader() {
 export default function App() {
   return (
     <GeoBlock>
-      <EnhancedAgeGate>
+      <WelcomeFlow>
         <ErrorBoundary>
         <div className="min-h-screen flex flex-col bg-background">
           <Navbar />
@@ -135,7 +135,7 @@ export default function App() {
           <AIAssistant />
         </div>
         </ErrorBoundary>
-      </EnhancedAgeGate>
+      </WelcomeFlow>
     </GeoBlock>
   )
 }

@@ -10,6 +10,7 @@ import i18n from 'i18next';
   import { legalFr } from './i18n/legal-fr';
   import { legalZh } from './i18n/legal-zh';
   import { tokushohoByLocale } from './i18n/tokushoho-locales';
+  import { kyotoJaOverrides } from './i18n/kyoto-ja';
 
   function deepMerge<T extends Record<string, unknown>>(target: T, source: Record<string, unknown>): T {
     const out = { ...target } as Record<string, unknown>;
@@ -249,6 +250,10 @@ import i18n from 'i18next';
     if (tokushoho) {
       resources[lng].translation = deepMerge(resources[lng].translation, { tokushoho });
     }
+  }
+
+  if (resources.ja) {
+    resources.ja.translation = deepMerge(resources.ja.translation, kyotoJaOverrides);
   }
 
   const { legalPrivacy: _legalPrivacy, legalTerms: _legalTerms, ...enTranslationWithoutLegal } =

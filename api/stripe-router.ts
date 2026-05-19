@@ -4,7 +4,6 @@ import { getDb } from "./queries/connection";
 import { users, marketplaceListings, orders, transactions, geoVerifications } from "@db/schema";
 import { eq, and } from "drizzle-orm";
 import Stripe from "stripe";
-
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   apiVersion: "2025-04-30.basil",
 });
@@ -195,48 +194,6 @@ export const stripeRouter = createRouter({
         platformFee: (applicationFeeCents / 100).toFixed(2),
         sellerReceives: (sellerReceivesCents / 100).toFixed(2),
       };
-    }),
-
-  // Handle Stripe webhook: called when payment succeeds
-  webhook: publicQuery
-    .input(z.object({
-      type: z.string(),
-      data: z.object({
-        object: z.any(),
-      }),
-    }))
-    .mutation(async ({ input }) => {
-      const db = getDb();
-      const event = input;
-
-      if (event.type === "checkout.session.completed") {
-        const session = event.data.object;
-        const orderId = session.metadata?.orderId;
-        if (!orderId) return { received: true };
-
-        const platformFee = session.metadata?.platformFee;
-        await db.update(orders)
-          .set({
-            status: "paid",
-            feeAmount: platformFee || undefined,
-            updatedAt: new Date(),
-          })
-          .where(eq(orders.id, parseInt(orderId)));
-
-        await db.update(transactions)
-          .set({ status: "completed", updatedAt: new Date() })
-          .where(eq(transactions.orderId, parseInt(orderId)));
-
-        // Mark listing as sold
-        const listingId = session.metadata?.listingId;
-        if (listingId) {
-          await db.update(marketplaceListings)
-            .set({ isActive: false })
-            .where(eq(marketplaceListings.id, parseInt(listingId)));
-        }
-      }
-
-      return { received: true };
     }),
 
   // Get my orders (buyer)

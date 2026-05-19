@@ -5,17 +5,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, AlertCircle, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function SellerStripeReturn() {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const success = params.get("success") === "true";
 
   const sync = trpc.stripe.syncOnboardingStatus.useMutation({
     onSuccess: (data) => {
       if (data.onboardingComplete) {
-        toast.success("Payment account is ready. You can receive payouts on Ramen Anime.");
+        toast.success(t("sellerStripe.readyToast"));
       } else if (success) {
-        toast.message("Stripe setup in progress. Finish any remaining steps in Stripe.");
+        toast.message(t("sellerStripe.progressToast"));
       }
     },
   });
@@ -34,22 +36,20 @@ export default function SellerStripeReturn() {
             <AlertCircle className="w-12 h-12 text-amber-500 mx-auto" />
           )}
           <h1 className="text-xl font-bold">
-            {success ? "Stripe connected" : "Stripe setup incomplete"}
+            {success ? t("sellerStripe.connectedTitle") : t("sellerStripe.incompleteTitle")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            {success
-              ? "Your seller payout account is linked to Ramen Anime. List items and buyers can pay by card."
-              : "You left Stripe before finishing. Connect again to accept card payments on your listings."}
+            {success ? t("sellerStripe.connectedDesc") : t("sellerStripe.incompleteDesc")}
           </p>
           <div className="flex flex-col gap-2">
             <Button asChild>
               <Link to="/marketplace/new">
                 <CreditCard className="w-4 h-4 mr-2" />
-                Create a listing
+                {t("sellerStripe.createListing")}
               </Link>
             </Button>
             <Button variant="outline" asChild>
-              <Link to="/marketplace">Back to marketplace</Link>
+              <Link to="/marketplace">{t("sellerStripe.backMarketplace")}</Link>
             </Button>
           </div>
         </CardContent>

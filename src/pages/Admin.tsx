@@ -5,10 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Users, Shield, MessageSquare, ShoppingBag, Heart, BarChart3, Trash2, Crown, X, Check, Ban, Unlock, Eye, CreditCard, Bug, Radio } from "lucide-react";
+import { Users, Shield, MessageSquare, ShoppingBag, Heart, BarChart3, Trash2, Crown, X, Check, Ban, Unlock, Eye, CreditCard } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 function StatCard({ label, value, icon: Icon, color }: { label: string; value: number | string; icon: any; color: string }) {
   return (
@@ -27,6 +28,7 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: n
 }
 
 export default function Admin() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user: me, isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState("overview");
@@ -39,27 +41,27 @@ export default function Admin() {
 
   const utils = trpc.useUtils();
   const deletePost = trpc.admin.deletePost.useMutation({
-    onSuccess: () => { utils.admin.listPosts.invalidate(); toast.success("Post deleted"); },
+    onSuccess: () => { utils.admin.listPosts.invalidate(); toast.success(t("admin.postDeleted")); },
     onError: (err) => toast.error(err.message),
   });
   const toggleListing = trpc.admin.toggleListing.useMutation({
-    onSuccess: () => { utils.admin.listListings.invalidate(); toast.success("Listing updated"); },
+    onSuccess: () => { utils.admin.listListings.invalidate(); toast.success(t("admin.listingUpdated")); },
   });
   const updateRole = trpc.admin.updateUserRole.useMutation({
-    onSuccess: () => { utils.admin.listUsers.invalidate(); toast.success("Role updated"); },
+    onSuccess: () => { utils.admin.listUsers.invalidate(); toast.success(t("admin.roleUpdated")); },
   });
   const banUser = trpc.admin.banUser.useMutation({
     onSuccess: (data) => {
       utils.admin.listUsers.invalidate();
       utils.admin.getStats.invalidate();
-      toast.success(data.banned ? "User banned" : "User unbanned");
+      toast.success(data.banned ? t("admin.userBanned") : t("admin.userUnbanned"));
     },
   });
 
   if (!isAuthenticated || me?.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Card className="p-6 text-center"><p className="text-destructive font-medium">Access denied. Admin only.</p></Card>
+        <Card className="p-6 text-center"><p className="text-destructive font-medium">{t("admin.accessDenied")}</p></Card>
       </div>
     );
   }
@@ -67,66 +69,50 @@ export default function Admin() {
   return (
     <div className="min-h-screen py-8 bg-background">
       <div className="container px-4 md:px-6 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Shield className="h-8 w-8 text-primary" />
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Admin Dashboard</h1>
-              <p className="text-sm text-muted-foreground">Manage your community</p>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/admin/analytics")}>
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
-            </Button>
-            <Button variant="outline" onClick={() => navigate("/admin/swarm")}>
-              <Radio className="h-4 w-4 mr-2" />
-              Swarm
-            </Button>
-            <Button variant="outline" onClick={() => navigate("/admin/site-doctor")}>
-              <Bug className="h-4 w-4 mr-2" />
-              Site Doctor
-            </Button>
+        <div className="flex items-center gap-3 mb-6">
+          <Shield className="h-8 w-8 text-primary" />
+          <div>
+            <h1 className="text-3xl font-bold text-foreground">{t("admin.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("admin.subtitle")}</p>
           </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6 bg-muted">
-            <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-1" /> Overview</TabsTrigger>
-            <TabsTrigger value="users"><Users className="h-4 w-4 mr-1" /> Users</TabsTrigger>
-            <TabsTrigger value="posts"><MessageSquare className="h-4 w-4 mr-1" /> Forum</TabsTrigger>
-            <TabsTrigger value="listings"><ShoppingBag className="h-4 w-4 mr-1" /> Marketplace</TabsTrigger>
-            <TabsTrigger value="donations"><Heart className="h-4 w-4 mr-1" /> Donations</TabsTrigger>
+            <TabsTrigger value="overview"><BarChart3 className="h-4 w-4 mr-1" /> {t("admin.overview")}</TabsTrigger>
+            <TabsTrigger value="users"><Users className="h-4 w-4 mr-1" /> {t("admin.users")}</TabsTrigger>
+            <TabsTrigger value="posts"><MessageSquare className="h-4 w-4 mr-1" /> {t("admin.forum")}</TabsTrigger>
+            <TabsTrigger value="listings"><ShoppingBag className="h-4 w-4 mr-1" /> {t("admin.marketplaceTab")}</TabsTrigger>
+            <TabsTrigger value="donations"><Heart className="h-4 w-4 mr-1" /> {t("admin.donations")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard label="Total Users" value={stats?.users ?? 0} icon={Users} color="#d4a853" />
-              <StatCard label="Admins" value={stats?.admins ?? 0} icon={Shield} color="#ef4444" />
-              <StatCard label="Banned" value={stats?.banned ?? 0} icon={Ban} color="#dc2626" />
-              <StatCard label="Forum Posts" value={stats?.posts ?? 0} icon={MessageSquare} color="#3b82f6" />
-              <StatCard label="Comments" value={stats?.comments ?? 0} icon={MessageSquare} color="#8b5cf6" />
-              <StatCard label="Marketplace" value={stats?.listings ?? 0} icon={ShoppingBag} color="#22c55e" />
-              <StatCard label="Donations" value={stats?.donations ?? 0} icon={Heart} color="#ec4899" />
-              <StatCard label="TOS Accepted" value={stats?.tosAcceptances ?? 0} icon={Check} color="#f59e0b" />
-              <StatCard label="Total Visits" value={stats?.visits ?? 0} icon={Eye} color="#06b6d4" />
-              <StatCard label="Orders" value={stats?.orders ?? 0} icon={ShoppingBag} color="#a855f7" />
-              <StatCard label="Paid Orders" value={stats?.paidOrders ?? 0} icon={CreditCard} color="#22c55e" />
-              <StatCard label="Active Listings" value={stats?.activeListings ?? 0} icon={ShoppingBag} color="#10b981" />
-              <StatCard label="GMV (paid)" value={`$${parseFloat(stats?.gmv ?? "0").toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={CreditCard} color="#d4a853" />
-              <StatCard label="Platform fees" value={`$${parseFloat(stats?.platformFees ?? "0").toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={CreditCard} color="#f97316" />
-              <StatCard label="Donation revenue" value={`$${parseFloat(stats?.donationRevenue ?? "0").toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={Heart} color="#ec4899" />
+              <StatCard label={t("admin.totalUsers")} value={stats?.users ?? 0} icon={Users} color="#d4a853" />
+              <StatCard label={t("admin.admins")} value={stats?.admins ?? 0} icon={Shield} color="#ef4444" />
+              <StatCard label={t("admin.banned")} value={stats?.banned ?? 0} icon={Ban} color="#dc2626" />
+              <StatCard label={t("admin.totalPosts")} value={stats?.posts ?? 0} icon={MessageSquare} color="#3b82f6" />
+              <StatCard label={t("admin.comments")} value={stats?.comments ?? 0} icon={MessageSquare} color="#8b5cf6" />
+              <StatCard label={t("admin.listings")} value={stats?.listings ?? 0} icon={ShoppingBag} color="#22c55e" />
+              <StatCard label={t("admin.donations")} value={stats?.donations ?? 0} icon={Heart} color="#ec4899" />
+              <StatCard label={t("admin.tosAccepted")} value={stats?.tosAcceptances ?? 0} icon={Check} color="#f59e0b" />
+              <StatCard label={t("admin.totalVisits")} value={stats?.visits ?? 0} icon={Eye} color="#06b6d4" />
+              <StatCard label={t("admin.orders")} value={stats?.orders ?? 0} icon={ShoppingBag} color="#a855f7" />
+              <StatCard label={t("admin.paidOrders")} value={stats?.paidOrders ?? 0} icon={CreditCard} color="#22c55e" />
+              <StatCard label={t("admin.activeListings")} value={stats?.activeListings ?? 0} icon={ShoppingBag} color="#10b981" />
+              <StatCard label={t("admin.gmv")} value={`$${parseFloat(stats?.gmv ?? "0").toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={CreditCard} color="#d4a853" />
+              <StatCard label={t("admin.platformFees")} value={`$${parseFloat(stats?.platformFees ?? "0").toLocaleString(undefined, { maximumFractionDigits: 2 })}`} icon={CreditCard} color="#f97316" />
+              <StatCard label={t("admin.donationRevenue")} value={`$${parseFloat(stats?.donationRevenue ?? "0").toLocaleString(undefined, { maximumFractionDigits: 0 })}`} icon={Heart} color="#ec4899" />
             </div>
           </TabsContent>
 
           <TabsContent value="users">
             <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <h2 className="text-lg font-bold mb-4">Users ({userList?.length ?? 0})</h2>
+                <h2 className="text-lg font-bold mb-4">{t("admin.usersCount", { count: userList?.length ?? 0 })}</h2>
                 <ScrollArea className="h-[60vh]">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">ID</th><th className="pb-2">Username</th><th className="pb-2">Role</th><th className="pb-2">TOS</th><th className="pb-2">Status</th><th className="pb-2">Actions</th></tr></thead>
+                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">ID</th><th className="pb-2">{t("admin.username")}</th><th className="pb-2">{t("admin.role")}</th><th className="pb-2">TOS</th><th className="pb-2">{t("admin.status")}</th><th className="pb-2">{t("admin.actions")}</th></tr></thead>
                     <tbody>
                       {userList?.map((u: any) => (
                         <tr key={u.id} className={`border-b border-border/50 ${u.isBanned ? "opacity-50" : ""}`}>
@@ -134,9 +120,9 @@ export default function Admin() {
                           <td className="py-2 font-medium">{u.username ?? "-"}</td>
                           <td className="py-2"><Badge variant={u.role === "admin" ? "default" : "secondary"} className="text-xs">{u.role}</Badge></td>
                           <td className="py-2">{u.hasAcceptedTos ? <Check className="h-4 w-4 text-green-500" /> : <span className="text-muted-foreground text-xs">-</span>}</td>
-                          <td className="py-2">{u.isBanned ? <Badge variant="destructive" className="text-xs">Banned</Badge> : <Badge variant="outline" className="text-xs">Active</Badge>}</td>
+                          <td className="py-2">{u.isBanned ? <Badge variant="destructive" className="text-xs">{t("admin.banned")}</Badge> : <Badge variant="outline" className="text-xs">{t("admin.active")}</Badge>}</td>
                           <td className="py-2 flex gap-1">
-                            <Button size="sm" variant="ghost" onClick={() => navigate(`/profile/${u.id}`)}>View</Button>
+                            <Button size="sm" variant="ghost" onClick={() => navigate(`/profile/${u.id}`)}>{t("admin.view")}</Button>
                             {u.role !== "admin" && <Button size="sm" variant="ghost" onClick={() => updateRole.mutate({ userId: u.id, role: "admin" })}><Crown className="h-3 w-3" /></Button>}
                             {u.role === "admin" && u.id !== me?.id && <Button size="sm" variant="ghost" onClick={() => updateRole.mutate({ userId: u.id, role: "user" })}><X className="h-3 w-3" /></Button>}
                             <Button size="sm" variant="ghost" className={u.isBanned ? "text-green-500" : "text-destructive"} onClick={() => banUser.mutate({ userId: u.id, banned: !u.isBanned })}>
@@ -155,7 +141,7 @@ export default function Admin() {
           <TabsContent value="posts">
             <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <h2 className="text-lg font-bold mb-4">Forum Posts ({postList?.length ?? 0})</h2>
+                <h2 className="text-lg font-bold mb-4">{t("admin.forumPostsCount", { count: postList?.length ?? 0 })}</h2>
                 <ScrollArea className="h-[60vh]">
                   <div className="space-y-3">
                     {postList?.map((p) => (
@@ -163,9 +149,9 @@ export default function Admin() {
                         <div className="flex justify-between gap-4">
                           <div>
                             <h3 className="font-bold text-sm">{p.title}</h3>
-                            <p className="text-xs text-muted-foreground">by {p.authorName ?? "Unknown"} | {p.likes} likes</p>
+                            <p className="text-xs text-muted-foreground">{t("admin.byAuthor", { name: p.authorName ?? t("admin.unknown"), likes: String(p.likes ?? 0) })}</p>
                           </div>
-                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { if (confirm("Delete?")) deletePost.mutate({ postId: p.id ?? 0 }); }}><Trash2 className="h-3 w-3" /></Button>
+                          <Button size="sm" variant="ghost" className="text-destructive" onClick={() => { if (confirm(t("admin.deleteConfirmShort"))) deletePost.mutate({ postId: p.id ?? 0 }); }}><Trash2 className="h-3 w-3" /></Button>
                         </div>
                       </div>
                     ))}
@@ -178,7 +164,7 @@ export default function Admin() {
           <TabsContent value="listings">
             <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <h2 className="text-lg font-bold mb-4">Listings ({listingList?.length ?? 0})</h2>
+                <h2 className="text-lg font-bold mb-4">{t("admin.listingsCount", { count: listingList?.length ?? 0 })}</h2>
                 <ScrollArea className="h-[60vh]">
                   <div className="space-y-3">
                     {listingList?.map((l) => (
@@ -186,7 +172,7 @@ export default function Admin() {
                         <div className="flex justify-between gap-4">
                           <div>
                             <h3 className="font-bold text-sm">{l.title}</h3>
-                            <p className="text-xs text-muted-foreground">by {l.sellerName ?? "Unknown"} | {l.price}</p>
+                            <p className="text-xs text-muted-foreground">{t("admin.bySeller", { seller: l.sellerName ?? t("admin.unknown"), price: l.price ?? "" })}</p>
                           </div>
                           <Button size="sm" variant="ghost" onClick={() => toggleListing.mutate({ listingId: l.id ?? 0, active: !l.isActive })}>{l.isActive ? <Ban className="h-3 w-3" /> : <Check className="h-3 w-3" />}</Button>
                         </div>
@@ -201,14 +187,14 @@ export default function Admin() {
           <TabsContent value="donations">
             <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <h2 className="text-lg font-bold mb-4">Donations ({donationList?.length ?? 0})</h2>
+                <h2 className="text-lg font-bold mb-4">{t("admin.donationsCount", { count: donationList?.length ?? 0 })}</h2>
                 <ScrollArea className="h-[60vh]">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">Donor</th><th className="pb-2">Amount</th><th className="pb-2">Status</th></tr></thead>
+                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">{t("admin.donor")}</th><th className="pb-2">{t("admin.amount")}</th><th className="pb-2">{t("admin.status")}</th></tr></thead>
                     <tbody>
                       {donationList?.map((d: any) => (
                         <tr key={d.id} className="border-b border-border/50">
-                          <td className="py-2">{d.donorName ?? "Anonymous"}</td>
+                          <td className="py-2">{d.donorName ?? t("admin.anonymous")}</td>
                           <td className="py-2 font-medium">{d.amount} {d.currency}</td>
                           <td className="py-2"><Badge variant={d.paymentStatus === "completed" ? "default" : "secondary"} className="text-xs">{d.paymentStatus}</Badge></td>
                         </tr>

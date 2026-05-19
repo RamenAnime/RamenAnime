@@ -14,6 +14,7 @@ import {
   MessageSquare, Globe, Gamepad2, Tv, Smile, Send, Loader2, Wallet,
 } from "lucide-react";
 import { useState, useCallback } from "react";
+import ProfileEarnings from "@/components/profile/ProfileEarnings";
 import { useTranslation } from "react-i18next";
 import ProfileEarnings from "@/components/profile/ProfileEarnings";
 import TosGate from "@/components/TosGate";

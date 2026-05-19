@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, Link, useSearchParams } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useCurrency } from "@/hooks/useCurrency";
-import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +13,9 @@ import {
   Star, Truck, MapPin, AlertTriangle, Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+
+const isDev = import.meta.env.DEV;
 
 function CountdownTimer({ endTime }: { endTime: string }) {
   const [timeLeft, setTimeLeft] = useState("");
@@ -54,11 +56,11 @@ function PriceChart({ data }: { data: any[] }) {
 }
 
 export default function ListingDetail() {
-  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const listingId = parseInt(id ?? "0");
   const { format } = useCurrency();
+  const { t } = useTranslation();
   const utils = trpc.useUtils();
   const [bidAmount, setBidAmount] = useState("");
   const [showAllBids, setShowAllBids] = useState(false);
@@ -66,9 +68,9 @@ export default function ListingDetail() {
   const [depositPaid, setDepositPaid] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<{id: number; orderNumber: string} | null>(null);
 
-  const { data: listing, isLoading: listingLoading, isError: listingError } = trpc.marketplace.getListing.useQuery(
+  const { data: listing } = trpc.marketplace.getListing.useQuery(
     { id: listingId },
-    { enabled: listingId > 0, retry: false }
+    { enabled: listingId > 0 }
   );
   const { data: bids } = trpc.marketplace.getBidHistory.useQuery(
     { listingId },
@@ -86,7 +88,7 @@ export default function ListingDetail() {
 
   useEffect(() => {
     if (searchParams.get("payment") === "success") {
-      toast.success("Payment received. Thank you for your purchase on Ramen Anime.");
+      toast.success(t("listing.paymentSuccess"));
       utils.order.getByListing.invalidate({ listingId });
       utils.marketplace.getListing.invalidate({ id: listingId });
     }
@@ -127,28 +129,16 @@ export default function ListingDetail() {
 
   const handleBuyNow = () => {
     if (!sellerCanAcceptPayments) {
-      toast.error(t("listing.sellerNotReadyBuy", { defaultValue: "This seller has not finished payment setup yet." }));
+      toast.error(t("listing.sellerNotReadyBuy"));
       return;
     }
     stripeCheckout.mutate({ listingId });
   };
 
-  if (listingId === 0 || listingLoading) {
+  if (!listing) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
-
-  if (!listing || listingError) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4 px-4">
-          <p className="text-2xl font-bold text-foreground">Listing Not Found</p>
-          <p className="text-muted-foreground">This listing may have been removed or doesn\'t exist.</p>
-          <a href="/marketplace" className="inline-flex items-center gap-2 text-primary hover:underline">← Back to Marketplace</a>
-        </div>
       </div>
     );
   }
@@ -216,7 +206,7 @@ export default function ListingDetail() {
                   {isAuction ? (
                     <>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                        {isEnded ? "Final Price" : t("listing.current_bid")}
+                        {isEnded ? "Final Price" : "Current Bid"}
                       </p>
                       <p className="text-4xl font-black text-primary">
                         {format(listing.currentBid || listing.startPrice || "0")}
@@ -282,7 +272,7 @@ export default function ListingDetail() {
                       onClick={handleBuyNow}
                     >
                       <Tag className="w-5 h-5 mr-2" />
-                      {stripeCheckout.isPending ? "Redirecting..." : "Buy Now"}
+                      {stripeCheckout.isPending ? t("listing.redirecting") : t("marketplace.buyNow")}
                     </Button>
                   )}
 
@@ -307,9 +297,9 @@ export default function ListingDetail() {
                   {/* Payment Section - Show when user has pending order */}
                   {(createdOrder || (myOrder && myOrder.status === "pending")) && (
                     <div className="mt-4 p-4 bg-yellow-500/10 rounded-lg border border-yellow-500/20 space-y-3">
-                      <p className="text-sm font-semibold text-yellow-600">Payment Required</p>
+                      <p className="text-sm font-semibold text-yellow-600">{t("listing.paymentRequired")}</p>
                       <p className="text-xs text-muted-foreground">
-                        Order: {createdOrder?.orderNumber || myOrder?.orderNumber}
+                        {t("listing.orderLabel", { number: createdOrder?.orderNumber || myOrder?.orderNumber || "" })}
                       </p>
                       {(() => {
                         const amount = parseFloat(listing.currentBid || listing.price || "0");
@@ -319,23 +309,23 @@ export default function ListingDetail() {
                           <>
                             <div className="space-y-1 text-xs">
                               <p className="flex justify-between font-semibold text-foreground text-sm">
-                                <span>Total:</span>
+                                <span>{t("listing.total")}</span>
                                 <span>${amount.toFixed(2)}</span>
                               </p>
                               <div className="pt-1 border-t border-yellow-500/20 space-y-1 text-muted-foreground">
                                 <p className="flex justify-between">
-                                  <span>Platform fee:</span>
+                                  <span>{t("listing.platformFee")}</span>
                                   <span>${platformFee.toFixed(2)}</span>
                                 </p>
                                 <p className="flex justify-between">
-                                  <span>Seller receives:</span>
+                                  <span>{t("listing.sellerReceives")}</span>
                                   <span>${sellerReceives.toFixed(2)}</span>
                                 </p>
                               </div>
                             </div>
                             {!sellerCanAcceptPayments ? (
                               <p className="text-xs text-red-500 text-center">
-                                Seller has not set up payment processing yet
+                                {t("listing.sellerNotReady")}
                               </p>
                             ) : (
                               <Button
@@ -343,22 +333,24 @@ export default function ListingDetail() {
                                 onClick={() => stripeCheckout.mutate({ listingId })}
                                 disabled={stripeCheckout.isPending}
                               >
-                                {stripeCheckout.isPending ? "Redirecting..." : "Pay with Card (Stripe)"}
+                                {stripeCheckout.isPending ? t("listing.redirecting") : t("listing.payWithCard")}
                               </Button>
                             )}
                           </>
                         );
                       })()}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => markPaid.mutate({ orderId: createdOrder?.id || myOrder?.id || 0 })}
-                        disabled={markPaid.isPending}
-                      >
-                        <Check className="w-4 h-4 mr-1" />
-                        {markPaid.isPending ? "Confirming..." : "I Have Paid"}
-                      </Button>
+                      {isDev && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full border-dashed"
+                          onClick={() => markPaid.mutate({ orderId: createdOrder?.id || myOrder?.id || 0 })}
+                          disabled={markPaid.isPending}
+                        >
+                          <Check className="w-4 h-4 mr-1" />
+                          {markPaid.isPending ? t("listing.confirming") : t("listing.markPaidDev")}
+                        </Button>
+                      )}
                     </div>
                   )}
 
@@ -390,7 +382,7 @@ export default function ListingDetail() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-sm">{listing.seller?.name || t("listing.seller")}</p>
+                    <p className="font-medium text-sm">{listing.seller?.name || "Seller"}</p>
                     <div className="flex items-center gap-1">
                       {[1,2,3,4,5].map((s) => (
                         <Star key={s} className={`w-3 h-3 ${s <= 4 ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />

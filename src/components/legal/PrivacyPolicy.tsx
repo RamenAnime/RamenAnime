@@ -1,16 +1,27 @@
 import { useComplianceFramework } from "./ComplianceRouter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import { Button } from "@/components/ui/button";
 
 export default function PrivacyPolicy() {
+  const { t } = useTranslation();
   const { framework } = useComplianceFramework();
   const f = framework;
   const lastUpdated = "May 2, 2025";
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <div className="mb-6">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/">{t("legal.backHome")}</Link>
+        </Button>
+      </div>
       <div className="prose dark:prose-invert max-w-none">
-        <h1 className="text-3xl font-bold mb-2">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground mb-8">Last Updated: {lastUpdated} | Framework: {f?.privacyLaw ?? "Global Best Practices"} | Region: {f?.name ?? "Global"}</p>
+        <h1 className="text-3xl font-bold mb-2">{t("legal.privacyTitle")}</h1>
+        <p className="text-sm text-muted-foreground mb-8">
+          {t("legal.lastUpdated", { date: lastUpdated })} | {t("legal.applicableLaw", { law: f?.privacyLaw ?? "Global Best Practices" })} | {t("legal.yourRegion", { region: f?.name ?? "Global" })}
+        </p>
 
         <div className="bg-muted/50 p-4 rounded-lg mb-8 text-sm">
           <p className="font-medium mb-2">Quick Summary</p>

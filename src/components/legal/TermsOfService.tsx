@@ -1,16 +1,27 @@
 import { useComplianceFramework } from "./ComplianceRouter";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
+import { Button } from "@/components/ui/button";
 
 export default function TermsOfService() {
+  const { t } = useTranslation();
   const { framework, country: _country } = useComplianceFramework();
   const f = framework;
   const lastUpdated = "May 2, 2025";
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <div className="mb-6">
+        <Button variant="ghost" size="sm" asChild>
+          <Link to="/">{t("legal.backHome")}</Link>
+        </Button>
+      </div>
       <div className="prose dark:prose-invert max-w-none">
-        <h1 className="text-3xl font-bold mb-2">Terms of Service</h1>
-        <p className="text-sm text-muted-foreground mb-8">Last Updated: {lastUpdated} | Applicable Law: {f?.privacyLaw ?? "Global Standards"} | Your Region: {f?.name ?? "Global"}</p>
+        <h1 className="text-3xl font-bold mb-2">{t("legal.termsTitle")}</h1>
+        <p className="text-sm text-muted-foreground mb-8">
+          {t("legal.lastUpdated", { date: lastUpdated })} | {t("legal.applicableLaw", { law: f?.privacyLaw ?? "Global Standards" })} | {t("legal.yourRegion", { region: f?.name ?? "Global" })}
+        </p>
 
         <Accordion type="multiple" defaultValue={["item-1"]} className="space-y-2">
 

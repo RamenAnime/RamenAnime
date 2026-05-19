@@ -262,6 +262,31 @@
 
   ---
 
+  ## Public portfolio (recruiters and employers)
+
+  The main application source may be **private**. A separate **public** repository documents the project for hiring managers: architecture, features, metrics, and screenshots.
+
+  | Resource | Link |
+  |----------|------|
+  | Portfolio repo (public) | [github.com/RamenAnime/RamenAnime-Portfolio](https://github.com/RamenAnime/RamenAnime-Portfolio) |
+  | In this repo (submodule) | [`RamenAnime-Portfolio/`](./RamenAnime-Portfolio) |
+  | Live product | [ramenanime.com](https://ramenanime.com) |
+
+  **Clone with portfolio included:**
+
+  ```bash
+  git clone --recurse-submodules https://github.com/RamenAnime/RamenAnime.git
+  ```
+
+  **Update the portfolio submodule** after pushing changes to the portfolio repo:
+
+  ```bash
+  cd RamenAnime-Portfolio && git pull origin main && cd ..
+  git add RamenAnime-Portfolio && git commit -m "chore: bump portfolio submodule"
+  ```
+
+  ---
+
   ## Contributing
 
   See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.

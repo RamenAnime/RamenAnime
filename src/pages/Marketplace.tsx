@@ -5,8 +5,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { useCurrency } from "@/hooks/useCurrency";
 import { useLocalizedLabels } from "@/lib/label-i18n";
+import { useMarketplaceListings } from "@/hooks/useMarketplaceListings";
+import { ListingSearchBar } from "@/components/marketplace/ListingSearchBar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -15,10 +16,9 @@ import {
   ShieldCheck, ImageIcon, Filter,
 } from "lucide-react";
 
-function formatTimeLeft(
-  endDate: string | null,
-  t: (key: string) => string
-): string {
+import type { TFunction } from "i18next";
+
+function formatTimeLeft(endDate: string | null, t: TFunction): string {
   if (!endDate) return "";
   const diff = new Date(endDate).getTime() - Date.now();
   if (diff <= 0) return t("marketplace.ended");
@@ -37,7 +37,6 @@ export default function Marketplace() {
   const { isAuthenticated } = useAuth();
   const { format } = useCurrency();
   const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [searchQuery, setSearchQuery] = useState("");
   const [listingType, setListingType] = useState<"all" | "fixed" | "auction">("all");
   const trackSearch = trpc.analytics.trackSearch.useMutation();
   const swarmPulse = trpc.swarm.pulse.useMutation();
@@ -46,23 +45,34 @@ export default function Marketplace() {
   const formatPrice = (amount: string | number | null | undefined) =>
     format(parseFloat(String(amount ?? "0")));
 
-  const { data: listings, isLoading } = trpc.marketplace.listListings.useQuery({
+  const {
+    searchQuery,
+    setSearchQuery,
+    debouncedSearch,
+    sortBy,
+    setSortBy,
+    page,
+    setPage,
+    listings,
+    totalCount,
+    totalPages,
+    hasSearch,
+    isLoading,
+    isFetching,
+  } = useMarketplaceListings({
     category: activeCategory === "All" ? undefined : activeCategory,
     listingType,
-    search: searchQuery || undefined,
-    limit: 50,
-    offset: 0,
   });
 
   useEffect(() => {
-    const q = searchQuery.trim();
+    const q = debouncedSearch.trim();
     if (q.length < 2 || q === lastSearchTracked.current) return;
     const timer = setTimeout(() => {
       lastSearchTracked.current = q;
       trackSearch.mutate({
         query: q,
         category: activeCategory === "All" ? undefined : activeCategory,
-        resultsCount: listings?.length ?? 0,
+        resultsCount: totalCount,
       });
       const sid = sessionStorage.getItem("ramen_analytics_session");
       if (sid) {
@@ -75,7 +85,7 @@ export default function Marketplace() {
       }
     }, 700);
     return () => clearTimeout(timer);
-  }, [searchQuery, activeCategory, listings?.length]);
+  }, [debouncedSearch, activeCategory, totalCount]);
 
   const filterCategoryLabel = (cat: string) =>
     cat === "All" ? t("marketplace.categories.all") : categoryLabel(cat);
@@ -89,16 +99,20 @@ export default function Marketplace() {
             <Store className="h-8 w-8 text-primary" />
             {t("marketplace.title")}
           </h1>
-          <div className="max-w-md mx-auto relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={t("marketplace.search")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10 bg-muted/50 border-border/50" />
-          </div>
+          <ListingSearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            totalCount={totalCount}
+            isFetching={isFetching}
+          />
         </div>
 
         <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
           {categorySlugs.map((cat) => (
             <Button key={cat} variant={activeCategory === cat ? "default" : "outline"} size="sm" onClick={() => setActiveCategory(cat)} className={activeCategory === cat ? "" : "border-border/50 text-muted-foreground hover:text-foreground"}>
-              {categoryLabel(cat)}
+              {filterCategoryLabel(cat)}
             </Button>
           ))}
         </div>
@@ -144,7 +158,7 @@ export default function Marketplace() {
               </Card>
             ))}
           </div>
-        ) : listings && listings.length > 0 ? (
+        ) : listings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((listing) => {
               const imgs: string[] = listing.images ? JSON.parse(listing.images) : [];
@@ -234,12 +248,42 @@ export default function Marketplace() {
           <Card className="bg-card/50 border-border/50">
             <CardContent className="p-12 text-center">
               <Search className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-lg font-medium text-foreground mb-2">{t("marketplace.noListings")}</h3>
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                {hasSearch ? t("marketplace.noSearchResults") : t("marketplace.noListings")}
+              </h3>
               <p className="text-sm text-muted-foreground">
-                {isAuthenticated ? t("marketplace.noListingsAuth") : t("marketplace.noListingsGuest")}
+                {hasSearch
+                  ? t("marketplace.noSearchResults")
+                  : isAuthenticated
+                    ? t("marketplace.noListingsAuth")
+                    : t("marketplace.noListingsGuest")}
               </p>
             </CardContent>
           </Card>
+        )}
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-4 mt-8">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page === 0}
+              onClick={() => setPage((p) => Math.max(0, p - 1))}
+            >
+              {t("marketplace.pagePrev")}
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              {t("marketplace.pageOf", { page: page + 1, total: totalPages })}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              {t("marketplace.pageNext")}
+            </Button>
+          </div>
         )}
       </div>
     </div>

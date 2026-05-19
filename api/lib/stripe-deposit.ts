@@ -1,12 +1,10 @@
-import Stripe from "stripe";
+import { createStripeClient } from "./stripe";
 import { getDb } from "../queries/connection";
 import { auctionDeposits, marketplaceListings } from "@db/schema";
 import { eq, and } from "drizzle-orm";
 import { getRequiredDeposit } from "./auction-engine";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-04-30.basil",
-});
+const stripe = createStripeClient(process.env.STRIPE_SECRET_KEY || "");
 
 export async function createAuctionDepositCheckout(input: {
   listingId: number;

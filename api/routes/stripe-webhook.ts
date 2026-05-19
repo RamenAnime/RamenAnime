@@ -1,10 +1,9 @@
 import type { Context } from "hono";
-import Stripe from "stripe";
+import type Stripe from "stripe";
+import { createStripeClient } from "../lib/stripe";
 import { handleStripeWebhookEvent } from "../lib/stripe-events";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-04-30.basil",
-});
+const stripe = createStripeClient(process.env.STRIPE_SECRET_KEY || "");
 
 export async function stripeWebhookHandler(c: Context) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;

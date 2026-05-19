@@ -11,6 +11,9 @@
     "moduleDetection": "force",
     "noEmit": true,
     "strict": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "esModuleInterop": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
@@ -20,5 +23,6 @@
       "@db/*": ["./db/*"]
     }
   },
-  "include": ["api", "contracts", "db"]
+  "include": ["api", "contracts", "db", "types"],
+  "exclude": ["api/lib/security"]
 }

@@ -1,4 +1,4 @@
-import { Component, ReactNode } from 'react';
+import { Component, type ReactNode } from "react";
 import i18n from 'i18next';
 
 interface Props {

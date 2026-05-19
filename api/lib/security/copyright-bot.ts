@@ -4,7 +4,7 @@
  * CURRENT LIMITATION: This scanner only performs TEXT-BASED analysis on the
  * listing title and description. Image copyright enforcement is NOT implemented.
  * The `imageUrls` parameter is accepted and logged for future expansion but the
- * images themselves are not analyzed (no reverse-image-search, OCR, or watermark
+ * images themselves are not analyzed (no reverse-image-search, OCR, or stock-photo
  * detection). To add image scanning, integrate a service like Google Vision API
  * or TinEye and call it here.
  */
@@ -26,7 +26,7 @@ const COPYRIGHT_FLAGS = [
   "Funimation", "Viz Media", "Kodansha", "Shueisha", "Shogakukan",
   "Bandai Namco", "Good Smile Company", "Max Factory", "Kotobukiya",
   "Square Enix", "Nintendo", "Pokemon Company", "Disney",
-  "watermark", "sample", "preview", "not for sale", "promotional use only",
+  "sample", "preview", "not for sale", "promotional use only", "proof copy",
   "copyright", "trademark", "TM", "(C)", "All Rights Reserved",
 ];
 

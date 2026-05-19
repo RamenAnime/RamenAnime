@@ -180,7 +180,7 @@ export default function Donations() {
   };
 
   const totalRaised =
-    publicDonations?.reduce((sum, d) => {
+    publicDonations?.reduce((sum: number, d: { amount?: string | null }) => {
       const amt = parseFloat(d.amount ?? "0");
       return Number.isNaN(amt) ? sum : sum + amt;
     }, 0) ?? 0;

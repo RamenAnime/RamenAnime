@@ -189,7 +189,7 @@ function PostContent() {
   const handleQuote = (comment: {
     id: number;
     content: string;
-    author?: { name?: string | null; username?: string | null };
+    author?: { name?: string | null; username?: string | null } | null;
   }) => {
     const authorName =
       comment.author?.name ??
@@ -417,10 +417,10 @@ function PostContent() {
                       )}
                       <RichText content={comment.content} />
                     </div>
-                    {comment.author?.signature && (
+                    {(comment.author as { signature?: string | null } | undefined)?.signature && (
                       <div className="pl-0 md:pl-14 mt-3 pt-2 border-t border-border/20">
                         <p className="text-xs text-muted-foreground italic">
-                          {comment.author.signature}
+                          {(comment.author as { signature?: string }).signature}
                         </p>
                       </div>
                     )}

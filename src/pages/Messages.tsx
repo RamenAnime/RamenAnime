@@ -9,10 +9,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useLocalizedLabels } from "@/lib/label-i18n";
+
 import { toast } from "sonner";
 
 export default function Messages() {
   const { t } = useTranslation();
+  const { genericError } = useLocalizedLabels();
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const initialUser = parseInt(searchParams.get("user") || "0", 10);

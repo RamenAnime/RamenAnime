@@ -12,8 +12,8 @@ async function searchTrends(query: string): Promise<any[]> {
       { signal: AbortSignal.timeout(5000) }
     );
     if (!res.ok) return [];
-    const data = await res.json();
-    return (data.items || []).slice(0, 5).map((item: any) => ({
+    const data = (await res.json()) as { items?: Array<{ title: string; displayLink?: string }> };
+    return (data.items || []).slice(0, 5).map((item) => ({
       title: item.title,
       avgPrice: Math.floor(Math.random() * 50) + 20,
       minPrice: Math.floor(Math.random() * 30) + 10,

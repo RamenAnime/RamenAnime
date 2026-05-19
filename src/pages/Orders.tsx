@@ -148,7 +148,7 @@ function OrderCard({
 }: {
   order: Order;
   onClick: (id: number) => void;
-  t: (key: string, opts?: object) => string;
+  t: import("i18next").TFunction;
 }) {
   const cfg = getStatusConfig(t)[order.status];
 

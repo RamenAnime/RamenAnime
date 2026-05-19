@@ -83,7 +83,14 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
               <p className="text-sm opacity-70" style={{ color: textColor }}>{t("profile.noSales")}</p>
             ) : (
               <ul className="space-y-3">
-                {sales.map((order) => (
+                {sales.map((order: {
+                  id: number;
+                  status: string;
+                  orderNumber: string;
+                  totalAmount: string;
+                  listingId?: number | null;
+                  listing?: { title?: string | null } | null;
+                }) => (
                   <li key={order.id} className="text-sm border-b border-white/10 pb-2 last:border-0">
                     <div className="flex justify-between gap-2">
                       <span style={{ color: textColor }}>{order.listing?.title ?? t("admin.unknown")}</span>
@@ -114,7 +121,14 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
               <p className="text-sm opacity-70" style={{ color: textColor }}>{t("profile.noPurchases")}</p>
             ) : (
               <ul className="space-y-3">
-                {purchases.map((order) => (
+                {purchases.map((order: {
+                  id: number;
+                  status: string;
+                  orderNumber: string;
+                  totalAmount: string;
+                  listingId?: number | null;
+                  listing?: { title?: string | null } | null;
+                }) => (
                   <li key={order.id} className="text-sm border-b border-white/10 pb-2 last:border-0">
                     <div className="flex justify-between gap-2">
                       <span style={{ color: textColor }}>{order.listing?.title ?? t("admin.unknown")}</span>

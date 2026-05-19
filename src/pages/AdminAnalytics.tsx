@@ -175,7 +175,7 @@ export default function AdminAnalytics() {
     { enabled: !!selectedUserId && isAuthenticated && me?.role === "admin" }
   );
 
-  const { data: trends } = trpc.analytics.getUserTrends.useQuery(undefined, {
+  const { data: trends } = trpc.analytics.getUserTrends.useQuery({}, {
     enabled: isAuthenticated && me?.role === "admin",
   });
 
@@ -396,7 +396,7 @@ export default function AdminAnalytics() {
                         }}
                       />
                       <Bar dataKey="views" radius={[0, 4, 4, 0]}>
-                        {topPages.slice(0, 10).map((_, i) => (
+                        {topPages.slice(0, 10).map((_: unknown, i: number) => (
                           <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                         ))}
                       </Bar>
@@ -456,7 +456,7 @@ export default function AdminAnalytics() {
                         }}
                       />
                       <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                        {topSearches.slice(0, 10).map((_, i) => (
+                        {topSearches.slice(0, 10).map((_: unknown, i: number) => (
                           <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                         ))}
                       </Bar>

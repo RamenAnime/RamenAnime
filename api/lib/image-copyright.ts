@@ -31,7 +31,13 @@ async function scanWithVision(imageUrl: string): Promise<ImageScanResult | null>
       }),
     });
     if (!resp.ok) return null;
-    const data = await resp.json();
+    const data = (await resp.json()) as {
+      responses?: Array<{
+        safeSearchAnnotation?: { adult?: string; violence?: string; racy?: string };
+        labelAnnotations?: Array<{ description: string }>;
+        textAnnotations?: Array<{ description?: string }>;
+      }>;
+    };
     const result = data.responses?.[0];
     const safe = result?.safeSearchAnnotation;
     const labels = (result?.labelAnnotations || []).map((l: { description: string }) => l.description);
@@ -40,9 +46,9 @@ async function scanWithVision(imageUrl: string): Promise<ImageScanResult | null>
 
     if (safe) {
       const risky: string[] = [];
-      if (["LIKELY", "VERY_LIKELY"].includes(safe.adult)) risky.push("adult");
-      if (["LIKELY", "VERY_LIKELY"].includes(safe.violence)) risky.push("violence");
-      if (["LIKELY", "VERY_LIKELY"].includes(safe.racy)) risky.push("racy");
+      if (safe.adult && ["LIKELY", "VERY_LIKELY"].includes(safe.adult)) risky.push("adult");
+      if (safe.violence && ["LIKELY", "VERY_LIKELY"].includes(safe.violence)) risky.push("violence");
+      if (safe.racy && ["LIKELY", "VERY_LIKELY"].includes(safe.racy)) risky.push("racy");
       if (risky.length) matched.push(`safe_search:${risky.join(",")}`);
     }
 
@@ -51,8 +57,8 @@ async function scanWithVision(imageUrl: string): Promise<ImageScanResult | null>
       if (bootlegLabels.some((b) => label.toLowerCase().includes(b))) matched.push(`label:${label}`);
     }
 
-    const watermarkTerms = ["sample", "not for sale", "preview", "watermark", "©", "copyright"];
-    for (const term of watermarkTerms) {
+    const stockPhotoTerms = ["sample", "not for sale", "preview", "proof copy", "©", "copyright"];
+    for (const term of stockPhotoTerms) {
       if (text.includes(term)) matched.push(`ocr:${term}`);
     }
 
@@ -61,7 +67,7 @@ async function scanWithVision(imageUrl: string): Promise<ImageScanResult | null>
         status: "clear",
         confidence: 0.9,
         matchedTerms: [],
-        reason: "Vision: no risky labels or watermark text detected",
+        reason: "Vision: no risky labels or stock-photo text detected",
         provider: "google_vision",
       };
     }
@@ -92,7 +98,7 @@ async function scanWithTinEye(imageUrl: string): Promise<ImageScanResult | null>
       },
     });
     if (!resp.ok) return null;
-    const data = await resp.json();
+    const data = (await resp.json()) as { results?: { matches?: unknown[] } };
     const matches = data.results?.matches?.length ?? 0;
     if (matches > 3) {
       return {

@@ -16,7 +16,7 @@ async function fetchLiveRates(): Promise<RateCache> {
     headers: { Accept: "application/json" },
   });
   if (!res.ok) throw new Error(`Rate API error: ${res.status}`);
-  const data = await res.json();
+  const data = (await res.json()) as { rates: Record<string, number>; date: string };
   return { rates: data.rates, timestamp: Date.now(), date: data.date };
 }
 

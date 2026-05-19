@@ -23,6 +23,10 @@ export function getRequiredDeposit(startPrice: number): number {
   return Math.min(Math.max(Math.round(startPrice * 0.05), 500), 10000);
 }
 
+export function isValidBid(currentBid: number, newBid: number): boolean {
+  return newBid >= currentBid + getMinBidIncrement(currentBid);
+}
+
 function generateOrderNumber() {
   return "ORD-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
 }

@@ -4,9 +4,10 @@ import { getDb } from "./queries/connection";
 import {
   marketplaceListings, auctionBids, watchlistItems, listingQuestions,
   sellerRatings, listingViews, priceOffers, auctionDeposits, sellerProfiles,
-  listingMedia, copyrightScans, orders, transactions, users,
+  listingMedia, copyrightScans, orders, users,
 } from "@db/schema";
-import { eq, and, desc, sql, count, avg } from "drizzle-orm";
+import { eq, and, desc, asc, sql, count, avg, inArray } from "drizzle-orm";
+import { tokenizeSearch, listingSearchCondition, listingRelevanceScore } from "./lib/listing-search";
 import { runCopyrightScan } from "./lib/copyright-bot";
 import { moderateListing } from "./lib/moderator";
 import { processBid, setAutoBidMax, getRequiredDeposit } from "./lib/auction-engine";
@@ -47,38 +48,110 @@ export const marketplaceRouter = createRouter({
       condition: z.string().optional(),
       listingType: z.enum(["fixed", "auction", "all"]).default("all"),
       search: z.string().optional(),
-      sortBy: z.enum(["newest", "price_asc", "price_desc", "ending_soon", "popular"]).default("newest"),
+      sortBy: z.enum(["newest", "price_asc", "price_desc", "ending_soon", "popular", "relevance"]).default("newest"),
       limit: z.number().min(1).max(50).default(20),
       offset: z.number().min(0).default(0),
     }))
     .query(async ({ input }) => {
       const db = getDb();
+      const searchTokens = tokenizeSearch(input.search);
+      const searchSql = listingSearchCondition(searchTokens);
+      const needsSellerJoin = Boolean(searchSql);
+
       const conditions = [eq(marketplaceListings.isActive, true)];
       if (input.category) conditions.push(eq(marketplaceListings.category, input.category));
       if (input.condition) conditions.push(eq(marketplaceListings.condition, input.condition as any));
       if (input.listingType !== "all") conditions.push(eq(marketplaceListings.listingType, input.listingType));
+      if (searchSql) conditions.push(searchSql);
       const whereClause = and(...conditions);
-      let orderBy;
-      switch (input.sortBy) {
-        case "price_asc": orderBy = marketplaceListings.price; break;
-        case "price_desc": orderBy = desc(marketplaceListings.price); break;
-        case "ending_soon": orderBy = marketplaceListings.auctionEnd; break;
-        case "popular": orderBy = desc(marketplaceListings.bidCount); break;
-        default: orderBy = desc(marketplaceListings.createdAt);
+
+      const countFrom = needsSellerJoin
+        ? db.select({ total: count() }).from(marketplaceListings)
+            .leftJoin(users, eq(marketplaceListings.sellerId, users.id))
+        : db.select({ total: count() }).from(marketplaceListings);
+      const [{ total }] = await countFrom.where(whereClause);
+      const totalCount = Number(total) || 0;
+
+      let effectiveSort = input.sortBy;
+      if (searchTokens.length > 0 && effectiveSort === "newest") {
+        effectiveSort = "relevance";
       }
-      const items = await db.query.marketplaceListings.findMany({
-        where: whereClause, with: { seller: true, media: true },
-        orderBy, limit: input.limit, offset: input.offset,
-      });
-      let result = items;
-      if (input.search) {
-        const q = input.search.toLowerCase();
-        result = items.filter(l => l.title.toLowerCase().includes(q) || l.description.toLowerCase().includes(q));
+
+      const priceAsc = asc(sql`CAST(${marketplaceListings.price} AS DECIMAL(12,2))`);
+      const priceDesc = desc(sql`CAST(${marketplaceListings.price} AS DECIMAL(12,2))`);
+      let orderClauses: ReturnType<typeof desc> | ReturnType<typeof desc>[];
+      switch (effectiveSort) {
+        case "relevance":
+          orderClauses = [desc(listingRelevanceScore(searchTokens)), desc(marketplaceListings.createdAt)];
+          break;
+        case "price_asc":
+          orderClauses = priceAsc;
+          break;
+        case "price_desc":
+          orderClauses = priceDesc;
+          break;
+        case "ending_soon":
+          orderClauses = asc(marketplaceListings.auctionEnd);
+          break;
+        case "popular":
+          orderClauses = [desc(marketplaceListings.bidCount), desc(marketplaceListings.createdAt)];
+          break;
+        default:
+          orderClauses = desc(marketplaceListings.createdAt);
       }
-      return Promise.all(result.map(async (item) => {
-        const viewCount = await db.select({ count: count() }).from(listingViews).where(eq(listingViews.listingId, item.id));
-        return { ...item, viewCount: viewCount[0]?.count || 0 };
+      const orderByList = Array.isArray(orderClauses) ? orderClauses : [orderClauses];
+
+      let items: Awaited<ReturnType<typeof db.query.marketplaceListings.findMany>>;
+
+      if (needsSellerJoin) {
+        const idRows = await db
+          .select({ id: marketplaceListings.id })
+          .from(marketplaceListings)
+          .leftJoin(users, eq(marketplaceListings.sellerId, users.id))
+          .where(whereClause)
+          .orderBy(...orderByList)
+          .limit(input.limit)
+          .offset(input.offset);
+        const ids = idRows.map((row: { id: number }) => row.id);
+        if (ids.length === 0) {
+          return { items: [], totalCount };
+        }
+        const rows = await db.query.marketplaceListings.findMany({
+          where: inArray(marketplaceListings.id, ids),
+          with: { seller: true, media: true },
+        });
+        const byId = new Map(rows.map((row) => [row.id, row] as const));
+        items = ids
+          .map((id: number) => byId.get(id))
+          .filter((row): row is NonNullable<typeof row> => Boolean(row));
+      } else {
+        items = await db.query.marketplaceListings.findMany({
+          where: whereClause,
+          with: { seller: true, media: true },
+          orderBy: orderByList.length === 1 ? orderByList[0] : orderByList,
+          limit: input.limit,
+          offset: input.offset,
+        });
+      }
+
+      const listingIds = items.map((item) => item.id);
+      const viewRows = listingIds.length
+        ? await db
+            .select({ listingId: listingViews.listingId, viewCount: count() })
+            .from(listingViews)
+            .where(inArray(listingViews.listingId, listingIds))
+            .groupBy(listingViews.listingId)
+        : [];
+      const viewMap = new Map(
+        viewRows.map((row) => [row.listingId, Number(row.viewCount)] as const),
+      );
+
+      const enriched = items.map((item) => ({
+        ...item,
+        viewCount: viewMap.get(item.id) ?? 0,
       }));
+
+      return { items: enriched, totalCount };
     }),
 
   getListing: publicQuery

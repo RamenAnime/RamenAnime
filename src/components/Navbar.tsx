@@ -30,43 +30,9 @@ import {
   Mail,
 } from "lucide-react";
 
-const languages = [
-  { code: "en", label: "English" },
-  { code: "ja", label: "日本語" },
-  { code: "ko", label: "한국어" },
-  { code: "zh-CN", label: "中文 (简体)" },
-  { code: "zh-TW", label: "中文 (繁體)" },
-  { code: "hi", label: "हिन्दी" },
-  { code: "id", label: "Bahasa Indonesia" },
-  { code: "ms", label: "Bahasa Melayu" },
-  { code: "tl", label: "Filipino" },
-  { code: "vi", label: "Tiếng Việt" },
-  { code: "th", label: "ไทย" },
-  { code: "ar", label: "العربية" },
-  { code: "he", label: "עברית" },
-  { code: "tr", label: "Türkçe" },
-  { code: "de", label: "Deutsch" },
-  { code: "es", label: "Español" },
-  { code: "fr", label: "Français" },
-  { code: "it", label: "Italiano" },
-  { code: "nl", label: "Nederlands" },
-  { code: "pt", label: "Português" },
-  { code: "pl", label: "Polski" },
-  { code: "ro", label: "Română" },
-  { code: "el", label: "Ελληνικά" },
-  { code: "sv", label: "Svenska" },
-  { code: "cs", label: "Čeština" },
-  { code: "hu", label: "Magyar" },
-  { code: "bg", label: "Български" },
-  { code: "da", label: "Dansk" },
-  { code: "fi", label: "Suomi" },
-  { code: "sk", label: "Slovenčina" },
-  { code: "hr", label: "Hrvatski" },
-  { code: "lt", label: "Lietuvių" },
-  { code: "lv", label: "Latviešu" },
-  { code: "sl", label: "Slovenščina" },
-  { code: "et", label: "Eesti" },
-];
+import { LANGUAGE_OPTIONS } from "@/i18n/languages";
+
+const languages = LANGUAGE_OPTIONS;
 
 export default function Navbar() {
   const { t, i18n } = useTranslation();

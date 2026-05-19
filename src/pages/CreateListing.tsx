@@ -113,8 +113,9 @@ export default function CreateListing() {
     Array.from(files).forEach((file) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          setImages((prev) => [...prev, reader.result]);
+        const dataUrl = reader.result;
+        if (typeof dataUrl === "string") {
+          setImages((prev) => [...prev, dataUrl]);
         }
       };
       reader.readAsDataURL(file);

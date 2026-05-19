@@ -162,7 +162,7 @@ function StatusTimeline({
 }: {
   status: OrderStatus;
   updatedAt: Date | string;
-  t: (key: string, opts?: object) => string;
+  t: import("i18next").TFunction;
 }) {
   const statusConfig = getStatusConfig(t);
   const activeIndex = timelineStatuses.indexOf(status);

@@ -440,6 +440,7 @@ export const extendedJaKyoto = {
     interested: "関心 {{count}}",
     needMoreUsers: "もっとアクティブユーザーが要るで（ほかのタブでサイト開いてライブデータ流してな）",
     itemLabel: "商品 #{{id}}",
+    severity: { critical: "重大", warning: "警告", info: "情報", low: "低" },
   },
   analytics: {
     accessDenied: "アクセス拒否。管理者のみやで。",
@@ -536,7 +537,6 @@ export const extendedJaKyoto = {
   ai: {
     title: "ラーメンAI",
     greeting: "こんにちは！ラーメンAIやで。出品、オークション、マーケットのコツ、なんでも聞いてな。",
-    poweredBy: "サーバーAI搭載",
     placeholder: "出品、オークション、トレンドについて聞いて…",
     toggleLabel: "AIアシスタントの切り替え",
     errorGeneric: "すまん、今は返せへんかった。もう一回試してな。",
@@ -707,5 +707,7 @@ export const extendedJaKyoto = {
     sidebar: "サイドバー",
     sidebarDesc: "モバイル用サイドバーを表示するで。",
     more: "もっと見る",
+    commandPalette: "コマンドパレット",
+    commandPaletteDesc: "実行するコマンドを検索…",
   },
 };

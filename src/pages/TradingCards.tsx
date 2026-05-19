@@ -1,42 +1,31 @@
-import { useState } from "react";
 import { Link } from "react-router";
-import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { useLocalizedLabels } from "@/lib/label-i18n";
+import { useMarketplaceListings } from "@/hooks/useMarketplaceListings";
+import { ListingSearchBar } from "@/components/marketplace/ListingSearchBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Layers, Search, Plus, Tag, Gavel, Clock, ArrowLeft, ImageIcon, Loader2,
+  Layers, Plus, Gavel, Clock, ArrowLeft, ImageIcon, Loader2,
 } from "lucide-react";
-
-function getTimeLeft(endDate: string | null, t: (key: string) => string): string {
-  if (!endDate) return "";
-  const diff = new Date(endDate).getTime() - Date.now();
-  if (diff <= 0) return t("common.ended");
-  const d = Math.floor(diff / 86400000);
-  const h = Math.floor((diff % 86400000) / 3600000);
-  if (d > 0) return t("marketplace.timeLeftDaysHours", { days: d, hours: h });
-  const m = Math.floor((diff % 3600000) / 60000);
-  return t("marketplace.timeLeftHoursMinutes", { hours: h, minutes: m });
-}
 
 export default function TradingCards() {
   const { t } = useTranslation();
   const { conditionLabel } = useLocalizedLabels();
   const { isAuthenticated } = useAuth();
-  const [search, setSearch] = useState("");
-
-  const { data: listings, isLoading } = trpc.marketplace.listListings.useQuery({
-    category: "trading-cards",
-    search: search || undefined,
-    listingType: "all",
-    limit: 50,
-    offset: 0,
-  });
+  const {
+    searchQuery,
+    setSearchQuery,
+    sortBy,
+    setSortBy,
+    listings,
+    totalCount,
+    isLoading,
+    isFetching,
+  } = useMarketplaceListings({ category: "trading-cards" });
 
   return (
     <div className="min-h-screen py-12">
@@ -54,10 +43,14 @@ export default function TradingCards() {
           <p className="text-muted-foreground max-w-xl mx-auto">
             {t("tradingCards.subtitle")}
           </p>
-          <div className="max-w-md mx-auto relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={t("tradingCards.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-muted/50" />
-          </div>
+          <ListingSearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            totalCount={totalCount}
+            isFetching={isFetching}
+          />
         </div>
 
         <div className="flex items-center justify-center gap-3 mb-6">
@@ -74,7 +67,7 @@ export default function TradingCards() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : listings && listings.length > 0 ? (
+        ) : listings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {listings.map((listing: any) => {
               const imgs: string[] = listing.images ? JSON.parse(listing.images) : [];

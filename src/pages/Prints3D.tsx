@@ -1,31 +1,31 @@
-import { useState } from "react";
 import { Link } from "react-router";
-import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { useTranslation } from "react-i18next";
 import { useLocalizedLabels } from "@/lib/label-i18n";
+import { useMarketplaceListings } from "@/hooks/useMarketplaceListings";
+import { ListingSearchBar } from "@/components/marketplace/ListingSearchBar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Box, Search, Plus, Tag, Gavel, Clock, ArrowLeft, ImageIcon, Loader2,
+  Box, Plus, Gavel, Clock, ArrowLeft, ImageIcon, Loader2,
 } from "lucide-react";
 
 export default function Prints3D() {
   const { t } = useTranslation();
   const { conditionLabel } = useLocalizedLabels();
   const { isAuthenticated } = useAuth();
-  const [search, setSearch] = useState("");
-
-  const { data: listings, isLoading } = trpc.marketplace.listListings.useQuery({
-    category: "3d-prints",
-    search: search || undefined,
-    listingType: "all",
-    limit: 50,
-    offset: 0,
-  });
+  const {
+    searchQuery,
+    setSearchQuery,
+    sortBy,
+    setSortBy,
+    listings,
+    totalCount,
+    isLoading,
+    isFetching,
+  } = useMarketplaceListings({ category: "3d-prints" });
 
   return (
     <div className="min-h-screen py-12">
@@ -43,10 +43,14 @@ export default function Prints3D() {
           <p className="text-muted-foreground max-w-xl mx-auto">
             {t("prints3d.subtitle")}
           </p>
-          <div className="max-w-md mx-auto relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder={t("prints3d.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-muted/50" />
-          </div>
+          <ListingSearchBar
+            value={searchQuery}
+            onChange={setSearchQuery}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            totalCount={totalCount}
+            isFetching={isFetching}
+          />
         </div>
 
         <div className="flex items-center justify-center gap-3 mb-6">
@@ -63,7 +67,7 @@ export default function Prints3D() {
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : listings && listings.length > 0 ? (
+        ) : listings.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {listings.map((listing: any) => {
               const imgs: string[] = listing.images ? JSON.parse(listing.images) : [];

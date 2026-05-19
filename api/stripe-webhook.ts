@@ -1,14 +1,13 @@
 import type { Context } from "hono";
-  import Stripe from "stripe";
+  import type Stripe from "stripe";
+  import { createStripeClient } from "./lib/stripe";
   import { getDb } from "./queries/connection";
 import { orders, transactions, users } from "@db/schema";
 import { eq } from "drizzle-orm";
 import { logger } from "./lib/utils/logger";
 import { markDepositHeld } from "./lib/stripe-deposit";
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-    apiVersion: "2025-04-30.basil",
-  });
+  const stripe = createStripeClient(process.env.STRIPE_SECRET_KEY || "");
 
   export async function handleStripeWebhook(c: Context): Promise<Response> {
     const sig = c.req.header("stripe-signature");

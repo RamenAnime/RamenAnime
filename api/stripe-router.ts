@@ -3,13 +3,10 @@ import { createRouter, authedQuery, publicQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { users, marketplaceListings, orders, transactions, geoVerifications } from "@db/schema";
 import { eq, and } from "drizzle-orm";
-import Stripe from "stripe";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-  apiVersion: "2025-04-30.basil",
-});
+import { createStripeClient } from "./lib/stripe";
+const stripe = createStripeClient(process.env.STRIPE_SECRET_KEY || "");
 
-const PLATFORM_FEE_PERCENT = 5;  // Seller pays 5%
-const BUYER_FEE_PERCENT = 3;      // Buyer pays 3% (added to total)
+import { calculateMarketplaceFees } from "./lib/platform-fees";
 
 function generateOrderNumber() {
   return "ORD-" + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -122,11 +119,8 @@ export const stripeRouter = createRouter({
       const priceCents = Math.round(parseFloat(unitPrice) * 100);
       if (priceCents <= 0) throw new Error("Invalid listing price");
 
-      const sellerFeeCents = Math.round(priceCents * (PLATFORM_FEE_PERCENT / 100));
-      const buyerFeeCents = Math.round(priceCents * (BUYER_FEE_PERCENT / 100));
-      const totalCents = priceCents + buyerFeeCents;
-      const applicationFeeCents = sellerFeeCents + buyerFeeCents;
-      const sellerReceivesCents = priceCents - sellerFeeCents;
+      const { totalCents, applicationFeeCents, sellerReceivesCents } =
+        calculateMarketplaceFees(priceCents);
 
       // Create order record
       const orderNum = generateOrderNumber();

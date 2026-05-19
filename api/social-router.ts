@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, publicQuery, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { userProfiles, forumPosts, forumComments, forumReactions, userSignatures, friends, users } from "@db/schema";
-import { eq, desc, asc, count, and, gte } from "drizzle-orm";
+import { eq, desc, asc, count, and, or, gte } from "drizzle-orm";
 import { createNotification } from "./queries/users";
 import { moderateContent } from "./lib/moderator";
 
@@ -253,22 +253,105 @@ export const socialRouter = createRouter({
       const postCount = await db.select({ count: count() }).from(forumPosts).where(eq(forumPosts.category, cat));
       const latest = await db.select().from(forumPosts).where(eq(forumPosts.category, cat)).orderBy(desc(forumPosts.createdAt)).limit(1);
       const latestPost = latest[0] ?? null;
-      let latestAuthor = null;
-      if (latestPost) { const u = await db.select().from(users).where(eq(users.id, latestPost.authorId)).limit(1); latestAuthor = u[0] ?? null; }
+      let latestAuthor: { name: string | null; username: string | null } | null = null;
+      if (latestPost) {
+        const u = await db.select({ name: users.name, username: users.username }).from(users).where(eq(users.id, latestPost.authorId)).limit(1);
+        latestAuthor = u[0] ?? null;
+      }
       return { category: cat, postCount: postCount[0]?.count || 0, latestPost: latestPost ? { title: latestPost.title, createdAt: latestPost.createdAt, authorName: latestAuthor?.name ?? latestAuthor?.username ?? "Unknown" } : null };
     }));
   }),
 
   listFriends: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
-    const rows = await db.select().from(friends).where(eq(friends.addresseeId, ctx.user.id));
-    return Promise.all(rows.map(async (f: any) => { const u = await db.select().from(users).where(eq(users.id, f.requesterId)).limit(1); return { ...f, requester: u[0] ?? null }; }));
+    const rows = await db
+      .select()
+      .from(friends)
+      .where(
+        and(
+          eq(friends.status, "accepted"),
+          or(eq(friends.requesterId, ctx.user.id), eq(friends.addresseeId, ctx.user.id)),
+        ),
+      );
+    return Promise.all(
+      rows.map(async (f) => {
+        const otherId = f.requesterId === ctx.user.id ? f.addresseeId : f.requesterId;
+        const u = await db.select().from(users).where(eq(users.id, otherId)).limit(1);
+        const profile = u[0];
+        return {
+          id: otherId,
+          name: profile?.name ?? profile?.username ?? "User",
+          avatar: profile?.avatar ?? null,
+          friendshipId: f.id,
+        };
+      }),
+    );
   }),
+
+  listFriendRequests: authedQuery.query(async ({ ctx }) => {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(friends)
+      .where(and(eq(friends.addresseeId, ctx.user.id), eq(friends.status, "pending")));
+    return Promise.all(
+      rows.map(async (f) => {
+        const u = await db.select().from(users).where(eq(users.id, f.requesterId)).limit(1);
+        return { ...f, requester: u[0] ?? null };
+      }),
+    );
+  }),
+
+  respondFriendRequest: authedQuery
+    .input(z.object({ requestId: z.number(), accept: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      const row = await db.select().from(friends).where(eq(friends.id, input.requestId)).limit(1);
+      if (!row[0] || row[0].addresseeId !== ctx.user.id) {
+        throw new Error("Unauthorized");
+      }
+      await db
+        .update(friends)
+        .set({ status: input.accept ? "accepted" : "declined" })
+        .where(eq(friends.id, input.requestId));
+      return { success: true };
+    }),
+
+  removeFriend: authedQuery
+    .input(z.object({ friendId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = getDb();
+      await db
+        .delete(friends)
+        .where(
+          and(
+            eq(friends.status, "accepted"),
+            or(
+              and(eq(friends.requesterId, ctx.user.id), eq(friends.addresseeId, input.friendId)),
+              and(eq(friends.requesterId, input.friendId), eq(friends.addresseeId, ctx.user.id)),
+            ),
+          ),
+        );
+      return { success: true };
+    }),
 
   sendFriendRequest: authedQuery.input(z.object({ addresseeId: z.number() })).mutation(async ({ ctx, input }) => {
     const db = getDb();
-    await db.insert(friends).values({ requesterId: ctx.user.id, addresseeId: input.addresseeId });
-    await createNotification({ userId: input.addresseeId, type: "friend_request", title: "New friend request", message: `${ctx.user.name ?? ctx.user.username} sent you a friend request`, link: `/profile/${ctx.user.id}` });
+    if (input.addresseeId === ctx.user.id) {
+      throw new Error("Cannot friend yourself");
+    }
+    await db.insert(friends).values({
+      requesterId: ctx.user.id,
+      addresseeId: input.addresseeId,
+      status: "pending",
+    });
+    await createNotification({
+      userId: input.addresseeId,
+      type: "friend_request",
+      title: "New friend request",
+      message: `${ctx.user.name ?? ctx.user.username} sent you a friend request`,
+      link: `/profile/${ctx.user.id}`,
+    });
     return { success: true };
   }),
 });

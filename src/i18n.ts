@@ -368,6 +368,15 @@ import i18n from 'i18next';
 
   Object.assign(resources, extraLangs);
 
+  // i18next may resolve zh-CN as zh-cn or zh; mirror bundles so t() finds copy.
+  if (resources['zh-CN']) {
+    resources['zh-cn'] = resources['zh-CN'];
+    resources.zh = resources['zh-CN'];
+  }
+  if (resources['zh-TW']) {
+    resources['zh-tw'] = resources['zh-TW'];
+  }
+
   const fullyMerged = new Set(['en', 'ja', ...Object.keys(LEGAL_LOCALE_BUNDLES)]);
   for (const lng of Object.keys(resources)) {
     if (fullyMerged.has(lng)) continue;
@@ -385,6 +394,7 @@ import i18n from 'i18next';
     .use(initReactI18next)
     .init({
       resources,
+      lowerCaseLng: false,
       fallbackLng: (code: string) => {
         if (!code || code === 'en') return ['en'];
         const base = code.split('-')[0];

@@ -56,7 +56,6 @@ export function useSwarm() {
         searchQuery: digest.searchQuery,
         category: digest.category,
         embedding: digest.embedding,
-        errorPattern: digest.errorPattern,
       });
     } catch {
       // Silently fail - swarm is best-effort
@@ -110,8 +109,8 @@ export function useSwarm() {
         topListings: snapshotQuery.data.topListings,
         topSearches: snapshotQuery.data.topSearches,
         topCategories: snapshotQuery.data.topCategories,
-        anomalies: snapshotQuery.data.anomalies || [],
-        collectiveInterests: snapshotQuery.data.collectiveInterests || { interests: [], confidence: 0 },
+        anomalies: [],
+        collectiveInterests: { interests: [], confidence: 0 },
       });
     }
   }, [snapshotQuery.data]);

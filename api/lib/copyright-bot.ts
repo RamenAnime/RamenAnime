@@ -20,13 +20,13 @@ const COPYRIGHT_FLAGS = [
   "Funimation", "Viz Media", "Kodansha", "Shueisha", "Shogakukan",
   "Bandai Namco", "Good Smile Company", "Max Factory", "Kotobukiya",
   "Square Enix", "Nintendo", "Pokemon Company", "Disney",
-  "watermark", "sample", "preview", "not for sale", "promotional use only",
+  "sample", "preview", "not for sale", "promotional use only", "proof copy",
   "copyright", "trademark", "TM", "(C)", "All Rights Reserved",
 ];
 
 const SEVERITY_RANK = { clear: 0, pending: 1, flagged: 2, rejected: 3 } as const;
 
-function scanText(title: string, description: string) {
+export function scanListingText(title: string, description: string) {
   const combined = `${title} ${description}`.toLowerCase();
   const matched: string[] = [];
   for (const term of PROHIBITED_TERMS) {
@@ -65,7 +65,7 @@ export async function runCopyrightScan(
   imageUrls: string[]
 ) {
   const db = getDb();
-  const textResult = scanText(title, description);
+  const textResult = scanListingText(title, description);
 
   await db.insert(copyrightScans).values({
     listingId,

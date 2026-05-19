@@ -146,9 +146,9 @@ export default function Home() {
             </Link>
           </div>
 
-          {auctionItems && auctionItems.length > 0 ? (
+          {auctionItems && auctionItems.items.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {auctionItems.map((item) => {
+              {auctionItems.items.map((item) => {
                 const imgs: string[] = item.images ? JSON.parse(item.images) : [];
                 const timeLeft = formatTimeLeft(item.auctionEnd ?? null, t);
                 const price = formatAuctionPrice(item.currentBid || item.startPrice);
@@ -200,7 +200,7 @@ export default function Home() {
         </div>
       </section>
 
-      {trendingItems && trendingItems.length > 0 && (
+      {trendingItems && trendingItems.items.length > 0 && (
         <section className="py-12 md:py-16 border-t border-border/40">
           <div className="container px-4 md:px-6">
             <div className="flex items-center justify-between mb-6">
@@ -215,7 +215,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {trendingItems.map((item) => {
+              {trendingItems.items.map((item) => {
                 const imgs: string[] = item.images ? JSON.parse(item.images) : [];
                 const priceLabel = item.listingType === "auction"
                   ? t("home.trending.current", { price: formatAuctionPrice(item.currentBid || item.startPrice) })
@@ -241,7 +241,7 @@ export default function Home() {
         </section>
       )}
 
-      {recentItems && recentItems.length > 0 && (
+      {recentItems && recentItems.items.length > 0 && (
         <section className="py-12 md:py-16 border-t border-border/40">
           <div className="container px-4 md:px-6">
             <div className="flex items-center justify-between mb-6">
@@ -256,7 +256,7 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {recentItems.map((item) => {
+              {recentItems.items.map((item) => {
                 const imgs: string[] = item.images ? JSON.parse(item.images) : [];
                 const priceLabel = item.listingType === "auction"
                   ? formatAuctionPrice(item.currentBid || item.startPrice)

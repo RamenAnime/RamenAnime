@@ -11,6 +11,32 @@ import i18n from 'i18next';
   import { legalZh } from './i18n/legal-zh';
   import { tokushohoByLocale } from './i18n/tokushoho-locales';
   import { kyotoJaOverrides } from './i18n/kyoto-ja';
+  import { extendedJaKyoto } from './i18n/extended-ja-kyoto';
+  import { applyKyotoDialectDeep } from './i18n/kyoto-transform';
+
+  const JA_KYOTO_BASE_KEYS = [
+    'nav', 'hero', 'home', 'features', 'products', 'about', 'contact', 'footer',
+    'ageGate', 'marketplace', 'forum', 'profile', 'terms', 'login', 'forgotPassword',
+    'resetPassword', 'admin', 'donations', 'listing', 'messages', 'orders',
+    'createListing', 'friends', 'orderDetail', 'geoBlock', 'legal', 'sellerStripe', 'common',
+  ] as const;
+
+  function applyKyotoJaBundle() {
+    if (!resources.ja) return;
+    for (const key of JA_KYOTO_BASE_KEYS) {
+      const section = resources.ja!.translation[key];
+      if (section && typeof section === 'object') {
+        resources.ja!.translation[key] = applyKyotoDialectDeep(section);
+      }
+    }
+    if (resources.ja.translation.legalPrivacy) {
+      resources.ja.translation.legalPrivacy = applyKyotoDialectDeep(resources.ja.translation.legalPrivacy);
+    }
+    if (resources.ja.translation.legalTerms) {
+      resources.ja.translation.legalTerms = applyKyotoDialectDeep(resources.ja.translation.legalTerms);
+    }
+    resources.ja.translation = deepMerge(resources.ja.translation, kyotoJaOverrides);
+  }
 
   function deepMerge<T extends Record<string, unknown>>(target: T, source: Record<string, unknown>): T {
     const out = { ...target } as Record<string, unknown>;
@@ -244,7 +270,8 @@ import i18n from 'i18next';
 
   for (const [lng, legalBundle] of Object.entries(LEGAL_LOCALE_BUNDLES)) {
     if (!resources[lng]) continue;
-    resources[lng].translation = deepMerge(resources[lng].translation, extendedEn);
+    const uiBundle = lng === 'ja' ? extendedJaKyoto : extendedEn;
+    resources[lng].translation = deepMerge(resources[lng].translation, uiBundle);
     resources[lng].translation = deepMerge(resources[lng].translation, legalBundle);
     const tokushoho = tokushohoByLocale[lng];
     if (tokushoho) {
@@ -252,9 +279,7 @@ import i18n from 'i18next';
     }
   }
 
-  if (resources.ja) {
-    resources.ja.translation = deepMerge(resources.ja.translation, kyotoJaOverrides);
-  }
+  applyKyotoJaBundle();
 
   const { legalPrivacy: _legalPrivacy, legalTerms: _legalTerms, ...enTranslationWithoutLegal } =
     resources.en.translation;

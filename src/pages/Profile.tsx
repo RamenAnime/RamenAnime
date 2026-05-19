@@ -128,13 +128,13 @@ function ProfileContent() {
               </Avatar>
               <div className="text-center md:text-left flex-1">
                 <h1 className="text-2xl md:text-4xl font-bold mb-2" style={{ color: textColor }}>
-                  {profile.displayName ?? profile.user?.name ?? "User"}
+                  {profile.displayName ?? profile.user?.name ?? t("common.user")}
                 </h1>
                 {profile.headline && <p className="text-lg mb-3" style={{ color: accentColor }}>"{profile.headline}"</p>}
                 <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 text-sm" style={{ color: textColor + "99" }}>
                   {profile.mood && <span className="flex items-center gap-1"><Smile className="h-4 w-4" style={{ color: accentColor }} />{profile.mood}</span>}
                   {profile.location && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" style={{ color: accentColor }} />{profile.location}</span>}
-                  {profile.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline" style={{ color: accentColor }}><LinkIcon className="h-4 w-4" />Website</a>}
+                  {profile.website && <a href={profile.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:underline" style={{ color: accentColor }}><LinkIcon className="h-4 w-4" />{t("profile.websiteLink")}</a>}
                 </div>
                 <div className="flex items-center justify-center md:justify-start gap-2 mt-4">
                   {isMyProfile ? (
@@ -259,30 +259,30 @@ function ProfileEditForm({ profile, onSave, isPending }: { profile?: Record<stri
   return (
     <div className="space-y-4 pt-2">
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs font-medium mb-1 block">Display Name</label><Input value={form.displayName} onChange={(e) => update("displayName", e.target.value)} className="bg-muted/50" /></div>
-        <div><label className="text-xs font-medium mb-1 block">Headline</label><Input value={form.headline} onChange={(e) => update("headline", e.target.value)} className="bg-muted/50" /></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.displayName")}</label><Input value={form.displayName} onChange={(e) => update("displayName", e.target.value)} className="bg-muted/50" /></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.headline")}</label><Input value={form.headline} onChange={(e) => update("headline", e.target.value)} className="bg-muted/50" /></div>
       </div>
-      <div><label className="text-xs font-medium mb-1 block">About Me</label><Textarea value={form.aboutMe} onChange={(e) => update("aboutMe", e.target.value)} rows={3} className="bg-muted/50" /></div>
-      <div><label className="text-xs font-medium mb-1 block">Interests</label><Textarea value={form.interests} onChange={(e) => update("interests", e.target.value)} rows={2} className="bg-muted/50" /></div>
+      <div><label className="text-xs font-medium mb-1 block">{t("profile.bio")}</label><Textarea value={form.aboutMe} onChange={(e) => update("aboutMe", e.target.value)} rows={3} className="bg-muted/50" /></div>
+      <div><label className="text-xs font-medium mb-1 block">{t("profile.interests")}</label><Textarea value={form.interests} onChange={(e) => update("interests", e.target.value)} rows={2} className="bg-muted/50" /></div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs font-medium mb-1 block">Favorite Anime</label><Input value={form.favoriteAnime} onChange={(e) => update("favoriteAnime", e.target.value)} className="bg-muted/50" /></div>
-        <div><label className="text-xs font-medium mb-1 block">Favorite Games</label><Input value={form.favoriteGames} onChange={(e) => update("favoriteGames", e.target.value)} className="bg-muted/50" /></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.favAnime")}</label><Input value={form.favoriteAnime} onChange={(e) => update("favoriteAnime", e.target.value)} className="bg-muted/50" /></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.favGames")}</label><Input value={form.favoriteGames} onChange={(e) => update("favoriteGames", e.target.value)} className="bg-muted/50" /></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs font-medium mb-1 block">Profile Song</label><Input value={form.profileSong} onChange={(e) => update("profileSong", e.target.value)} className="bg-muted/50" /></div>
-        <div><label className="text-xs font-medium mb-1 block">Song URL</label><Input value={form.profileSongUrl} onChange={(e) => update("profileSongUrl", e.target.value)} className="bg-muted/50" /></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.profileSong")}</label><Input value={form.profileSong} onChange={(e) => update("profileSong", e.target.value)} className="bg-muted/50" /></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.songUrl")}</label><Input value={form.profileSongUrl} onChange={(e) => update("profileSongUrl", e.target.value)} className="bg-muted/50" placeholder={t("profile.urlPlaceholder")} /></div>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        <div><label className="text-xs font-medium mb-1 block">Background</label><div className="flex gap-2"><Input value={form.backgroundColor} onChange={(e) => update("backgroundColor", e.target.value)} className="bg-muted/50" /><div className="w-8 h-9 rounded border shrink-0" style={{ backgroundColor: form.backgroundColor }} /></div></div>
-        <div><label className="text-xs font-medium mb-1 block">Text Color</label><div className="flex gap-2"><Input value={form.textColor} onChange={(e) => update("textColor", e.target.value)} className="bg-muted/50" /><div className="w-8 h-9 rounded border shrink-0" style={{ backgroundColor: form.textColor }} /></div></div>
-        <div><label className="text-xs font-medium mb-1 block">Accent</label><div className="flex gap-2"><Input value={form.accentColor} onChange={(e) => update("accentColor", e.target.value)} className="bg-muted/50" /><div className="w-8 h-9 rounded border shrink-0" style={{ backgroundColor: form.accentColor }} /></div></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.background")}</label><div className="flex gap-2"><Input value={form.backgroundColor} onChange={(e) => update("backgroundColor", e.target.value)} className="bg-muted/50" /><div className="w-8 h-9 rounded border shrink-0" style={{ backgroundColor: form.backgroundColor }} /></div></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.textColor")}</label><div className="flex gap-2"><Input value={form.textColor} onChange={(e) => update("textColor", e.target.value)} className="bg-muted/50" /><div className="w-8 h-9 rounded border shrink-0" style={{ backgroundColor: form.textColor }} /></div></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.accent")}</label><div className="flex gap-2"><Input value={form.accentColor} onChange={(e) => update("accentColor", e.target.value)} className="bg-muted/50" /><div className="w-8 h-9 rounded border shrink-0" style={{ backgroundColor: form.accentColor }} /></div></div>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-xs font-medium mb-1 block">Mood</label><Input value={form.mood} onChange={(e) => update("mood", e.target.value)} className="bg-muted/50" /></div>
-        <div><label className="text-xs font-medium mb-1 block">Location</label><Input value={form.location} onChange={(e) => update("location", e.target.value)} className="bg-muted/50" /></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.mood")}</label><Input value={form.mood} onChange={(e) => update("mood", e.target.value)} className="bg-muted/50" /></div>
+        <div><label className="text-xs font-medium mb-1 block">{t("profile.location")}</label><Input value={form.location} onChange={(e) => update("location", e.target.value)} className="bg-muted/50" /></div>
       </div>
-      <div><label className="text-xs font-medium mb-1 block">Website</label><Input value={form.website} onChange={(e) => update("website", e.target.value)} className="bg-muted/50" /></div>
-      <div><label className="text-xs font-medium mb-1 block">Background Image URL</label><Input value={form.backgroundImage} onChange={(e) => update("backgroundImage", e.target.value)} className="bg-muted/50" placeholder="https://..." /></div>
+      <div><label className="text-xs font-medium mb-1 block">{t("profile.website")}</label><Input value={form.website} onChange={(e) => update("website", e.target.value)} className="bg-muted/50" /></div>
+      <div><label className="text-xs font-medium mb-1 block">{t("profile.backgroundImageUrl")}</label><Input value={form.backgroundImage} onChange={(e) => update("backgroundImage", e.target.value)} className="bg-muted/50" placeholder={t("profile.urlPlaceholder")} /></div>
       <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isPending} onClick={onSubmit}>
         {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
         {isPending ? t("profile.saving") : t("profile.saveBtn")}

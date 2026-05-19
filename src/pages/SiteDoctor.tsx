@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,15 +18,17 @@ interface ErrorReport {
   suggestedFix?: string;
 }
 
+function statusLabel(t: (key: string) => string, status: ErrorReport["status"]) {
+  if (status === "new") return t("siteDoctor.statusNew");
+  if (status === "investigating") return t("siteDoctor.statusInvestigating");
+  return t("siteDoctor.statusFixed");
+}
+
 export default function SiteDoctor() {
+  const { t } = useTranslation();
   const [errors, setErrors] = useState<ErrorReport[]>([]);
   const [selectedError, setSelectedError] = useState<ErrorReport | null>(null);
-  const [_isAdmin] = useState(() => {
-    // Simple admin check - in production this uses auth
-    return true; // Wrapped in admin route anyway
-  });
 
-  // Capture global errors
   useEffect(() => {
     const stored = localStorage.getItem("ramen_site_errors");
     if (stored) {
@@ -45,9 +48,9 @@ export default function SiteDoctor() {
         count: 1,
         status: "new",
       };
-      
-      setErrors(prev => {
-        const existing = prev.find(e => e.message === report.message);
+
+      setErrors((prev) => {
+        const existing = prev.find((e) => e.message === report.message);
         if (existing) {
           existing.count++;
           existing.timestamp = report.timestamp;
@@ -64,9 +67,8 @@ export default function SiteDoctor() {
   }, []);
 
   const generateFix = (error: ErrorReport) => {
-    // Simple pattern-based fix suggestions
     let suggestion = "";
-    
+
     if (error.message.includes("Cannot read properties of undefined")) {
       suggestion = `// Add optional chaining or null check:
 const value = obj?.property ?? defaultValue;
@@ -99,17 +101,17 @@ try {
 // 3. Verify API response shape
 // 4. Add try/catch block`;
     }
-    
-    setErrors(prev => prev.map(e => 
-      e.id === error.id ? { ...e, suggestedFix: suggestion, status: "investigating" } : e
-    ));
+
+    setErrors((prev) =>
+      prev.map((e) =>
+        e.id === error.id ? { ...e, suggestedFix: suggestion, status: "investigating" } : e
+      )
+    );
     setSelectedError({ ...error, suggestedFix: suggestion, status: "investigating" });
   };
 
   const markFixed = (id: string) => {
-    setErrors(prev => prev.map(e => 
-      e.id === id ? { ...e, status: "fixed" } : e
-    ));
+    setErrors((prev) => prev.map((e) => (e.id === id ? { ...e, status: "fixed" } : e)));
     if (selectedError?.id === id) {
       setSelectedError({ ...selectedError, status: "fixed" });
     }
@@ -121,21 +123,21 @@ try {
     setSelectedError(null);
   };
 
-  const activeErrors = errors.filter(e => e.status !== "fixed");
+  const activeErrors = errors.filter((e) => e.status !== "fixed");
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Bug className="w-6 h-6 text-destructive" />
-          Site Doctor
+          {t("siteDoctor.title")}
         </h1>
         <div className="flex gap-2">
           <Badge variant={activeErrors.length > 0 ? "destructive" : "default"}>
-            {activeErrors.length} Active {activeErrors.length === 1 ? "Issue" : "Issues"}
+            {t("siteDoctor.activeIssues", { count: activeErrors.length })}
           </Badge>
           <Button variant="outline" size="sm" onClick={clearAll}>
-            Clear All
+            {t("siteDoctor.clearAll")}
           </Button>
         </div>
       </div>
@@ -144,31 +146,41 @@ try {
         <Card>
           <CardContent className="p-8 text-center">
             <Check className="w-12 h-12 text-green-500 mx-auto mb-3" />
-            <p className="text-lg font-medium">No errors detected!</p>
-            <p className="text-muted-foreground">Your site is running smoothly.</p>
+            <p className="text-lg font-medium">{t("siteDoctor.noErrors")}</p>
+            <p className="text-muted-foreground">{t("siteDoctor.runningSmooth")}</p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Error List */}
           <div className="space-y-3">
-            {errors.map(error => (
-              <Card 
+            {errors.map((error) => (
+              <Card
                 key={error.id}
                 className={`cursor-pointer transition-colors ${selectedError?.id === error.id ? "border-primary" : ""} ${error.status === "fixed" ? "opacity-50" : ""}`}
                 onClick={() => setSelectedError(error)}
               >
                 <CardContent className="p-3">
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className={`w-4 h-4 mt-0.5 ${error.status === "fixed" ? "text-green-500" : "text-destructive"}`} />
+                    <AlertTriangle
+                      className={`w-4 h-4 mt-0.5 ${error.status === "fixed" ? "text-green-500" : "text-destructive"}`}
+                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{error.message}</p>
                       <p className="text-xs text-muted-foreground">
                         {error.count}x • {new Date(error.timestamp).toLocaleTimeString()}
                       </p>
                     </div>
-                    <Badge variant={error.status === "new" ? "destructive" : error.status === "investigating" ? "default" : "secondary"} className="text-xs">
-                      {error.status}
+                    <Badge
+                      variant={
+                        error.status === "new"
+                          ? "destructive"
+                          : error.status === "investigating"
+                            ? "default"
+                            : "secondary"
+                      }
+                      className="text-xs"
+                    >
+                      {statusLabel(t, error.status)}
                     </Badge>
                   </div>
                 </CardContent>
@@ -176,38 +188,52 @@ try {
             ))}
           </div>
 
-          {/* Error Detail */}
           <div>
             {selectedError ? (
               <Card>
                 <CardContent className="p-4 space-y-4">
                   <div>
-                    <h3 className="font-semibold mb-1">Error Details</h3>
+                    <h3 className="font-semibold mb-1">{t("siteDoctor.errorDetails")}</h3>
                     <p className="text-sm text-destructive">{selectedError.message}</p>
                   </div>
-                  
+
                   {selectedError.stack && (
                     <div>
-                      <h4 className="text-xs font-medium text-muted-foreground mb-1">Stack Trace</h4>
+                      <h4 className="text-xs font-medium text-muted-foreground mb-1">
+                        {t("siteDoctor.stackTrace")}
+                      </h4>
                       <pre className="bg-muted p-2 rounded text-xs overflow-x-auto max-h-40">
                         {selectedError.stack}
                       </pre>
                     </div>
                   )}
-                  
+
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div><span className="text-muted-foreground">URL:</span> {selectedError.url}</div>
-                    <div><span className="text-muted-foreground">Count:</span> {selectedError.count}</div>
+                    <div>
+                      <span className="text-muted-foreground">{t("siteDoctor.url")}</span>{" "}
+                      {selectedError.url}
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">{t("siteDoctor.count")}</span>{" "}
+                      {selectedError.count}
+                    </div>
                   </div>
-                  
+
                   {selectedError.suggestedFix ? (
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <h4 className="text-sm font-medium flex items-center gap-1">
                           <Wrench className="w-4 h-4" />
-                          Suggested Fix
+                          {t("siteDoctor.suggestedFix")}
                         </h4>
-                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => navigator.clipboard.writeText(selectedError.suggestedFix || "")}>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          onClick={() =>
+                            navigator.clipboard.writeText(selectedError.suggestedFix || "")
+                          }
+                        >
                           <Copy className="w-3 h-3" />
                         </Button>
                       </div>
@@ -215,25 +241,25 @@ try {
                         {selectedError.suggestedFix}
                       </pre>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Review this fix before applying. Test in staging first.
+                        {t("siteDoctor.reviewFix")}
                       </p>
                     </div>
                   ) : (
                     <Button onClick={() => generateFix(selectedError)} className="w-full">
                       <Wrench className="w-4 h-4 mr-2" />
-                      Generate Fix Proposal
+                      {t("siteDoctor.generateFix")}
                     </Button>
                   )}
-                  
+
                   <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="flex-1"
                       onClick={() => markFixed(selectedError.id)}
                       disabled={selectedError.status === "fixed"}
                     >
                       <Check className="w-4 h-4 mr-2" />
-                      Mark Fixed
+                      {t("siteDoctor.markFixed")}
                     </Button>
                   </div>
                 </CardContent>
@@ -241,7 +267,7 @@ try {
             ) : (
               <Card>
                 <CardContent className="p-8 text-center text-muted-foreground">
-                  Select an error to view details and generate fix proposals.
+                  {t("siteDoctor.selectError")}
                 </CardContent>
               </Card>
             )}

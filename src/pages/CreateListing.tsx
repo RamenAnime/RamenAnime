@@ -29,23 +29,31 @@ const CATEGORY_IDS = [
   { id: "other", key: "cat_other", icon: "✨" },
 ];
 
-const DURATIONS = [
-  { label: "3 Days", hours: 72 },
-  { label: "5 Days", hours: 120 },
-  { label: "7 Days", hours: 168 },
-  { label: "10 Days", hours: 240 },
-  { label: "14 Days", hours: 336 },
-];
+const DURATION_OPTIONS = [
+  { key: "duration3", hours: 72 },
+  { key: "duration5", hours: 120 },
+  { key: "duration7", hours: 168 },
+  { key: "duration10", hours: 240 },
+  { key: "duration14", hours: 336 },
+] as const;
+
+const PACKAGE_SIZE_KEYS = {
+  envelope: "packageEnvelope",
+  small: "packageSmall",
+  medium: "packageMedium",
+  large: "packageLarge",
+  oversize: "packageOversize",
+} as const;
 
 export default function CreateListing() {
   const { t } = useTranslation();
   const CATEGORIES = CATEGORY_IDS.map((c) => ({ ...c, name: t(`createListing.${c.key}`) }));
   const CONDITIONS = [
-    { id: "new", label: t("createListing.new"), desc: "Unopened, brand new" },
-    { id: "like_new", label: t("createListing.like_new"), desc: "Opened but perfect" },
-    { id: "used", label: t("createListing.used"), desc: "Gently used" },
-    { id: "fair", label: "Fair", desc: "Visible wear" },
-    { id: "poor", label: "Poor", desc: "Heavy wear / parts" },
+    { id: "new", label: t("createListing.new"), desc: t("createListing.conditionNewDesc") },
+    { id: "like_new", label: t("createListing.like_new"), desc: t("createListing.conditionLikeNewShort") },
+    { id: "used", label: t("createListing.used"), desc: t("createListing.conditionUsedShort") },
+    { id: "fair", label: t("createListing.conditionFair"), desc: t("createListing.conditionFairDesc") },
+    { id: "poor", label: t("createListing.conditionPoor"), desc: t("createListing.conditionPoorDesc") },
   ];
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -116,11 +124,11 @@ export default function CreateListing() {
 
   const handleSubmit = () => {
     if (!title || !category || !condition || !startPrice) {
-      toast.error("Please fill in all required fields");
+      toast.error(t("createListing.fillRequired"));
       return;
     }
     if (images.length === 0) {
-      toast.error("Please upload at least one image");
+      toast.error(t("createListing.uploadOneImage"));
       return;
     }
     const endTime = new Date(Date.now() + duration * 3600000).toISOString();
@@ -155,13 +163,13 @@ export default function CreateListing() {
         <Card className="max-w-md w-full">
           <CardContent className="p-8 text-center">
             <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-xl font-bold mb-2">Please log in to create a listing</h2>
+            <h2 className="text-xl font-bold mb-2">{t("createListing.signInToCreate")}</h2>
             <p className="text-sm text-muted-foreground mb-4">
-              You need to be signed in to start selling your anime collectibles.
+              {t("createListing.signInSellDesc")}
             </p>
             <div className="flex gap-3 justify-center">
-              <Button asChild><Link to="/login">Sign In</Link></Button>
-              <Button variant="outline" asChild><Link to="/register">Create Account</Link></Button>
+              <Button asChild><Link to="/login">{t("createListing.signIn")}</Link></Button>
+              <Button variant="outline" asChild><Link to="/register">{t("createListing.createAccount")}</Link></Button>
             </div>
           </CardContent>
         </Card>
@@ -171,23 +179,23 @@ export default function CreateListing() {
 
   const selectedCat = CATEGORIES.find((c) => c.id === category);
   const selectedCond = CONDITIONS.find((c) => c.id === condition);
-  const selectedDur = DURATIONS.find((d) => d.hours === duration);
+  const selectedDur = DURATION_OPTIONS.find((d) => d.hours === duration);
 
   return (
     <div className="min-h-screen bg-background">
       {/* Progress Header */}
       <div className="bg-card border-b border-border">
         <div className="max-w-3xl mx-auto px-4 py-6">
-          <h1 className="text-2xl font-bold mb-1">Create a New Listing</h1>
+          <h1 className="text-2xl font-bold mb-1">{t("createListing.pageTitle")}</h1>
           <p className="text-sm text-muted-foreground mb-4">
-            Fill in the details below to list your item for auction
+            {t("createListing.subtitle")}
           </p>
           <div className="flex items-center gap-2">
-            <Badge variant="default" className="bg-primary text-primary-foreground">1. Item Info</Badge>
+            <Badge variant="default" className="bg-primary text-primary-foreground">{t("createListing.stepItemInfo")}</Badge>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <Badge variant="outline">2. Photos</Badge>
+            <Badge variant="outline">{t("createListing.stepPhotos")}</Badge>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            <Badge variant="outline">3. Review & List</Badge>
+            <Badge variant="outline">{t("createListing.stepReview")}</Badge>
           </div>
         </div>
       </div>
@@ -200,9 +208,9 @@ export default function CreateListing() {
               <div className="flex gap-3">
                 <CreditCard className="h-8 w-8 text-amber-600 shrink-0" />
                 <div>
-                  <p className="font-semibold text-sm">Connect Stripe to get paid</p>
+                  <p className="font-semibold text-sm">{t("createListing.connectStripeTitle")}</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Ramen Anime charges a 5% seller fee and 3% buyer fee on card sales. Connect once to accept payments on all listings.
+                    {t("createListing.connectStripeFees")}
                   </p>
                 </div>
               </div>
@@ -211,7 +219,7 @@ export default function CreateListing() {
                 disabled={connectStripe.isPending}
                 onClick={() => connectStripe.mutate()}
               >
-                {connectStripe.isPending ? "Opening Stripe..." : stripeStatus.connected ? "Finish setup" : "Connect Stripe"}
+                {connectStripe.isPending ? t("createListing.openingStripe") : stripeStatus.connected ? t("createListing.finishSetup") : t("createListing.connectStripe")}
               </Button>
             </CardContent>
           </Card>
@@ -222,8 +230,8 @@ export default function CreateListing() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Camera className="h-5 w-5" />
-              Photos
-              <span className="text-red-500 text-sm">*Required - max 10</span>
+              {t("createListing.images")}
+              <span className="text-red-500 text-sm">{t("createListing.photosRequired")}</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -234,7 +242,7 @@ export default function CreateListing() {
                 className="w-32 h-32 rounded-lg border-2 border-dashed border-border hover:border-primary cursor-pointer flex flex-col items-center justify-center bg-muted/30 transition-colors"
               >
                 <Upload className="h-6 w-6 text-muted-foreground mb-1" />
-                <span className="text-xs text-muted-foreground">Add Photo</span>
+                <span className="text-xs text-muted-foreground">{t("createListing.addPhoto")}</span>
               </div>
 
               {/* Uploaded images */}
@@ -242,7 +250,7 @@ export default function CreateListing() {
                 <div key={i} className="relative w-32 h-32 rounded-lg overflow-hidden border border-border group">
                   <img src={img} alt={`upload-${i}`} className="w-full h-full object-cover" />
                   {i === 0 && (
-                    <Badge className="absolute top-1 left-1 text-[10px] px-1.5 py-0 bg-primary/90">MAIN</Badge>
+                    <Badge className="absolute top-1 left-1 text-[10px] px-1.5 py-0 bg-primary/90">{t("createListing.mainPhoto")}</Badge>
                   )}
                   <button
                     onClick={() => removeImage(i)}
@@ -262,7 +270,7 @@ export default function CreateListing() {
               onChange={handleImageUpload}
             />
             {images.length > 0 && (
-              <p className="text-xs text-muted-foreground mt-2">{images.length}/10 photos uploaded</p>
+              <p className="text-xs text-muted-foreground mt-2">{t("createListing.photosUploaded", { count: images.length })}</p>
             )}
           </CardContent>
         </Card>
@@ -272,7 +280,7 @@ export default function CreateListing() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <FileText className="h-5 w-5" />
-              Item Details
+              {t("createListing.itemDetails")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -280,29 +288,29 @@ export default function CreateListing() {
             {/* Title */}
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">
-                Title <span className="text-red-500">*</span>
+                {t("createListing.item_title")} <span className="text-red-500">*</span>
               </Label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g., One Piece Luffy Gear 5 Figure - Banpresto Ichiban Kuji"
+                placeholder={t("createListing.item_title_ph")}
                 className="h-11"
               />
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>{title.length}/80 characters</span>
+                <span>{t("createListing.charsCount", { count: title.length })}</span>
               </div>
             </div>
 
             {/* Description */}
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Description</Label>
+              <Label className="text-sm font-medium">{t("createListing.description")}</Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your item - include details about condition, packaging, any defects, and shipping preferences..."
+                placeholder={t("createListing.description_ph")}
                 className="min-h-[120px] resize-none"
               />
-              <p className="text-xs text-muted-foreground">{description.length}/5000 characters</p>
+              <p className="text-xs text-muted-foreground">{t("createListing.descCharsCount", { count: description.length })}</p>
             </div>
 
           </CardContent>
@@ -313,7 +321,7 @@ export default function CreateListing() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Tag className="h-5 w-5" />
-              Category <span className="text-red-500">*</span>
+              {t("createListing.category")} <span className="text-red-500">*</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -341,7 +349,7 @@ export default function CreateListing() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <Package className="h-5 w-5" />
-              Condition <span className="text-red-500">*</span>
+              {t("createListing.condition")} <span className="text-red-500">*</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -369,7 +377,7 @@ export default function CreateListing() {
         {/* LISTING TYPE */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Listing Type</CardTitle>
+            <CardTitle className="text-base">{t("createListing.listingType")}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-3">
@@ -382,8 +390,8 @@ export default function CreateListing() {
                 }`}
               >
                 <Clock className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <div className="font-semibold text-sm">Auction</div>
-                <div className="text-xs text-muted-foreground">Buyers place bids</div>
+                <div className="font-semibold text-sm">{t("createListing.auction")}</div>
+                <div className="text-xs text-muted-foreground">{t("createListing.auctionBuyersBid")}</div>
               </button>
               <button
                 onClick={() => setIsAuction(false)}
@@ -394,8 +402,8 @@ export default function CreateListing() {
                 }`}
               >
                 <Tag className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <div className="font-semibold text-sm">Fixed Price</div>
-                <div className="text-xs text-muted-foreground">Immediate purchase</div>
+                <div className="font-semibold text-sm">{t("createListing.fixed_price")}</div>
+                <div className="text-xs text-muted-foreground">{t("createListing.fixedImmediate")}</div>
               </button>
             </div>
           </CardContent>
@@ -406,14 +414,14 @@ export default function CreateListing() {
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
               <span className="text-lg font-bold">$</span>
-              Pricing
+              {t("createListing.pricing")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium">
-                  {isAuction ? "Starting Bid" : "Price"} <span className="text-red-500">*</span>
+                  {isAuction ? t("createListing.startingBid") : t("createListing.price")} <span className="text-red-500">*</span>
                 </Label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
@@ -429,46 +437,54 @@ export default function CreateListing() {
               {isAuction && (
                 <>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Reserve Price</Label>
+                    <Label className="text-sm font-medium">{t("createListing.reservePrice")}</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                       <Input
                         type="number"
                         value={reservePrice}
                         onChange={(e) => setReservePrice(e.target.value)}
-                        placeholder="Optional"
+                        placeholder={t("createListing.optional")}
                         className="pl-7 h-11"
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground">Hidden minimum to sell</p>
+                    <p className="text-xs text-muted-foreground">{t("createListing.reserveHidden")}</p>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Buy It Now</Label>
+                    <Label className="text-sm font-medium">{t("createListing.buyItNow")}</Label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
                       <Input
                         type="number"
                         value={buyNowPrice}
                         onChange={(e) => setBuyNowPrice(e.target.value)}
-                        placeholder="Optional"
+                        placeholder={t("createListing.optional")}
                         className="pl-7 h-11"
                       />
                     </div>
-                    <p className="text-xs text-muted-foreground">Instant purchase price</p>
+                    <p className="text-xs text-muted-foreground">{t("createListing.buyNowInstant")}</p>
                   </div>
                 </>
               )}
             </div>
 
             {listingPriceNum > 0 && jpTaxPreview.data && (
-              <div className="rounded-lg border border-border p-3 text-sm bg-muted/30"><p className="font-medium">Japan tax preview (10%)</p><p className="text-sm text-muted-foreground">VAT {jpTaxPreview.data.vatAmount.toFixed(2)} on {listingPriceNum.toFixed(2)}</p></div>
+              <div className="rounded-lg border border-border p-3 text-sm bg-muted/30">
+                <p className="font-medium">{t("createListing.jpTaxPreview")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("createListing.jpTaxLine", {
+                    vat: jpTaxPreview.data.vatAmount.toFixed(2),
+                    amount: listingPriceNum.toFixed(2),
+                  })}
+                </p>
+              </div>
             )}
 
             {isAuction && (
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Auction Duration</Label>
+                <Label className="text-sm font-medium">{t("createListing.auctionDuration")}</Label>
                 <div className="flex flex-wrap gap-2">
-                  {DURATIONS.map((d) => (
+                  {DURATION_OPTIONS.map((d) => (
                     <button
                       key={d.hours}
                       onClick={() => setDuration(d.hours)}
@@ -478,7 +494,7 @@ export default function CreateListing() {
                           : "border-border bg-card hover:border-primary/40"
                       }`}
                     >
-                      {d.label}
+                      {t(`createListing.${d.key}`)}
                     </button>
                   ))}
                 </div>
@@ -489,32 +505,37 @@ export default function CreateListing() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Shipping & authenticity</CardTitle>
+            <CardTitle className="text-base">{t("createListing.shippingAuthenticity")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {(["envelope", "small", "medium", "large", "oversize"] as const).map((s) => (
                 <button key={s} type="button" onClick={() => setPackageSize(s)} className={`px-3 py-1.5 rounded-lg text-sm border ${packageSize === s ? "border-primary bg-primary/10" : "border-border"}`}>
-                  {s}
+                  {t(`createListing.${PACKAGE_SIZE_KEYS[s]}`)}
                 </button>
               ))}
             </div>
             <div className="flex gap-2">
-              <button type="button" onClick={() => setShippingPayer("buyer")} className={`flex-1 py-2 rounded-lg border text-sm ${shippingPayer === "buyer" ? "border-primary" : ""}`}>Buyer pays shipping</button>
-              <button type="button" onClick={() => setShippingPayer("seller")} className={`flex-1 py-2 rounded-lg border text-sm ${shippingPayer === "seller" ? "border-primary" : ""}`}>Free shipping</button>
+              <button type="button" onClick={() => setShippingPayer("buyer")} className={`flex-1 py-2 rounded-lg border text-sm ${shippingPayer === "buyer" ? "border-primary" : ""}`}>{t("createListing.buyerPaysShipping")}</button>
+              <button type="button" onClick={() => setShippingPayer("seller")} className={`flex-1 py-2 rounded-lg border text-sm ${shippingPayer === "seller" ? "border-primary" : ""}`}>{t("createListing.freeShipping")}</button>
             </div>
             {shippingEstimate.data && (
-              <p className="text-sm text-muted-foreground">Estimated shipping: ${shippingEstimate.data.cost.toFixed(2)} ({shippingEstimate.data.carrierHint})</p>
+              <p className="text-sm text-muted-foreground">
+                {t("createListing.estimatedShipping", {
+                  cost: shippingEstimate.data.cost.toFixed(2),
+                  carrier: shippingEstimate.data.carrierHint,
+                })}
+              </p>
             )}
             {category === "trading-cards" && (
               <div className="grid grid-cols-2 gap-2">
-                <Input placeholder="Set / series" value={cardSet} onChange={(e) => setCardSet(e.target.value)} />
-                <Input placeholder="Grade (PSA 10, raw, etc.)" value={cardGrade} onChange={(e) => setCardGrade(e.target.value)} />
+                <Input placeholder={t("createListing.cardSet")} value={cardSet} onChange={(e) => setCardSet(e.target.value)} />
+                <Input placeholder={t("createListing.cardGrade")} value={cardGrade} onChange={(e) => setCardGrade(e.target.value)} />
               </div>
             )}
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={authenticityDeclared} onChange={(e) => setAuthenticityDeclared(e.target.checked)} />
-              I declare this item is authentic (not bootleg / counterfeit)
+              {t("createListing.authenticityDeclare")}
             </label>
           </CardContent>
         </Card>
@@ -524,25 +545,25 @@ export default function CreateListing() {
           <CardContent className="p-5 space-y-4">
             <h3 className="font-semibold flex items-center gap-2">
               <AlertCircle className="h-4 w-4" />
-              Listing Summary
+              {t("createListing.listingSummary")}
             </h3>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-              <div className="text-muted-foreground">Category</div>
-              <div>{selectedCat ? `${selectedCat.icon} ${selectedCat.name}` : <span className="text-red-500">Not selected</span>}</div>
-              <div className="text-muted-foreground">Condition</div>
-              <div>{selectedCond?.label || <span className="text-red-500">Not selected</span>}</div>
-              <div className="text-muted-foreground">Type</div>
+              <div className="text-muted-foreground">{t("createListing.summaryCategory")}</div>
+              <div>{selectedCat ? `${selectedCat.icon} ${selectedCat.name}` : <span className="text-red-500">{t("createListing.notSelected")}</span>}</div>
+              <div className="text-muted-foreground">{t("createListing.summaryCondition")}</div>
+              <div>{selectedCond?.label || <span className="text-red-500">{t("createListing.notSelected")}</span>}</div>
+              <div className="text-muted-foreground">{t("createListing.summaryType")}</div>
               <div>{isAuction ? t("createListing.auction") : t("createListing.fixed_price")}</div>
-              <div className="text-muted-foreground">{isAuction ? "Starting Bid" : "Price"}</div>
-              <div>{startPrice ? `$${startPrice}` : <span className="text-red-500">Not set</span>}</div>
+              <div className="text-muted-foreground">{isAuction ? t("createListing.startingBid") : t("createListing.price")}</div>
+              <div>{startPrice ? `$${startPrice}` : <span className="text-red-500">{t("createListing.notSet")}</span>}</div>
               {isAuction && (
                 <>
-                  <div className="text-muted-foreground">Duration</div>
-                  <div>{selectedDur?.label}</div>
+                  <div className="text-muted-foreground">{t("createListing.summaryDuration")}</div>
+                  <div>{selectedDur ? t(`createListing.${selectedDur.key}`) : null}</div>
                 </>
               )}
-              <div className="text-muted-foreground">Photos</div>
-              <div>{images.length > 0 ? `${images.length} uploaded` : <span className="text-red-500">None</span>}</div>
+              <div className="text-muted-foreground">{t("createListing.summaryPhotos")}</div>
+              <div>{images.length > 0 ? t("createListing.photosUploadedCount", { count: images.length }) : <span className="text-red-500">{t("createListing.none")}</span>}</div>
             </div>
             <Separator />
             <Button
@@ -551,10 +572,10 @@ export default function CreateListing() {
               className="w-full h-12 text-base font-semibold"
               size="lg"
             >
-              {createMutation.isPending ? "Creating Listing..." : "List My Item"}
+              {createMutation.isPending ? t("createListing.creatingListing") : t("createListing.listMyItem")}
             </Button>
             <p className="text-xs text-center text-muted-foreground">
-              By listing, you agree to our Terms of Service and confirm this item is authentic.
+              {t("createListing.listingLegal")}
             </p>
           </CardContent>
         </Card>

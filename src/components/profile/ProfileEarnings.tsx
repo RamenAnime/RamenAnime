@@ -34,7 +34,7 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
               <CreditCard className="h-8 w-8 shrink-0" style={{ color: accentColor }} />
               <div>
                 <p className="font-semibold text-sm" style={{ color: textColor }}>{t("profile.connectStripe")}</p>
-                <p className="text-xs mt-1 opacity-70" style={{ color: textColor }}>5% seller fee + 3% buyer fee on card sales</p>
+                <p className="text-xs mt-1 opacity-70" style={{ color: textColor }}>{t("earnings.feeNote")}</p>
               </div>
             </div>
             <Button
@@ -43,7 +43,7 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
               disabled={connectStripe.isPending}
               onClick={() => connectStripe.mutate()}
             >
-              {connectStripe.isPending ? "..." : t("profile.connectStripeBtn")}
+              {connectStripe.isPending ? t("earnings.connecting") : t("profile.connectStripeBtn")}
             </Button>
           </CardContent>
         </Card>
@@ -53,19 +53,19 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center text-sm mb-4">
           <div className="rounded-lg border border-white/10 p-3">
             <p className="text-lg font-bold" style={{ color: accentColor }}>{analytics.activeListings}</p>
-            <p className="opacity-70" style={{ color: textColor }}>Active</p>
+            <p className="opacity-70" style={{ color: textColor }}>{t("earnings.active")}</p>
           </div>
           <div className="rounded-lg border border-white/10 p-3">
             <p className="text-lg font-bold" style={{ color: accentColor }}>{analytics.totalViews}</p>
-            <p className="opacity-70" style={{ color: textColor }}>Views</p>
+            <p className="opacity-70" style={{ color: textColor }}>{t("earnings.views")}</p>
           </div>
           <div className="rounded-lg border border-white/10 p-3">
             <p className="text-lg font-bold" style={{ color: accentColor }}>{analytics.totalSales}</p>
-            <p className="opacity-70" style={{ color: textColor }}>Sales</p>
+            <p className="opacity-70" style={{ color: textColor }}>{t("earnings.sales")}</p>
           </div>
           <div className="rounded-lg border border-white/10 p-3">
             <p className="text-lg font-bold" style={{ color: accentColor }}>${analytics.revenue}</p>
-            <p className="opacity-70" style={{ color: textColor }}>Revenue</p>
+            <p className="opacity-70" style={{ color: textColor }}>{t("earnings.revenue")}</p>
           </div>
         </div>
       )}
@@ -92,7 +92,7 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
                     </p>
                     {order.listingId && (
                       <Link to={`/marketplace/${order.listingId}`} className="text-xs hover:underline" style={{ color: accentColor }}>
-                        View listing
+                        {t("earnings.viewListing")}
                       </Link>
                     )}
                   </li>
@@ -123,7 +123,7 @@ export default function ProfileEarnings({ accentColor, textColor }: ProfileEarni
                     </p>
                     {order.listingId && (
                       <Link to={`/marketplace/${order.listingId}`} className="text-xs hover:underline" style={{ color: accentColor }}>
-                        View listing
+                        {t("earnings.viewListing")}
                       </Link>
                     )}
                   </li>

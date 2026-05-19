@@ -25,7 +25,7 @@ import { useEffect } from "react";
         await utils.tos.getStatus.invalidate();
       },
       onError: (err) => {
-        toast.error("Failed to accept terms: " + err.message);
+        toast.error(t("terms.acceptFailed", { message: err.message }));
       },
     });
 
@@ -65,22 +65,16 @@ import { useEffect } from "react";
                   <p className="text-muted-foreground">{t("terms.acceptDesc")}</p>
                 </div>
                 <div className="text-left bg-muted/30 rounded-lg p-4 text-sm text-muted-foreground space-y-2 max-h-64 overflow-y-auto">
-                  <p>By clicking "Accept", you agree to:</p>
+                  <p>{t("terms.acceptIntro")}</p>
                   <ul className="list-disc list-inside space-y-1">
-                    <li>Be at least 13 years of age (18 without parental consent)</li>
-                    <li>Not post hateful, threatening, or explicit content</li>
-                    <li>Not harass or abuse other community members</li>
-                    <li>Not use the service for spam or unsolicited advertising</li>
-                    <li>Respect intellectual property rights</li>
-                    <li>Comply with all applicable laws in your jurisdiction</li>
+                    <li>{t("terms.ruleAge")}</li>
+                    <li>{t("terms.ruleContent")}</li>
+                    <li>{t("terms.ruleHarassment")}</li>
+                    <li>{t("terms.ruleSpam")}</li>
+                    <li>{t("terms.ruleIP")}</li>
+                    <li>{t("terms.ruleLaw")}</li>
                   </ul>
-                  <p className="mt-3">
-                    You also acknowledge our{" "}
-                    <a href="/privacy" className="text-primary underline">Privacy Policy</a>{" "}
-                    and{" "}
-                    <a href="/terms" className="text-primary underline">Terms of Service</a>.
-                    These terms only need to be accepted once per account.
-                  </p>
+                  <p className="mt-3">{t("terms.acceptPrivacy")}</p>
                 </div>
                 <Button
                   className="w-full"
@@ -92,7 +86,7 @@ import { useEffect } from "react";
                   }
                   disabled={acceptMutation.isPending}
                 >
-                  {acceptMutation.isPending ? "Saving..." : "I Accept the Terms of Service"}
+                  {acceptMutation.isPending ? t("terms.saving") : t("terms.acceptBtn")}
                 </Button>
               </CardContent>
             </Card>

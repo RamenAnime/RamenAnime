@@ -74,53 +74,55 @@ interface Order {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const statusConfig: Record<
+function getStatusConfig(t: (key: string) => string): Record<
   OrderStatus,
   { label: string; color: string; icon: React.ReactNode; desc: string }
-> = {
-  pending: {
-    label: "Pending",
-    color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-    icon: <Clock className="w-4 h-4" />,
-    desc: "Awaiting payment",
-  },
-  paid: {
-    label: "Paid",
-    color: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-    icon: <CreditCard className="w-4 h-4" />,
-    desc: "Payment confirmed",
-  },
-  shipped: {
-    label: "Shipped",
-    color: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-    icon: <Truck className="w-4 h-4" />,
-    desc: "In transit",
-  },
-  delivered: {
-    label: "Delivered",
-    color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-    icon: <CheckCircle className="w-4 h-4" />,
-    desc: "Item received",
-  },
-  cancelled: {
-    label: "Cancelled",
-    color: "bg-gray-500/15 text-gray-400 border-gray-500/30",
-    icon: <AlertTriangle className="w-4 h-4" />,
-    desc: "Order cancelled",
-  },
-  disputed: {
-    label: "Disputed",
-    color: "bg-red-500/15 text-red-400 border-red-500/30",
-    icon: <AlertTriangle className="w-4 h-4" />,
-    desc: "Under review",
-  },
-  refunded: {
-    label: "Refunded",
-    color: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-    icon: <Shield className="w-4 h-4" />,
-    desc: "Refund issued",
-  },
-};
+> {
+  return {
+    pending: {
+      label: t("orderDetail.statusPendingLabel"),
+      color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+      icon: <Clock className="w-4 h-4" />,
+      desc: t("orderDetail.statusPendingDesc"),
+    },
+    paid: {
+      label: t("orderDetail.statusPaidLabel"),
+      color: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+      icon: <CreditCard className="w-4 h-4" />,
+      desc: t("orderDetail.statusPaidDesc"),
+    },
+    shipped: {
+      label: t("orderDetail.statusShippedLabel"),
+      color: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+      icon: <Truck className="w-4 h-4" />,
+      desc: t("orderDetail.statusShippedDesc"),
+    },
+    delivered: {
+      label: t("orderDetail.statusDeliveredLabel"),
+      color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      icon: <CheckCircle className="w-4 h-4" />,
+      desc: t("orderDetail.statusDeliveredDesc"),
+    },
+    cancelled: {
+      label: t("orderDetail.statusCancelledLabel"),
+      color: "bg-gray-500/15 text-gray-400 border-gray-500/30",
+      icon: <AlertTriangle className="w-4 h-4" />,
+      desc: t("orderDetail.statusCancelledDesc"),
+    },
+    disputed: {
+      label: t("orderDetail.statusDisputedLabel"),
+      color: "bg-red-500/15 text-red-400 border-red-500/30",
+      icon: <AlertTriangle className="w-4 h-4" />,
+      desc: t("orderDetail.statusDisputedDesc"),
+    },
+    refunded: {
+      label: t("orderDetail.statusRefundedLabel"),
+      color: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+      icon: <Shield className="w-4 h-4" />,
+      desc: t("orderDetail.statusRefundedDesc"),
+    },
+  };
+}
 
 const timelineStatuses: OrderStatus[] = [
   "pending",
@@ -153,7 +155,16 @@ function formatDate(date: Date | string) {
 /*  Sub-components                                                     */
 /* ------------------------------------------------------------------ */
 
-function StatusTimeline({ status, updatedAt }: { status: OrderStatus; updatedAt: Date | string }) {
+function StatusTimeline({
+  status,
+  updatedAt,
+  t,
+}: {
+  status: OrderStatus;
+  updatedAt: Date | string;
+  t: (key: string, opts?: object) => string;
+}) {
+  const statusConfig = getStatusConfig(t);
   const activeIndex = timelineStatuses.indexOf(status);
   const resolvedIndex = activeIndex >= 0 ? activeIndex : -1;
 
@@ -297,7 +308,7 @@ export default function OrderDetail() {
     return (
       <div className="min-h-screen bg-[#111] text-white flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-10 h-10 text-[#d4a853] animate-spin" />
-        <p className="text-sm text-white/40">Loading order details…</p>
+        <p className="text-sm text-white/40">{t("orderDetail.loadingDetails")}</p>
       </div>
     );
   }
@@ -310,9 +321,9 @@ export default function OrderDetail() {
           <AlertTriangle className="w-7 h-7 text-red-400" />
         </div>
         <div className="text-center">
-          <p className="text-lg font-medium text-white/80">Order not found</p>
+          <p className="text-lg font-medium text-white/80">{t("orderDetail.orderNotFound")}</p>
           <p className="text-sm text-white/40 mt-1">
-            The order you’re looking for doesn’t exist or you don’t have access.
+            {t("orderDetail.orderNotFoundDesc")}
           </p>
         </div>
         <Button
@@ -320,7 +331,7 @@ export default function OrderDetail() {
           onClick={() => navigate("/orders")}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Orders
+          {t("orderDetail.backToOrders")}
         </Button>
       </div>
     );
@@ -331,13 +342,13 @@ export default function OrderDetail() {
     return (
       <div className="min-h-screen bg-[#111] text-white flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 text-[#d4a853] animate-spin" />
-        <p className="text-sm text-white/40">Loading order…</p>
+        <p className="text-sm text-white/40">{t("orderDetail.loadingOrder")}</p>
       </div>
     );
   }
 
   const o = order as Order;
-  const cfg = statusConfig[o.status];
+  const cfg = getStatusConfig(t)[o.status];
 
   /* Derive subtotal: total - tax - fees - shipping */
   const total = parseFloat(o.totalAmount) || 0;
@@ -350,7 +361,7 @@ export default function OrderDetail() {
   /* The API returns buyer/seller objects; if neither matches current user, unauthorized */
   /* We use a simple heuristic: if the API returned the order, user is authorized. */
   /* But to show the unauthorized state as requested, we check a flag. */
-  /* Since we don't have auth context here, we skip strict unauthorized UI — */
+  /* Since we don't have auth context here, we skip strict unauthorized UI - */
   /* the API itself would 403. If we reach here, user is authorized. */
 
   const isSellerView = true; // simplified; real app checks auth userId === sellerId
@@ -372,7 +383,7 @@ export default function OrderDetail() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold tracking-tight">
-                Order #{o.orderNumber}
+                {t("orderDetail.orderTitle", { number: o.orderNumber })}
               </h1>
               <Badge
                 variant="outline"
@@ -383,7 +394,7 @@ export default function OrderDetail() {
               </Badge>
             </div>
             <p className="text-xs text-white/40 mt-0.5">
-              Placed on {formatDate(o.createdAt)}
+              {t("orderDetail.placedOn", { date: formatDate(o.createdAt) })}
             </p>
           </div>
         </div>
@@ -392,7 +403,7 @@ export default function OrderDetail() {
         {timelineStatuses.includes(o.status) && (
           <Card className="bg-[#1a1a1a] border-[#2a2a2a] mb-4">
             <CardContent className="p-5">
-              <StatusTimeline status={o.status} updatedAt={o.updatedAt} />
+              <StatusTimeline status={o.status} updatedAt={o.updatedAt} t={t} />
             </CardContent>
           </Card>
         )}
@@ -414,7 +425,7 @@ export default function OrderDetail() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-base font-semibold text-white/90">
-                  {o.listing?.title ?? "Unknown Item"}
+                  {o.listing?.title ?? t("common.unknownItem")}
                 </p>
                 <p className="text-sm text-[#d4a853] font-medium mt-1">
                   {formatCurrency(o.listing?.price ?? "0", o.currency)}
@@ -423,7 +434,7 @@ export default function OrderDetail() {
                   <div className="flex items-center gap-2 mt-2 text-xs text-white/50">
                     <Truck className="w-3.5 h-3.5" />
                     <span>
-                      {o.shippingCarrier ?? "Carrier"}: {o.trackingNumber}
+                      {o.shippingCarrier ?? t("orderDetail.carrier")}: {o.trackingNumber}
                     </span>
                   </div>
                 )}
@@ -437,7 +448,7 @@ export default function OrderDetail() {
           <CardContent className="p-5">
             <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
               <CreditCard className="w-4 h-4 text-[#d4a853]" />
-              Price Breakdown
+              {t("orderDetail.priceBreakdown")}
             </h3>
             <Separator className="bg-[#2a2a2a] mb-2" />
             <PriceRow
@@ -446,7 +457,7 @@ export default function OrderDetail() {
               currency={o.currency}
             />
             {tax > 0 && (
-              <PriceRow label="Tax" amount={o.taxAmount} currency={o.currency} />
+              <PriceRow label={t("orderDetail.tax")} amount={o.taxAmount} currency={o.currency} />
             )}
             {shipping > 0 && (
               <PriceRow
@@ -457,7 +468,7 @@ export default function OrderDetail() {
             )}
             {fee > 0 && (
               <PriceRow
-                label="Service Fee"
+                label={t("orderDetail.serviceFee")}
                 amount={o.feeAmount}
                 currency={o.currency}
               />
@@ -478,7 +489,7 @@ export default function OrderDetail() {
           <CardContent className="p-5">
             <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
               <User className="w-4 h-4 text-[#d4a853]" />
-              People
+              {t("orderDetail.people")}
             </h3>
             <Separator className="bg-[#2a2a2a] mb-3" />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -488,7 +499,7 @@ export default function OrderDetail() {
                     <User className="w-4 h-4 text-[#d4a853]" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white/80">Seller</p>
+                    <p className="text-sm font-medium text-white/80">{t("orderDetail.seller")}</p>
                     <p className="text-xs text-white/40">
                       {o.seller.name ?? o.seller.username}
                     </p>
@@ -501,7 +512,7 @@ export default function OrderDetail() {
                     <User className="w-4 h-4 text-[#d4a853]" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white/80">Buyer</p>
+                    <p className="text-sm font-medium text-white/80">{t("orderDetail.buyer")}</p>
                     <p className="text-xs text-white/40">
                       {o.buyer.name ?? o.buyer.username}
                     </p>
@@ -518,13 +529,13 @@ export default function OrderDetail() {
             <CardContent className="p-5">
               <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#d4a853]" />
-                Shipping
+                {t("orderDetail.shipping")}
               </h3>
               <Separator className="bg-[#2a2a2a] mb-3" />
               <div className="space-y-2 text-sm">
                 {o.shippingCarrier && (
                   <div className="flex items-center justify-between">
-                    <span className="text-white/50">Carrier</span>
+                    <span className="text-white/50">{t("orderDetail.carrier")}</span>
                     <span className="text-white/80 font-medium">
                       {o.shippingCarrier}
                     </span>
@@ -532,7 +543,7 @@ export default function OrderDetail() {
                 )}
                 {o.trackingNumber && (
                   <div className="flex items-center justify-between">
-                    <span className="text-white/50">Tracking Number</span>
+                    <span className="text-white/50">{t("orderDetail.trackingNumber")}</span>
                     <span className="text-white/80 font-medium font-mono">
                       {o.trackingNumber}
                     </span>
@@ -540,7 +551,7 @@ export default function OrderDetail() {
                 )}
                 {!o.shippingCarrier && !o.trackingNumber && (
                   <p className="text-white/40 text-xs">
-                    No tracking details provided.
+                    {t("orderDetail.noTracking")}
                   </p>
                 )}
               </div>
@@ -554,23 +565,23 @@ export default function OrderDetail() {
             <CardContent className="p-5">
               <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
                 <Truck className="w-4 h-4 text-[#d4a853]" />
-                Mark as Shipped
+                {t("orderDetail.markShipped")}
               </h3>
               <Separator className="bg-[#2a2a2a] mb-4" />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/50">Tracking Number</Label>
+                  <Label className="text-xs text-white/50">{t("orderDetail.trackingNumber")}</Label>
                   <Input
-                    placeholder="e.g. 1Z999AA10123456784"
+                    placeholder={t("orderDetail.trackingPlaceholder")}
                     value={trackingNumber}
                     onChange={(e) => setTrackingNumber(e.target.value)}
                     className="bg-[#111] border-[#2a2a2a] text-white placeholder:text-white/20 focus:border-[#d4a853]/50"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-white/50">Carrier</Label>
+                  <Label className="text-xs text-white/50">{t("orderDetail.carrier")}</Label>
                   <Input
-                    placeholder="e.g. UPS, FedEx, USPS"
+                    placeholder={t("orderDetail.carrierPlaceholder")}
                     value={carrier}
                     onChange={(e) => setCarrier(e.target.value)}
                     className="bg-[#111] border-[#2a2a2a] text-white placeholder:text-white/20 focus:border-[#d4a853]/50"
@@ -594,12 +605,12 @@ export default function OrderDetail() {
                 {markShipped.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving…
+                    {t("orderDetail.saving")}
                   </>
                 ) : (
                   <>
                     <Truck className="w-4 h-4 mr-2" />
-                    Mark as Shipped
+                    {t("orderDetail.markShipped")}
                   </>
                 )}
               </Button>
@@ -612,11 +623,11 @@ export default function OrderDetail() {
             <CardContent className="p-5">
               <h3 className="text-sm font-semibold text-white/80 mb-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-[#d4a853]" />
-                Confirm Receipt
+                {t("orderDetail.confirmReceipt")}
               </h3>
               <Separator className="bg-[#2a2a2a] mb-3" />
               <p className="text-xs text-white/40 mb-4">
-                Has your item arrived? Confirm receipt to complete this order.
+                {t("orderDetail.confirmReceiptDesc")}
               </p>
               {receiveError && (
                 <p className="text-xs text-red-400 mb-3">{receiveError}</p>
@@ -629,12 +640,12 @@ export default function OrderDetail() {
                 {markReceived.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving…
+                    {t("orderDetail.saving")}
                   </>
                 ) : (
                   <>
                     <CheckCircle className="w-4 h-4 mr-2" />
-                    Mark as Received
+                    {t("orderDetail.markReceived")}
                   </>
                 )}
               </Button>
@@ -669,10 +680,10 @@ export default function OrderDetail() {
             onClick={() => navigate("/orders")}
           >
             <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-            All Orders
+            {t("orderDetail.allOrders")}
           </Button>
           <p className="text-[10px] text-white/20">
-            Order ID: {o.id} · Updated {formatDate(o.updatedAt)}
+            {t("orderDetail.orderMeta", { id: o.id, date: formatDate(o.updatedAt) })}
           </p>
         </div>
       </div>

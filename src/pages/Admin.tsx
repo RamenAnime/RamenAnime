@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Users, Shield, MessageSquare, ShoppingBag, Heart, BarChart3, Trash2, Crown, X, Check, Ban, Unlock, Eye, CreditCard } from "lucide-react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -54,7 +54,7 @@ export default function Admin() {
   const reviewCopyright = trpc.admin.reviewCopyright.useMutation({
     onSuccess: () => {
       utils.admin.copyrightQueue.invalidate();
-      toast.success("Copyright status updated");
+      toast.success(t("admin.copyrightUpdated"));
     },
     onError: (err) => toast.error(err.message),
   });
@@ -77,11 +77,24 @@ export default function Admin() {
   return (
     <div className="min-h-screen py-8 bg-background">
       <div className="container px-4 md:px-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">{t("admin.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("admin.subtitle")}</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Shield className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">{t("admin.title")}</h1>
+              <p className="text-sm text-muted-foreground">{t("admin.subtitle")}</p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/analytics">{t("admin.analyticsLink")}</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/swarm">{t("admin.swarmLink")}</Link>
+            </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/site-doctor">{t("admin.siteDoctorLink")}</Link>
+            </Button>
           </div>
         </div>
 
@@ -92,7 +105,7 @@ export default function Admin() {
             <TabsTrigger value="posts"><MessageSquare className="h-4 w-4 mr-1" /> {t("admin.forum")}</TabsTrigger>
             <TabsTrigger value="listings"><ShoppingBag className="h-4 w-4 mr-1" /> {t("admin.marketplaceTab")}</TabsTrigger>
             <TabsTrigger value="donations"><Heart className="h-4 w-4 mr-1" /> {t("admin.donations")}</TabsTrigger>
-            <TabsTrigger value="copyright"><Shield className="h-4 w-4 mr-1" /> Copyright</TabsTrigger>
+            <TabsTrigger value="copyright"><Shield className="h-4 w-4 mr-1" /> {t("admin.copyrightTab")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -121,7 +134,7 @@ export default function Admin() {
                 <h2 className="text-lg font-bold mb-4">{t("admin.usersCount", { count: userList?.length ?? 0 })}</h2>
                 <ScrollArea className="h-[60vh]">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">ID</th><th className="pb-2">{t("admin.username")}</th><th className="pb-2">{t("admin.role")}</th><th className="pb-2">TOS</th><th className="pb-2">{t("admin.status")}</th><th className="pb-2">{t("admin.actions")}</th></tr></thead>
+                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">{t("common.id")}</th><th className="pb-2">{t("admin.username")}</th><th className="pb-2">{t("admin.role")}</th><th className="pb-2">{t("admin.tosShort")}</th><th className="pb-2">{t("admin.status")}</th><th className="pb-2">{t("admin.actions")}</th></tr></thead>
                     <tbody>
                       {userList?.map((u: any) => (
                         <tr key={u.id} className={`border-b border-border/50 ${u.isBanned ? "opacity-50" : ""}`}>
@@ -199,13 +212,13 @@ export default function Admin() {
                 <h2 className="text-lg font-bold mb-4">{t("admin.donationsCount", { count: donationList?.length ?? 0 })}</h2>
                 <ScrollArea className="h-[60vh]">
                   <table className="w-full text-sm">
-                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">{t("admin.donor")}</th><th className="pb-2">{t("admin.amount")}</th><th className="pb-2">{t("admin.status")}</th></tr></thead>
+                    <thead><tr className="border-b border-border text-left text-muted-foreground"><th className="pb-2">{t("admin.donor")}</th><th className="pb-2">{t("admin.amount")}</th><th className="pb-2">{t("admin.paymentMethod")}</th></tr></thead>
                     <tbody>
                       {donationList?.map((d: any) => (
                         <tr key={d.id} className="border-b border-border/50">
                           <td className="py-2">{d.donorName ?? t("admin.anonymous")}</td>
                           <td className="py-2 font-medium">{d.amount} {d.currency}</td>
-                          <td className="py-2"><Badge variant={d.paymentStatus === "completed" ? "default" : "secondary"} className="text-xs">{d.paymentStatus}</Badge></td>
+                          <td className="py-2 text-muted-foreground">{d.paymentMethod}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -218,13 +231,13 @@ export default function Admin() {
           <TabsContent value="copyright">
             <Card className="bg-card border-border">
               <CardContent className="p-4">
-                <h2 className="text-lg font-bold mb-4">Copyright review queue</h2>
+                <h2 className="text-lg font-bold mb-4">{t("admin.copyrightQueue")}</h2>
                 <ScrollArea className="h-[60vh]">
                   {copyrightQueue?.map((row: any) => (
                     <div key={row.listing.id} className="border border-border rounded-lg p-4 mb-3">
                       <div className="flex justify-between items-start gap-2 mb-2">
                         <p className="font-medium">{row.listing.title}</p>
-                        <p className="text-xs text-muted-foreground">Seller: {row.seller?.name || row.seller?.email} · Status: {row.listing.copyrightStatus}</p>
+                        <p className="text-xs text-muted-foreground">{t("admin.sellerLabel")}: {row.seller?.name || row.seller?.email} · {t("admin.status")}: {row.listing.copyrightStatus}</p>
                       </div>
                       <ul className="text-xs text-muted-foreground mb-3 list-disc pl-4">
                         {row.scans?.slice(0, 3).map((s: any) => (
@@ -232,12 +245,12 @@ export default function Admin() {
                         ))}
                       </ul>
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => reviewCopyright.mutate({ listingId: row.listing.id, status: "clear" })}>Approve</Button>
-                        <Button size="sm" variant="destructive" onClick={() => reviewCopyright.mutate({ listingId: row.listing.id, status: "rejected" })}>Reject</Button>
+                        <Button size="sm" onClick={() => reviewCopyright.mutate({ listingId: row.listing.id, status: "clear" })}>{t("admin.approve")}</Button>
+                        <Button size="sm" variant="destructive" onClick={() => reviewCopyright.mutate({ listingId: row.listing.id, status: "rejected" })}>{t("admin.reject")}</Button>
                       </div>
                     </div>
                   ))}
-                  {!copyrightQueue?.length && <p className="text-muted-foreground text-sm">No flagged listings.</p>}
+                  {!copyrightQueue?.length && <p className="text-muted-foreground text-sm">{t("admin.noFlaggedListings")}</p>}
                 </ScrollArea>
               </CardContent>
             </Card>

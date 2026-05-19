@@ -44,7 +44,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">{t("contact.responseTime")}</p>
-                  <p className="text-sm text-muted-foreground">Usually within 24 hours</p>
+                  <p className="text-sm text-muted-foreground">{t("contact.responseWithin24h")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -55,7 +55,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <p className="font-medium text-foreground">{t("contact.shippingFrom")}</p>
-                  <p className="text-sm text-muted-foreground">Worldwide from USA</p>
+                  <p className="text-sm text-muted-foreground">{t("contact.shipsWorldwide")}</p>
                 </div>
               </CardContent>
             </Card>
@@ -70,8 +70,8 @@ export default function Contact() {
                       <Input placeholder={t("contact.name")} className="bg-muted/50 border-border/50" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-foreground">Email</label>
-                      <Input type="email" placeholder="your@email.com" className="bg-muted/50 border-border/50" />
+                      <label className="text-sm font-medium text-foreground">{t("contact.emailLabel")}</label>
+                      <Input type="email" placeholder={t("contact.emailPlaceholder")} className="bg-muted/50 border-border/50" />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -84,7 +84,7 @@ export default function Contact() {
                   </div>
                   <Button type="submit" className="bg-primary text-primary-foreground hover:bg-primary/90 w-full sm:w-auto">
                     <Send className="mr-2 h-4 w-4" />
-                    {submitted ? "Message Sent!" : t("contact.sendMessage")}
+                    {submitted ? t("contact.messageSent") : t("contact.sendMessage")}
                   </Button>
                 </form>
               </CardContent>

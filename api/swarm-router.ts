@@ -9,6 +9,7 @@ const swarmState = {
   activeUsers: new Map<string, any>(), // sessionId -> user digest
   lastUpdate: Date.now(),
   totalSharedInsights: 0,
+  alerts: [] as Array<{ id: string; type: string; message: string; severity: string; timestamp: string }>,
 };
 
 // Clean up stale users every 30 seconds
@@ -144,31 +145,23 @@ export const swarmRouter = createRouter({
   // Collective embeddings - aggregate user interests
   collectiveInterests: publicQuery.query(async () => {
     const users = Array.from(swarmState.activeUsers.values());
-    const embeddings = users.map(u => u.embedding).filter(Boolean);
-    
-    if (embeddings.length < 2) return { interests: [], confidence: 0 };
-
-    // Average all embeddings to find collective interest
-    const dimension = embeddings[0].length;
-    const avg = new Array(dimension).fill(0);
-    for (const emb of embeddings) {
-      for (let i = 0; i < dimension; i++) avg[i] += emb[i];
-    }
-    for (let i = 0; i < dimension; i++) avg[i] /= embeddings.length;
-
-    // Decode interests from user categories
     const interests: Record<string, number> = {};
     for (const u of users) {
       if (u.category) interests[u.category] = (interests[u.category] || 0) + 1;
+      else if (u.pagePath?.includes("trading-cards")) interests["trading-cards"] = (interests["trading-cards"] || 0) + 1;
+      else if (u.pagePath?.includes("marketplace")) interests["marketplace"] = (interests["marketplace"] || 0) + 1;
     }
     const sortedInterests = Object.entries(interests)
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .slice(0, 8);
+
+    const embeddings = users.map((u) => u.embedding).filter(Boolean);
+    const signalCount = Math.max(users.length, sortedInterests.length);
 
     return {
       interests: sortedInterests,
-      activeEmbeddings: embeddings.length,
-      confidence: Math.min(1, embeddings.length / 10),
+      activeEmbeddings: embeddings.length || users.length,
+      confidence: Math.min(1, signalCount / 10),
     };
   }),
 
@@ -260,11 +253,20 @@ export const swarmRouter = createRouter({
       severity: z.enum(["info", "warning", "critical"]),
     }))
     .mutation(async ({ input }) => {
-      // In a real system this would push via WebSocket
-      // For now we store in memory and clients poll
-      const alert = { ...input, id: "alert_" + Date.now(), timestamp: new Date().toISOString() };
-      // Store for 5 minutes
-      setTimeout(() => {}, 300000);
-      return { broadcasted: true, recipients: swarmState.activeUsers.size };
+      const alert = {
+        ...input,
+        id: "alert_" + Date.now(),
+        timestamp: new Date().toISOString(),
+      };
+      swarmState.alerts.unshift(alert);
+      if (swarmState.alerts.length > 50) swarmState.alerts.length = 50;
+      setTimeout(() => {
+        swarmState.alerts = swarmState.alerts.filter((a) => a.id !== alert.id);
+      }, 300_000);
+      return { broadcasted: true, recipients: swarmState.activeUsers.size, alertId: alert.id };
     }),
+
+  recentAlerts: publicQuery.query(async () => ({
+    alerts: swarmState.alerts.slice(0, 20),
+  })),
 });

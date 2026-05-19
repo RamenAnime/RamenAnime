@@ -76,46 +76,48 @@ interface Order {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-const statusConfig: Record<
+function getStatusConfig(t: (key: string) => string): Record<
   OrderStatus,
   { label: string; color: string; icon: React.ReactNode }
-> = {
-  pending: {
-    label: t("orders.pending"),
-    color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-    icon: <Clock className="w-3.5 h-3.5" />,
-  },
-  paid: {
-    label: t("orders.paid"),
-    color: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-    icon: <ShoppingBag className="w-3.5 h-3.5" />,
-  },
-  shipped: {
-    label: t("orders.shipped"),
-    color: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-    icon: <Truck className="w-3.5 h-3.5" />,
-  },
-  delivered: {
-    label: t("orders.delivered"),
-    color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-    icon: <CheckCircle className="w-3.5 h-3.5" />,
-  },
-  cancelled: {
-    label: t("orders.cancelled"),
-    color: "bg-gray-500/15 text-gray-400 border-gray-500/30",
-    icon: <AlertTriangle className="w-3.5 h-3.5" />,
-  },
-  disputed: {
-    label: "Disputed",
-    color: "bg-red-500/15 text-red-400 border-red-500/30",
-    icon: <AlertTriangle className="w-3.5 h-3.5" />,
-  },
-  refunded: {
-    label: t("orders.refunded"),
-    color: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-    icon: <Package className="w-3.5 h-3.5" />,
-  },
-};
+> {
+  return {
+    pending: {
+      label: t("orders.pending"),
+      color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+      icon: <Clock className="w-3.5 h-3.5" />,
+    },
+    paid: {
+      label: t("orders.paid"),
+      color: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+      icon: <ShoppingBag className="w-3.5 h-3.5" />,
+    },
+    shipped: {
+      label: t("orders.shipped"),
+      color: "bg-purple-500/15 text-purple-400 border-purple-500/30",
+      icon: <Truck className="w-3.5 h-3.5" />,
+    },
+    delivered: {
+      label: t("orders.delivered"),
+      color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+      icon: <CheckCircle className="w-3.5 h-3.5" />,
+    },
+    cancelled: {
+      label: t("orders.cancelled"),
+      color: "bg-gray-500/15 text-gray-400 border-gray-500/30",
+      icon: <AlertTriangle className="w-3.5 h-3.5" />,
+    },
+    disputed: {
+      label: t("orders.disputed"),
+      color: "bg-red-500/15 text-red-400 border-red-500/30",
+      icon: <AlertTriangle className="w-3.5 h-3.5" />,
+    },
+    refunded: {
+      label: t("orders.refunded"),
+      color: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+      icon: <Package className="w-3.5 h-3.5" />,
+    },
+  };
+}
 
 function formatCurrency(amount: string, currency: string) {
   const num = parseFloat(amount);
@@ -142,11 +144,13 @@ function formatDate(date: Date | string) {
 function OrderCard({
   order,
   onClick,
+  t,
 }: {
   order: Order;
   onClick: (id: number) => void;
+  t: (key: string, opts?: object) => string;
 }) {
-  const cfg = statusConfig[order.status];
+  const cfg = getStatusConfig(t)[order.status];
 
   return (
     <Card
@@ -170,10 +174,10 @@ function OrderCard({
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-white/90 truncate">
-                {order.listing?.title ?? "Unknown Item"}
+                {order.listing?.title ?? t("common.unknownItem")}
               </p>
               <p className="text-xs text-white/40 mt-0.5">
-                Order #{order.orderNumber}
+                {t("orders.orderNumber", { number: order.orderNumber })}
               </p>
               <p className="text-xs text-white/40">
                 {formatDate(order.createdAt)}
@@ -201,18 +205,18 @@ function OrderCard({
           <div className="text-xs text-white/40">
             {order.seller && (
               <span>
-                Seller: <span className="text-white/60">{order.seller.username}</span>
+                {t("orders.sellerLabel")} <span className="text-white/60">{order.seller.username}</span>
               </span>
             )}
             {order.buyer && (
               <span>
-                Buyer: <span className="text-white/60">{order.buyer.username}</span>
+                {t("orders.buyerLabel")} <span className="text-white/60">{order.buyer.username}</span>
               </span>
             )}
           </div>
           <div className="flex items-center gap-1 text-xs text-[#d4a853] opacity-0 group-hover:opacity-100 transition-opacity">
             <Eye className="w-3.5 h-3.5" />
-            View
+            {t("orders.viewOrder")}
           </div>
         </div>
       </CardContent>
@@ -265,10 +269,10 @@ export default function Orders() {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("orders.title")}</h1>
         </div>
         <p className="text-sm text-white/40 ml-12">
-          Track your purchases and sales in one place.
+          {t("orders.pageSubtitle")}
         </p>
       </div>
 
@@ -287,14 +291,14 @@ export default function Orders() {
               className="data-[state=active]:bg-[#d4a853]/15 data-[state=active]:text-[#d4a853] data-[state=active]:shadow-none text-white/60"
             >
               <ShoppingBag className="w-4 h-4 mr-2" />
-              My Purchases
+              {t("orders.myPurchases")}
             </TabsTrigger>
             <TabsTrigger
               value="sales"
               className="data-[state=active]:bg-[#d4a853]/15 data-[state=active]:text-[#d4a853] data-[state=active]:shadow-none text-white/60"
             >
               <Package className="w-4 h-4 mr-2" />
-              My Sales
+              {t("orders.mySales")}
             </TabsTrigger>
           </TabsList>
 
@@ -303,13 +307,13 @@ export default function Orders() {
             {purchasesLoading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <Loader2 className="w-8 h-8 text-[#d4a853] animate-spin" />
-                <p className="text-sm text-white/40">Loading your purchases…</p>
+                <p className="text-sm text-white/40">{t("orders.loadingPurchases")}</p>
               </div>
             ) : purchasesError ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <AlertTriangle className="w-8 h-8 text-red-400" />
                 <p className="text-sm text-white/60">
-                  Failed to load purchases. Please try again.
+                  {t("orders.loadPurchasesError")}
                 </p>
                 <Button
                   variant="outline"
@@ -317,7 +321,7 @@ export default function Orders() {
                   className="border-[#2a2a2a] text-white/70 hover:text-white hover:bg-white/5"
                   onClick={() => window.location.reload()}
                 >
-                  Retry
+                  {t("common.retry")}
                 </Button>
               </div>
             ) : orders.length === 0 ? (
@@ -327,17 +331,17 @@ export default function Orders() {
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-medium text-white/80">
-                    No purchases yet
+                    {t("orders.noPurchases")}
                   </p>
                   <p className="text-sm text-white/40 mt-1 max-w-sm">
-                    When you buy anime collectibles, your orders will appear here.
+                    {t("orders.noPurchasesDesc")}
                   </p>
                 </div>
                 <Button
                   className="bg-[#d4a853] text-black hover:bg-[#c49a4b] font-medium"
                   onClick={() => navigate("/browse")}
                 >
-                  Browse Listings
+                  {t("orders.browseListings")}
                 </Button>
               </div>
             ) : (
@@ -347,6 +351,7 @@ export default function Orders() {
                     key={order.id}
                     order={order}
                     onClick={handleOrderClick}
+                    t={t}
                   />
                 ))}
               </div>
@@ -358,13 +363,13 @@ export default function Orders() {
             {salesLoading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <Loader2 className="w-8 h-8 text-[#d4a853] animate-spin" />
-                <p className="text-sm text-white/40">Loading your sales…</p>
+                <p className="text-sm text-white/40">{t("orders.loadingSales")}</p>
               </div>
             ) : salesError ? (
               <div className="flex flex-col items-center justify-center py-20 gap-3">
                 <AlertTriangle className="w-8 h-8 text-red-400" />
                 <p className="text-sm text-white/60">
-                  Failed to load sales. Please try again.
+                  {t("orders.loadSalesError")}
                 </p>
                 <Button
                   variant="outline"
@@ -372,7 +377,7 @@ export default function Orders() {
                   className="border-[#2a2a2a] text-white/70 hover:text-white hover:bg-white/5"
                   onClick={() => window.location.reload()}
                 >
-                  Retry
+                  {t("common.retry")}
                 </Button>
               </div>
             ) : orders.length === 0 ? (
@@ -382,17 +387,17 @@ export default function Orders() {
                 </div>
                 <div className="text-center">
                   <p className="text-lg font-medium text-white/80">
-                    No sales yet
+                    {t("orders.noSales")}
                   </p>
                   <p className="text-sm text-white/40 mt-1 max-w-sm">
-                    When buyers purchase your listings, your sales will appear here.
+                    {t("orders.noSalesDesc")}
                   </p>
                 </div>
                 <Button
                   className="bg-[#d4a853] text-black hover:bg-[#c49a4b] font-medium"
                   onClick={() => navigate("/sell")}
                 >
-                  Create Listing
+                  {t("orders.createListing")}
                 </Button>
               </div>
             ) : (
@@ -402,6 +407,7 @@ export default function Orders() {
                     key={order.id}
                     order={order}
                     onClick={handleOrderClick}
+                    t={t}
                   />
                 ))}
               </div>

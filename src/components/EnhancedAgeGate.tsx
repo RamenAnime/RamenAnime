@@ -28,7 +28,7 @@ export default function EnhancedAgeGate({ children }: { children: React.ReactNod
   const verifyAge = () => {
     const ageNum = parseInt(age);
     if (isNaN(ageNum) || ageNum < 18) {
-      setError("You must be 18 or older to access this service.");
+      setError(t("ageGate.mustBe18"));
       return;
     }
     submitAge.mutate({ age: ageNum });
@@ -46,7 +46,7 @@ export default function EnhancedAgeGate({ children }: { children: React.ReactNod
                 ラ
               </div>
               <h1 className="text-2xl font-bold text-foreground">{t("ageGate.title")}</h1>
-              <p className="text-sm text-muted-foreground">You must be 18 years or older to access this website.</p>
+              <p className="text-sm text-muted-foreground">{t("ageGate.desc")}</p>
             </div>
 
             {error && (
@@ -57,7 +57,7 @@ export default function EnhancedAgeGate({ children }: { children: React.ReactNod
             )}
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Enter your age</label>
+              <label className="text-sm font-medium text-foreground">{t("ageGate.enterAge")}</label>
               <Input
                 type="number"
                 value={age}
@@ -72,13 +72,15 @@ export default function EnhancedAgeGate({ children }: { children: React.ReactNod
             <div className="flex flex-col gap-3">
               <Button className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={verifyAge} disabled={submitAge.isPending}>
                 <Shield className="mr-2 h-4 w-4" />
-                {submitAge.isPending ? "Verifying..." : "Confirm Age & Continue"}
+                {submitAge.isPending ? t("ageGate.verifying") : t("ageGate.confirmAge")}
               </Button>
-              <Button variant="outline" onClick={() => window.location.href = "https://google.com"}>Exit</Button>
+              <Button variant="outline" onClick={() => { window.location.href = "https://google.com"; }}>
+                {t("ageGate.exit")}
+              </Button>
             </div>
 
             <p className="text-xs text-muted-foreground text-center">
-              By continuing, you confirm you are of legal age in your jurisdiction.
+              {t("ageGate.consentFooter")}
             </p>
           </CardContent>
         </Card>

@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useTranslation } from "react-i18next"
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -65,35 +66,52 @@ function PaginationLink({
   )
 }
 
+type PaginationNavProps = React.ComponentProps<typeof PaginationLink> & {
+  label?: string
+  ariaLabel?: string
+}
+
 function PaginationPrevious({
   className,
+  label,
+  ariaLabel,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) {
+}: PaginationNavProps) {
+  const { t } = useTranslation()
+  const text = label ?? t("common.previous")
+  const aria = ariaLabel ?? text
+
   return (
     <PaginationLink
-      aria-label="Go to previous page"
+      aria-label={aria}
       size="default"
       className={cn("gap-1 px-2.5 sm:pl-2.5", className)}
       {...props}
     >
       <ChevronLeftIcon />
-      <span className="hidden sm:block">Previous</span>
+      <span className="hidden sm:block">{text}</span>
     </PaginationLink>
   )
 }
 
 function PaginationNext({
   className,
+  label,
+  ariaLabel,
   ...props
-}: React.ComponentProps<typeof PaginationLink>) {
+}: PaginationNavProps) {
+  const { t } = useTranslation()
+  const text = label ?? t("common.next")
+  const aria = ariaLabel ?? text
+
   return (
     <PaginationLink
-      aria-label="Go to next page"
+      aria-label={aria}
       size="default"
       className={cn("gap-1 px-2.5 sm:pr-2.5", className)}
       {...props}
     >
-      <span className="hidden sm:block">Next</span>
+      <span className="hidden sm:block">{text}</span>
       <ChevronRightIcon />
     </PaginationLink>
   )
@@ -103,6 +121,8 @@ function PaginationEllipsis({
   className,
   ...props
 }: React.ComponentProps<"span">) {
+  const { t } = useTranslation()
+
   return (
     <span
       aria-hidden
@@ -111,7 +131,7 @@ function PaginationEllipsis({
       {...props}
     >
       <MoreHorizontalIcon className="size-4" />
-      <span className="sr-only">More pages</span>
+      <span className="sr-only">{t("common.morePages")}</span>
     </span>
   )
 }

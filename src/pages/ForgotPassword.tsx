@@ -29,7 +29,7 @@ export default function ForgotPassword() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         <Link to="/login" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
-          <ArrowLeft className="mr-1 h-4 w-4" /> Back to Login
+          <ArrowLeft className="mr-1 h-4 w-4" /> {t("forgotPassword.backToLoginLink")}
         </Link>
         <Card className="bg-card/90 border-border/50 backdrop-blur-sm shadow-2xl">
           <CardHeader className="text-center pb-2">
@@ -37,13 +37,13 @@ export default function ForgotPassword() {
               ラ
             </div>
             <CardTitle className="text-2xl font-bold">{t("forgotPassword.title")}</CardTitle>
-            <p className="text-sm text-muted-foreground">Enter your email and we will send you a reset link.</p>
+            <p className="text-sm text-muted-foreground">{t("forgotPassword.desc")}</p>
           </CardHeader>
           <CardContent className="p-6">
             {submitted ? (
               <div className="text-center space-y-4">
                 <CheckCircle className="h-12 w-12 text-emerald-400 mx-auto" />
-                <p className="text-foreground">Check your email for reset instructions.</p>
+                <p className="text-foreground">{t("forgotPassword.checkEmail")}</p>
                 <Link to="/login">
                   <Button variant="outline" className="mt-2">{t("forgotPassword.backToLogin")}</Button>
                 </Link>
@@ -62,7 +62,7 @@ export default function ForgotPassword() {
                 </div>
                 <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={forgotMutation.isPending}>
                   <Mail className="mr-2 h-4 w-4" />
-                  {forgotMutation.isPending ? "Sending..." : "Send Reset Link"}
+                  {forgotMutation.isPending ? t("forgotPassword.sending") : t("forgotPassword.send")}
                 </Button>
               </form>
             )}

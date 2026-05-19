@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +37,9 @@ export default function Marketplace() {
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [listingType, setListingType] = useState<"all" | "fixed" | "auction">("all");
+  const trackSearch = trpc.analytics.trackSearch.useMutation();
+  const swarmPulse = trpc.swarm.pulse.useMutation();
+  const lastSearchTracked = useRef("");
 
   const formatPrice = (amount: string | number | null | undefined) =>
     format(parseFloat(String(amount ?? "0")));
@@ -48,6 +51,29 @@ export default function Marketplace() {
     limit: 50,
     offset: 0,
   });
+
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2 || q === lastSearchTracked.current) return;
+    const timer = setTimeout(() => {
+      lastSearchTracked.current = q;
+      trackSearch.mutate({
+        query: q,
+        category: activeCategory === "All" ? undefined : activeCategory,
+        resultsCount: listings?.length ?? 0,
+      });
+      const sid = sessionStorage.getItem("ramen_analytics_session");
+      if (sid) {
+        swarmPulse.mutate({
+          sessionId: sid,
+          pagePath: window.location.pathname,
+          searchQuery: q,
+          category: activeCategory === "All" ? undefined : activeCategory,
+        });
+      }
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [searchQuery, activeCategory, listings?.length]);
 
   const categoryLabel = (cat: string) =>
     cat === "All" ? t("marketplace.categories.all") : t(`marketplace.categories.${cat}`, { defaultValue: cat });

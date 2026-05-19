@@ -29,23 +29,23 @@ export default function ResetPassword() {
   });
 
   useEffect(() => {
-    if (!token) setError("Invalid or missing reset token.");
-  }, [token]);
+    if (!token) setError(t("resetPassword.invalidToken"));
+  }, [token, t]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (password !== confirmPassword) { setError(t("resetPassword.passwordsMatch")); return; }
-    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    if (password.length < 8) { setError(t("resetPassword.passwordMinLength")); return; }
     if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/.test(password)) {
-      setError("Password must contain uppercase, lowercase, number, and special character.");
+      setError(t("resetPassword.passwordComplexity"));
       return;
     }
     resetMutation.mutate({ token, newPassword: password });
   };
 
   if (verifyQuery.isLoading) {
-    return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">Verifying token...</p></div>;
+    return <div className="min-h-screen flex items-center justify-center"><p className="text-muted-foreground">{t("resetPassword.verifyingToken")}</p></div>;
   }
 
   if (!verifyQuery.data?.valid) {
@@ -53,8 +53,8 @@ export default function ResetPassword() {
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
         <div className="w-full max-w-md text-center space-y-4">
           <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
-          <h1 className="text-xl font-bold">Invalid or Expired Link</h1>
-          <p className="text-muted-foreground">This password reset link is no longer valid. Please request a new one.</p>
+          <h1 className="text-xl font-bold">{t("resetPassword.invalidLinkTitle")}</h1>
+          <p className="text-muted-foreground">{t("resetPassword.invalidLinkDesc")}</p>
           <Link to="/forgot-password"><Button variant="outline">{t("resetPassword.requestNew")}</Button></Link>
         </div>
       </div>
@@ -65,7 +65,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         <Link to="/login" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
-          <ArrowLeft className="mr-1 h-4 w-4" /> Back to Login
+          <ArrowLeft className="mr-1 h-4 w-4" /> {t("resetPassword.backToLoginLink")}
         </Link>
         <Card className="bg-card/90 border-border/50 backdrop-blur-sm shadow-2xl">
           <CardHeader className="text-center pb-2">
@@ -73,7 +73,7 @@ export default function ResetPassword() {
               ラ
             </div>
             <CardTitle className="text-2xl font-bold">{t("resetPassword.title")}</CardTitle>
-            <p className="text-sm text-muted-foreground">Create a strong password for your account.</p>
+            <p className="text-sm text-muted-foreground">{t("resetPassword.createStrongPassword")}</p>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -86,7 +86,7 @@ export default function ResetPassword() {
               <div className="space-y-2">
                 <Label htmlFor="password">{t("resetPassword.newPassword")}</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Enter new password" required className="bg-muted/50 pr-10" />
+                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("resetPassword.newPasswordPlaceholder")} required className="bg-muted/50 pr-10" />
                   <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
@@ -94,11 +94,11 @@ export default function ResetPassword() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirm">{t("resetPassword.confirmPassword")}</Label>
-                <Input id="confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Confirm new password" required className="bg-muted/50" />
+                <Input id="confirm" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder={t("resetPassword.confirmPasswordPlaceholder")} required className="bg-muted/50" />
               </div>
               <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={resetMutation.isPending}>
                 <KeyRound className="mr-2 h-4 w-4" />
-                {resetMutation.isPending ? "Updating..." : "Update Password"}
+                {resetMutation.isPending ? t("resetPassword.updating") : t("resetPassword.updatePassword")}
               </Button>
             </form>
           </CardContent>

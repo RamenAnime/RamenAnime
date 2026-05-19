@@ -101,6 +101,40 @@ import { runAuctionMaintenance } from "./lib/auction-jobs";
       await db.execute(sql`CREATE TABLE IF NOT EXISTS rate_limit_logs (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, ip_hash VARCHAR(64) NOT NULL, action VARCHAR(50) NOT NULL, createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
       await db.execute(sql`CREATE TABLE IF NOT EXISTS swarm_snapshots (id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, active_users INT NOT NULL DEFAULT 0, page_counts TEXT, country_counts TEXT, captured_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
 
+      // ── Phase 6b: Align legacy analytics columns with Drizzle schema ───────
+      try { await db.execute(sql`ALTER TABLE site_visits ADD COLUMN country VARCHAR(10)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE site_visits ADD COLUMN createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE page_views ADD COLUMN user_id INT`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE page_views ADD COLUMN ip_hash VARCHAR(64)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE page_views ADD COLUMN referrer VARCHAR(500)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE page_views ADD COLUMN user_agent VARCHAR(255)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE page_views ADD COLUMN duration_seconds INT DEFAULT 0`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE page_views ADD COLUMN createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE search_queries ADD COLUMN category VARCHAR(50)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE search_queries ADD COLUMN clicked_listing_id INT`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE user_events ADD COLUMN event_data TEXT`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE user_events ADD COLUMN page_path VARCHAR(255)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE user_events ADD COLUMN ip_hash VARCHAR(64)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE product_views ADD COLUMN view_count INT DEFAULT 1`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE product_views ADD COLUMN last_viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE product_views ADD COLUMN createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE user_sessions ADD COLUMN session_id VARCHAR(64)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE user_sessions ADD COLUMN started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE user_sessions ADD COLUMN page_views INT DEFAULT 0`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE swarm_snapshots ADD COLUMN snapshot_type VARCHAR(50) DEFAULT 'aggregate'`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE swarm_snapshots ADD COLUMN data TEXT`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE swarm_snapshots ADD COLUMN createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP`); } catch (_) {}
+
+      // ── Phase 6c: Donations table (Drizzle schema + payment tracking) ─────
+      try { await db.execute(sql`ALTER TABLE donations ADD COLUMN donor_email VARCHAR(320)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE donations ADD COLUMN country_code VARCHAR(10)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE donations ADD COLUMN payment_method VARCHAR(50) NOT NULL DEFAULT 'other'`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE donations ADD COLUMN payment_status ENUM('pending','completed','failed','refunded') NOT NULL DEFAULT 'pending'`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE donations ADD COLUMN transaction_id VARCHAR(255)`); } catch (_) {}
+      try { await db.execute(sql`ALTER TABLE donations MODIFY COLUMN amount VARCHAR(50) NOT NULL`); } catch (_) {}
+      try { await db.execute(sql`UPDATE donations SET payment_status = 'completed' WHERE payment_status IS NULL OR payment_status = ''`); } catch (_) {}
+      try { await db.execute(sql`DELETE FROM donations WHERE payment_status = 'pending' AND createdAt < NOW() - INTERVAL 1 DAY`); } catch (_) {}
+
       // ── Phase 7: Indexes ───────────────────────────────────────────────────
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`); } catch (_) {}
       try { await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_forum_posts_author ON forum_posts(authorId)`); } catch (_) {}
@@ -194,12 +228,35 @@ const app = new Hono<{ Bindings: HttpBindings }>();
     return c.json({ ok: true, ...result });
   });
 
-  app.use("/api/trpc", async (c) =>
-    fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext })
-  );
-  app.use("/api/trpc/*", async (c) =>
-    fetchRequestHandler({ endpoint: "/api/trpc", req: c.req.raw, router: appRouter, createContext })
-  );
+  const handleTrpc = async (c: HonoContext) => {
+    const response = await fetchRequestHandler({
+      endpoint: "/api/trpc",
+      req: c.req.raw,
+      router: appRouter,
+      createContext,
+      responseMeta({ ctx }) {
+        const headers: Record<string, string | string[]> = {};
+        ctx.resHeaders.forEach((value, key) => {
+          const lower = key.toLowerCase();
+          if (lower === "set-cookie") {
+            const existing = headers[key];
+            headers[key] = existing
+              ? Array.isArray(existing)
+                ? [...existing, value]
+                : [existing, value]
+              : value;
+          } else {
+            headers[key] = value;
+          }
+        });
+        return Object.keys(headers).length ? { headers } : {};
+      },
+    });
+    return response;
+  };
+
+  app.use("/api/trpc", handleTrpc);
+  app.use("/api/trpc/*", handleTrpc);
 
   app.get("/api/run-migration", async (c) => {
       const adminKey = c.req.header("X-Admin-Key");

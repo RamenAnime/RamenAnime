@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router";
 import { trpc } from "@/providers/trpc";
 
 export default function VerifyEmail() {
+  const { t } = useTranslation();
   const [params] = useSearchParams();
   const token = params.get("token");
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
-  const [message, setMessage] = useState("Verifying...");
+  const [message, setMessage] = useState(t("verifyEmail.verifying"));
 
   const verifyQuery = trpc.auth.verifyEmail.useQuery(
     { token: token ?? "" },
@@ -32,9 +34,9 @@ export default function VerifyEmail() {
   useEffect(() => {
     if (!token) {
       setStatus("error");
-      setMessage("Invalid verification link.");
+      setMessage(t("verifyEmail.invalidLink"));
     }
-  }, [token]);
+  }, [token, t]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">

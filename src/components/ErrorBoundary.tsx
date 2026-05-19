@@ -1,7 +1,25 @@
 import { Component, type ReactNode } from "react";
+import i18n from "i18next";
 
 interface Props { children: ReactNode; }
 interface State { hasError: boolean; error?: Error; }
+
+function ErrorFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="text-center space-y-4">
+        <h1 className="text-xl font-bold">{i18n.t("errorBoundary.title")}</h1>
+        <p className="text-muted-foreground">{i18n.t("errorBoundary.body")}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+        >
+          {i18n.t("errorBoundary.refresh")}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
@@ -10,7 +28,6 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   static getDerivedStateFromError(error: Error) {
-    // Log to Site Doctor
     const reports = JSON.parse(localStorage.getItem("ramen_site_errors") || "[]");
     reports.unshift({
       id: "err_" + Date.now().toString(36),
@@ -28,20 +45,7 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      return (
-        <div className="min-h-screen flex items-center justify-center p-4">
-          <div className="text-center space-y-4">
-            <h1 className="text-xl font-bold">Something went wrong</h1>
-            <p className="text-muted-foreground">The error has been logged. Please refresh the page.</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
-      );
+      return <ErrorFallback />;
     }
     return this.props.children;
   }

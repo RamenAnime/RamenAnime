@@ -12,7 +12,10 @@ export const adminRouter = createRouter({
     const [postCount] = await db.select({ count: count() }).from(forumPosts);
     const [commentCount] = await db.select({ count: count() }).from(forumComments);
     const [listingCount] = await db.select({ count: count() }).from(marketplaceListings);
-    const [donationCount] = await db.select({ count: count() }).from(donations);
+    const [donationCount] = await db
+      .select({ count: count() })
+      .from(donations)
+      .where(eq(donations.paymentStatus, "completed"));
     const [friendCount] = await db.select({ count: count() }).from(friends);
     const [geoCount] = await db.select({ count: count() }).from(geoVerifications);
     const [tosCount] = await db.select({ count: count() }).from(tosAcceptances);
@@ -100,7 +103,17 @@ export const adminRouter = createRouter({
 
   listDonations: adminQuery.query(async () => {
     const db = getDb();
-    return db.select().from(donations).orderBy(desc(donations.createdAt));
+    return db
+      .select()
+      .from(donations)
+      .where(eq(donations.paymentStatus, "completed"))
+      .orderBy(desc(donations.createdAt));
+  }),
+
+  purgePendingDonations: adminQuery.mutation(async () => {
+    const db = getDb();
+    await db.delete(donations).where(eq(donations.paymentStatus, "pending"));
+    return { success: true };
   }),
 
   copyrightQueue: adminQuery.query(async () => {

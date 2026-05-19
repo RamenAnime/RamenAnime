@@ -9,6 +9,39 @@ export type TrpcContext = {
   user?: User;
 };
 
+function collectAllowedOrigins(): string[] {
+  const origins = new Set<string>([
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "https://ramenanime.com",
+    "https://www.ramenanime.com",
+  ]);
+  for (const raw of [
+    process.env.SITE_URL,
+    process.env.VITE_SITE_URL,
+    process.env.RENDER_EXTERNAL_URL,
+  ]) {
+    if (!raw) continue;
+    try {
+      const u = new URL(raw);
+      origins.add(u.origin);
+      if (u.hostname.startsWith("www.")) {
+        origins.add(`${u.protocol}//${u.hostname.slice(4)}`);
+      } else {
+        origins.add(`${u.protocol}//www.${u.hostname}`);
+      }
+    } catch {
+      origins.add(raw.replace(/\/$/, ""));
+    }
+  }
+  return [...origins];
+}
+
+function matchesAllowedOrigin(value: string, allowed: string[]): boolean {
+  return allowed.some((host) => value === host || value.startsWith(`${host}/`));
+}
+
 function isValidOrigin(req: Request): boolean {
   const origin = req.headers.get("origin");
   const referer = req.headers.get("referer");
@@ -18,17 +51,14 @@ function isValidOrigin(req: Request): boolean {
     if (req.headers.get("x-requested-with")) return true;
     return false;
   }
-  const allowed = [
-    process.env.SITE_URL ?? "",
-    "https://ramenanime.com",
-    "http://localhost:5173",
-    "http://localhost:3000",
-  ].filter(Boolean);
-  if (origin) {
-    return allowed.some((host) => origin.startsWith(host));
-  }
+  const allowed = collectAllowedOrigins();
+  if (origin) return matchesAllowedOrigin(origin, allowed);
   if (referer) {
-    return allowed.some((host) => referer.startsWith(host));
+    try {
+      return matchesAllowedOrigin(new URL(referer).origin, allowed);
+    } catch {
+      return matchesAllowedOrigin(referer, allowed);
+    }
   }
   return false;
 }

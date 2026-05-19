@@ -6,14 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, UserPlus, LogIn, Eye, EyeOff, AlertCircle, Check, X, KeyRound } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router";
-
 import { toast } from "sonner";
 import { trpc } from "@/providers/trpc";
 
 declare global {
   interface Window {
     grecaptcha?: {
-      render: (id: string, options: any) => number;
+      render: (id: string, options: Record<string, unknown>) => number;
       reset: (id?: number) => void;
       getResponse: (id?: number) => string;
     };
@@ -24,12 +23,13 @@ declare global {
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY || "";
 
 function PasswordRequirements({ password }: { password: string }) {
+  const { t } = useTranslation();
   const reqs = [
-    { label: "At least 8 characters", met: password.length >= 8 },
-    { label: "One uppercase letter", met: /[A-Z]/.test(password) },
-    { label: "One lowercase letter", met: /[a-z]/.test(password) },
-    { label: "One number", met: /\d/.test(password) },
-    { label: "One special character (!@#$% etc.)", met: /[@$!%*?&]/.test(password) },
+    { label: t("login.req1"), met: password.length >= 8 },
+    { label: t("login.req2"), met: /[A-Z]/.test(password) },
+    { label: t("login.req3"), met: /[a-z]/.test(password) },
+    { label: t("login.req4"), met: /\d/.test(password) },
+    { label: t("login.req5"), met: /[@$!%*?&]/.test(password) },
   ];
   return (
     <div className="space-y-1 text-xs">
@@ -47,6 +47,7 @@ export default function Login({ initialMode }: { initialMode?: "login" | "regist
   const navigate = useNavigate();
   const { t } = useTranslation();
   const location = useLocation();
+  const utils = trpc.useUtils();
   const startMode: "login" | "register" = initialMode ?? (location.pathname === "/register" ? "register" : "login");
   const [mode, setMode] = useState<"login" | "register">(startMode);
   const [username, setUsername] = useState("");
@@ -57,13 +58,24 @@ export default function Login({ initialMode }: { initialMode?: "login" | "regist
   const [recaptchaToken, setRecaptchaToken] = useState("");
   const recaptchaWidgetId = useRef<number | null>(null);
 
+  const finishAuth = async (toastKey: string) => {
+    await utils.auth.me.invalidate();
+    try {
+      await utils.auth.me.fetch();
+      toast.success(t(toastKey));
+      navigate("/", { replace: true });
+    } catch {
+      setError(t("login.sessionFailed"));
+    }
+  };
+
   const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: () => { toast.success("Welcome back!"); navigate("/"); },
+    onSuccess: () => void finishAuth("login.welcomeToast"),
     onError: (err) => setError(err.message),
   });
 
   const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: () => { toast.success("Account created! Welcome to ラーメンアニメ."); navigate("/"); },
+    onSuccess: () => void finishAuth("login.registerToast"),
     onError: (err) => setError(err.message),
   });
 
@@ -98,7 +110,7 @@ export default function Login({ initialMode }: { initialMode?: "login" | "regist
     e.preventDefault();
     setError("");
     if (RECAPTCHA_SITE_KEY && !recaptchaToken) {
-      setError("Please complete the CAPTCHA verification.");
+      setError(t("login.captchaRequired"));
       return;
     }
     if (mode === "login") {
@@ -114,7 +126,7 @@ export default function Login({ initialMode }: { initialMode?: "login" | "regist
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
       <div className="w-full max-w-md">
         <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
-          <ArrowLeft className="mr-1 h-4 w-4" /> Back to Home
+          <ArrowLeft className="mr-1 h-4 w-4" /> {t("login.backToHome")}
         </Link>
         <Card className="bg-card/90 border-border/50 backdrop-blur-sm shadow-2xl">
           <CardHeader className="text-center pb-2">
@@ -122,10 +134,10 @@ export default function Login({ initialMode }: { initialMode?: "login" | "regist
               ラ
             </div>
             <CardTitle className="text-2xl font-bold">
-              {mode === "login" ? "Welcome Back" : "Create Account"}
+              {mode === "login" ? t("login.welcomeBack") : t("login.joinTitle")}
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              {mode === "login" ? "Sign in to your ラーメンアニメ account" : "Join the anime community today"}
+              {mode === "login" ? t("login.signInDesc") : t("login.joinDesc")}
             </p>
           </CardHeader>
           <CardContent className="p-6">
@@ -137,20 +149,48 @@ export default function Login({ initialMode }: { initialMode?: "login" | "regist
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
-                <Input id="username" value={username} onChange={(e) => { setUsername(e.target.value); setError(""); }} placeholder="your_username" required className="bg-muted/50" />
+                <Label htmlFor="username">{t("login.username")}</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => { setUsername(e.target.value); setError(""); }}
+                  placeholder={t("login.usernamePlaceholder")}
+                  required
+                  className="bg-muted/50"
+                />
               </div>
               {mode === "register" && (
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email (optional, needed for password recovery)</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(""); }} placeholder="you@example.com" className="bg-muted/50" />
+                  <Label htmlFor="email">{t("login.email")}</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                    placeholder={t("forgotPassword.emailPlaceholder")}
+                    className="bg-muted/50"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("login.emailHint")}</p>
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("login.password")}</Label>
                 <div className="relative">
-                  <Input id="password" type={showPassword ? "text" : "password"} value={password} onChange={(e) => { setPassword(e.target.value); setError(""); }} placeholder="Enter password" required className="bg-muted/50 pr-10" />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                    placeholder={t("login.passwordPlaceholder")}
+                    required
+                    className="bg-muted/50 pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? t("login.hidePassword") : t("login.showPassword")}
+                  >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
@@ -162,8 +202,13 @@ export default function Login({ initialMode }: { initialMode?: "login" | "regist
                 </div>
               )}
               <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
-                {isLoading ? (mode === "login" ? "Signing in..." : "Creating account...") : (
-                  <>{mode === "login" ? <LogIn className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}{mode === "login" ? "Sign In" : "Create Account"}</>
+                {isLoading ? (
+                  mode === "login" ? t("login.signingIn") : t("login.creating")
+                ) : (
+                  <>
+                    {mode === "login" ? <LogIn className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                    {mode === "login" ? t("login.signIn") : t("login.createAccount")}
+                  </>
                 )}
               </Button>
             </form>
@@ -171,17 +216,29 @@ export default function Login({ initialMode }: { initialMode?: "login" | "regist
               {mode === "login" ? (
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">
-                    No account?{" "}
-                    <button onClick={() => { setMode("register"); setError(""); setRecaptchaToken(""); }} className="text-primary hover:underline font-medium">Create one</button>
+                    {t("login.newHere")}{" "}
+                    <button
+                      type="button"
+                      onClick={() => { setMode("register"); setError(""); setRecaptchaToken(""); }}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      {t("login.createAccount")}
+                    </button>
                   </p>
                   <Link to="/forgot-password" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-                    <KeyRound className="mr-1 h-3 w-3" /> Forgot password?
+                    <KeyRound className="mr-1 h-3 w-3" /> {t("login.forgotPassword")}
                   </Link>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Already have an account?{" "}
-                  <button onClick={() => { setMode("login"); setError(""); setRecaptchaToken(""); }} className="text-primary hover:underline font-medium">Sign in</button>
+                  {t("login.alreadyMember")}{" "}
+                  <button
+                    type="button"
+                    onClick={() => { setMode("login"); setError(""); setRecaptchaToken(""); }}
+                    className="text-primary hover:underline font-medium"
+                  >
+                    {t("login.signIn")}
+                  </button>
                 </p>
               )}
             </div>

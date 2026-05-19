@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Heart, Share2, MessageSquare, Gavel, Tag, Zap,
   Clock, Shield, ChevronDown, ChevronUp, TrendingUp,
-  Star, Truck, MapPin, AlertTriangle, Check,
+  Star, Truck, MapPin, AlertTriangle, Check, Eye,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -20,6 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 const isDev = import.meta.env.DEV;
 
 function CountdownTimer({ endTime }: { endTime: string }) {
+  const { t } = useTranslation();
   const [timeLeft, setTimeLeft] = useState("");
 
   useEffect(() => {
@@ -27,7 +28,7 @@ function CountdownTimer({ endTime }: { endTime: string }) {
     const update = () => {
       const now = Date.now();
       const diff = end - now;
-      if (diff <= 0) { setTimeLeft("Ended"); return; }
+      if (diff <= 0) { setTimeLeft(t("common.ended")); return; }
       const days = Math.floor(diff / 86400000);
       const hours = Math.floor((diff % 86400000) / 3600000);
       const mins = Math.floor((diff % 3600000) / 60000);
@@ -37,17 +38,18 @@ function CountdownTimer({ endTime }: { endTime: string }) {
     update();
     const id = setInterval(update, 1000);
     return () => clearInterval(id);
-  }, [endTime]);
+  }, [endTime, t]);
 
   return <span className="font-mono text-lg">{timeLeft}</span>;
 }
 
 function PriceChart({ data }: { data: any[] }) {
+  const { t } = useTranslation();
   if (!data || data.length === 0) return null;
   const max = Math.max(...data.map((d) => d.price));
   return (
     <div className="mt-3 space-y-1">
-      <p className="text-xs text-muted-foreground">Price History</p>
+      <p className="text-xs text-muted-foreground">{t("listing.priceHistory")}</p>
       <div className="flex items-end gap-1 h-16">
         {data.map((d, i) => (
           <div key={i} className="flex-1 bg-primary/30 rounded-t" style={{ height: `${(d.price / max) * 100}%` }} />
@@ -102,6 +104,11 @@ export default function ListingDetail() {
     { enabled: !!user && listingId > 0 && isAuctionListing }
   );
 
+  const { data: liveViewers } = trpc.swarm.listingViewers.useQuery(
+    { listingId },
+    { enabled: listingId > 0, refetchInterval: 5000 }
+  );
+
   const setAutoBid = trpc.marketplace.setAutoBid.useMutation({
     onSuccess: (data) => {
       setProxyMax("");
@@ -122,7 +129,7 @@ export default function ListingDetail() {
       utils.marketplace.getListing.invalidate({ id: listingId });
     }
     if (searchParams.get("deposit") === "success") {
-      toast.success("Bid deposit secured");
+      toast.success(t("listing.depositSecured"));
       setDepositPaid(true);
       utils.marketplace.getDepositInfo.invalidate({ listingId });
     }
@@ -161,7 +168,7 @@ export default function ListingDetail() {
   });
   const markPaid = trpc.order.markPaid.useMutation({
     onSuccess: () => {
-      toast.success("Order marked as paid");
+      toast.success(t("listing.orderMarkedPaid"));
       utils.order.getByListing.invalidate({ listingId });
     },
   });
@@ -208,7 +215,7 @@ export default function ListingDetail() {
       <div className="max-w-6xl mx-auto px-4">
         {/* Breadcrumbs */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-          <Link to="/marketplace" className="hover:text-primary">Marketplace</Link>
+          <Link to="/marketplace" className="hover:text-primary">{t("listing.marketplaceBreadcrumb")}</Link>
           <span>/</span>
           <span className="capitalize">{listing.category}</span>
           <span>/</span>
@@ -237,17 +244,23 @@ export default function ListingDetail() {
                 <Badge variant="outline" className="capitalize">{listing.category}</Badge>
                 <Badge variant="outline" className="capitalize">{listing.condition}</Badge>
                 {listing.copyrightStatus === "clear" && (
-                  <Badge variant="outline" className="border-green-500/30 text-green-500"><Shield className="w-3 h-3 mr-1" />Verified</Badge>
+                  <Badge variant="outline" className="border-green-500/30 text-green-500"><Shield className="w-3 h-3 mr-1" />{t("common.verified")}</Badge>
                 )}
                 {listing.copyrightStatus === "flagged" && (
-                  <Badge variant="outline" className="border-yellow-500/30 text-yellow-500"><AlertTriangle className="w-3 h-3 mr-1" />Review</Badge>
+                  <Badge variant="outline" className="border-yellow-500/30 text-yellow-500"><AlertTriangle className="w-3 h-3 mr-1" />{t("listing.review")}</Badge>
                 )}
-                {isAuction && <Badge className="bg-primary text-primary-foreground"><Gavel className="w-3 h-3 mr-1" />Auction</Badge>}
+                {isAuction && <Badge className="bg-primary text-primary-foreground"><Gavel className="w-3 h-3 mr-1" />{t("listing.auction")}</Badge>}
               </div>
               <h1 className="text-2xl md:text-3xl font-bold">{listing.title}</h1>
               <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                <span>Listed {new Date(listing.createdAt).toLocaleDateString()}</span>
-                <span>{listing.bidCount || 0} bids</span>
+                <span>{t("listing.listedOn", { date: new Date(listing.createdAt).toLocaleDateString() })}</span>
+                <span>{t("listing.bidsCount", { count: listing.bidCount || 0 })}</span>
+                {(liveViewers?.count ?? 0) > 0 && (
+                  <span className="flex items-center gap-1 text-primary">
+                    <Eye className="w-3.5 h-3.5" />
+                    {t("listing.viewingNow", { count: liveViewers!.count })}
+                  </span>
+                )}
               </div>
               <p className="mt-4 text-foreground whitespace-pre-wrap">{listing.description}</p>
               {listing.authenticityDeclared && (
@@ -274,7 +287,7 @@ export default function ListingDetail() {
                   {isAuction ? (
                     <>
                       <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                        {isEnded ? "Final Price" : "Current Bid"}
+                        {isEnded ? t("listing.finalPrice") : t("listing.current_bid")}
                       </p>
                       <p className="text-4xl font-black text-primary">
                         {format(displayBid)}
@@ -284,21 +297,21 @@ export default function ListingDetail() {
                       )}
                       <div className="flex items-center justify-center gap-4 mt-2 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <Zap className="w-3 h-3" />{displayBidCount} bids
+                          <Zap className="w-3 h-3" />{t("listing.bidsCount", { count: displayBidCount })}
                         </span>
-                        {listing.reservePrice && <span>Reserve: ${listing.reservePrice}</span>}
+                        {listing.reservePrice && <span>{t("listing.reserve", { price: listing.reservePrice })}</span>}
                       </div>
                       {isAuction && !isEnded && (
                         <div className="mt-2 text-sm">
                           <Clock className="w-3 h-3 inline mr-1" />
-                          Ends in: <CountdownTimer endTime={String(displayAuctionEnd || new Date().toISOString())} />
+                          {t("listing.ends_in")}: <CountdownTimer endTime={String(displayAuctionEnd || new Date().toISOString())} />
                         </div>
                       )}
                       <PriceChart data={priceHistory} />
                     </>
                   ) : (
                     <>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Price</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">{t("listing.priceLabel")}</p>
                       <p className="text-4xl font-black text-primary">{format(listing.price)}</p>
                     </>
                   )}
@@ -310,9 +323,9 @@ export default function ListingDetail() {
                     <>
                       {depositInfo?.isRequired && !depositPaid && !depositInfo?.held && (
                         <div className="p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20 mb-2">
-                          <p className="text-xs text-yellow-600 mb-1">Deposit Required (5%)</p>
+                          <p className="text-xs text-yellow-600 mb-1">{t("listing.depositRequired")}</p>
                           <Button className="w-full" size="sm" disabled={payDeposit.isPending} onClick={() => payDeposit.mutate({ listingId })}>
-                            {payDeposit.isPending ? "Processing..." : `Pay ${(parseFloat(listing.startPrice || "0") * 0.05).toFixed(2)} Deposit`}
+                            {payDeposit.isPending ? t("listing.processing") : t("listing.payDepositAmount", { amount: (parseFloat(listing.startPrice || "0") * 0.05).toFixed(2) })}
                           </Button>
                         </div>
                       )}
@@ -321,11 +334,11 @@ export default function ListingDetail() {
                           type="number"
                           value={bidAmount}
                           onChange={(e: any) => setBidAmount(e.target.value)}
-                          placeholder="Enter bid"
+                          placeholder={t("listing.enterBid")}
                           className="flex-1"
                         />
                         <Button onClick={() => placeBid.mutate({ listingId, amount: bidAmount, proxyMax: proxyMax || undefined })} disabled={!bidAmount || placeBid.isPending}>
-                          {placeBid.isPending ? "Bidding..." : <><Gavel className="w-4 h-4 mr-1" />Bid</>}
+                          {placeBid.isPending ? t("listing.bidding") : <><Gavel className="w-4 h-4 mr-1" />{t("listing.bid")}</>}
                         </Button>
                       </div>
                       <div className="flex gap-2 items-center">
@@ -354,7 +367,7 @@ export default function ListingDetail() {
                   {!isAuction && (
                     <Link to={`/profile/${listing.sellerId}`}>
                       <Button variant="outline" className="w-full">
-                        <MessageSquare className="w-4 h-4 mr-1" />Contact Seller
+                        <MessageSquare className="w-4 h-4 mr-1" />{t("listing.contact_seller")}
                       </Button>
                     </Link>
                   )}
@@ -362,10 +375,10 @@ export default function ListingDetail() {
                   <div className="flex gap-2">
                     <Button variant="outline" className="flex-1" onClick={() => toggleWatch.mutate({ listingId })}>
                       <Heart className={`w-4 h-4 mr-1 ${isWatching ? "fill-primary text-primary" : ""}`} />
-                      {isWatching ? "Watching" : "Watch"}
+                      {isWatching ? t("listing.watching") : t("listing.watch")}
                     </Button>
                     <Button variant="outline" className="flex-1" onClick={() => navigator.clipboard.writeText(window.location.href)}>
-                      <Share2 className="w-4 h-4 mr-1" />Share
+                      <Share2 className="w-4 h-4 mr-1" />{t("listing.share")}
                     </Button>
                   </div>
 
@@ -437,9 +450,9 @@ export default function ListingDetail() {
                       "bg-muted border-border/50"
                     }`}>
                       <p className="text-sm font-semibold">
-                        {myOrder.status === "paid" && "Payment Received - Awaiting Shipment"}
-                        {myOrder.status === "shipped" && "Shipped - " + (myOrder.trackingNumber || "Tracking info available")}
-                        {myOrder.status === "delivered" && "Delivered - Thank you!"}
+                        {myOrder.status === "paid" && t("listing.paymentAwaitingShipment")}
+                        {myOrder.status === "shipped" && t("listing.shippedTracking", { tracking: myOrder.trackingNumber || t("listing.shippedTrackingFallback") })}
+                        {myOrder.status === "delivered" && t("listing.deliveredThanks")}
                       </p>
                     </div>
                   )}
@@ -457,12 +470,12 @@ export default function ListingDetail() {
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="font-medium text-sm">{listing.seller?.name || "Seller"}</p>
+                    <p className="font-medium text-sm">{listing.seller?.name || t("listing.seller")}</p>
                     <div className="flex items-center gap-1">
                       {[1,2,3,4,5].map((s) => (
                         <Star key={s} className={`w-3 h-3 ${s <= 4 ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
                       ))}
-                      <span className="text-xs text-muted-foreground">(12)</span>
+                      <span className="text-xs text-muted-foreground">{t("listing.ratingCount", { count: 12 })}</span>
                     </div>
                   </div>
                 </div>
@@ -484,9 +497,9 @@ export default function ListingDetail() {
                 <h3 className="font-medium text-sm mb-2">{t("listing.shipping")}</h3>
                 <div className="space-y-1 text-xs text-muted-foreground">
                   {listing.shippingCost ? (
-                    <p>{format(listing.shippingCost)} — {listing.shippingPayer === "seller" ? "Seller pays" : "Buyer pays"}</p>
+                    <p>{format(listing.shippingCost)} - {listing.shippingPayer === "seller" ? t("listing.sellerPays") : t("listing.buyerPays")}</p>
                   ) : (
-                    <p>Contact seller for quote</p>
+                    <p>{t("listing.contactForQuote")}</p>
                   )}
                   <p>{t("listing.paymentDeadline")}</p>
                 </div>
@@ -501,7 +514,7 @@ export default function ListingDetail() {
                   className="w-full bg-muted px-4 py-3 font-semibold flex items-center justify-between text-sm"
                 >
                   <span className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />Bid History ({bids.bids.length})
+                    <TrendingUp className="w-4 h-4" />{t("listing.bidHistoryCount", { count: bids.bids.length })}
                   </span>
                   {showAllBids ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                 </button>
@@ -516,13 +529,13 @@ export default function ListingDetail() {
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-xs font-medium">{bid.bidder?.name || "User"}</p>
+                            <p className="text-xs font-medium">{bid.bidder?.name || t("common.user")}</p>
                             <p className="text-[10px] text-muted-foreground">{new Date(bid.createdAt).toLocaleDateString()}</p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className={`text-sm font-bold ${i === 0 ? "text-primary" : ""}`}>${bid.amount}</p>
-                          {bid.isProxy && <p className="text-[10px] text-muted-foreground">auto</p>}
+                          {bid.isProxy && <p className="text-[10px] text-muted-foreground">{t("common.auto")}</p>}
                         </div>
                       </div>
                     ))}
@@ -536,7 +549,7 @@ export default function ListingDetail() {
         {/* Related Items */}
         {related && related.length > 0 && (
           <div className="mt-12">
-            <h2 className="text-xl font-bold mb-4">Related Items</h2>
+            <h2 className="text-xl font-bold mb-4">{t("listing.related_items")}</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {related.map((item: any) => (
                 <Link key={item.id} to={`/marketplace/${item.id}`} className="group">

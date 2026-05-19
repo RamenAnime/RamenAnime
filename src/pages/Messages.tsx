@@ -110,7 +110,7 @@ export default function Messages() {
                       <div>
                         <p className="font-medium text-sm">{activeThread?.partnerName}</p>
                         <Link to={`/profile/${activePartner}`} className="text-xs text-primary hover:underline">
-                          View profile
+                          {t("messages.viewProfile")}
                         </Link>
                       </div>
                     </div>

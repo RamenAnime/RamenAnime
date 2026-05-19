@@ -12,10 +12,10 @@ import {
   Layers, Search, Plus, Tag, Gavel, Clock, ArrowLeft, ImageIcon, Loader2,
 } from "lucide-react";
 
-function getTimeLeft(endDate: string | null): string {
+function getTimeLeft(endDate: string | null, t: (key: string) => string): string {
   if (!endDate) return "";
   const diff = new Date(endDate).getTime() - Date.now();
-  if (diff <= 0) return "Ended";
+  if (diff <= 0) return t("common.ended");
   const d = Math.floor(diff / 86400000);
   const h = Math.floor((diff % 86400000) / 3600000);
   if (d > 0) return `${d}d ${h}h left`;
@@ -40,7 +40,7 @@ export default function TradingCards() {
     <div className="min-h-screen py-12">
       <div className="container px-4 md:px-6">
         <Link to="/marketplace" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors mb-6">
-          <ArrowLeft className="mr-1 h-4 w-4" /> Marketplace
+          <ArrowLeft className="mr-1 h-4 w-4" /> {t("tradingCards.backMarketplace")}
         </Link>
 
         <div className="text-center mb-10 space-y-4">
@@ -50,11 +50,11 @@ export default function TradingCards() {
             {t("nav.cards")}
           </h1>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Trading cards from the community marketplace. All items are verified authentic and seller-reviewed.
+            {t("tradingCards.subtitle")}
           </p>
           <div className="max-w-md mx-auto relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search cards..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-muted/50" />
+            <Input placeholder={t("tradingCards.searchPlaceholder")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 bg-muted/50" />
           </div>
         </div>
 
@@ -62,7 +62,7 @@ export default function TradingCards() {
           {isAuthenticated && (
             <Link to="/marketplace/create">
               <Button size="sm" className="bg-primary">
-                <Plus className="mr-1 h-4 w-4" /> Sell Cards
+                <Plus className="mr-1 h-4 w-4" /> {t("tradingCards.sellCards")}
               </Button>
             </Link>
           )}
@@ -85,12 +85,12 @@ export default function TradingCards() {
                         <img src={imgs[0]} alt={listing.title} className="w-full h-full object-cover" />
                         {imgs.length > 1 && (
                           <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                            {imgs.length} photos
+                            {t("tradingCards.photosCount", { count: imgs.length })}
                           </div>
                         )}
                         {isAuction && (
                           <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1">
-                            <Gavel className="w-3 h-3" /> Auction
+                            <Gavel className="w-3 h-3" /> {t("common.auction")}
                           </div>
                         )}
                       </div>
@@ -103,7 +103,7 @@ export default function TradingCards() {
                       <div className="flex items-center justify-between">
                         <Badge variant="outline" className="text-xs capitalize">{listing.condition}</Badge>
                         {listing.copyrightStatus === "clear" && (
-                          <Badge variant="outline" className="text-xs text-green-600 border-green-300">Verified</Badge>
+                          <Badge variant="outline" className="text-xs text-green-600 border-green-300">{t("common.verified")}</Badge>
                         )}
                       </div>
                       <h3 className="font-semibold text-foreground line-clamp-2">{listing.title}</h3>
@@ -113,7 +113,7 @@ export default function TradingCards() {
                           <div className="flex items-center justify-between">
                             <span className="font-bold text-primary text-lg">${listing.currentBid || listing.startPrice}</span>
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="w-3 h-3" /> {listing.bidCount || 0} bids
+                              <Clock className="w-3 h-3" /> {t("listing.bidsCount", { count: listing.bidCount || 0 })}
                             </span>
                           </div>
                         ) : (
@@ -124,7 +124,7 @@ export default function TradingCards() {
                         <Avatar className="h-5 w-5">
                           <AvatarFallback className="bg-primary/10 text-primary text-[10px]">{listing.seller?.name?.charAt(0) ?? "U"}</AvatarFallback>
                         </Avatar>
-                        <span>{listing.seller?.name ?? "User"}</span>
+                        <span>{listing.seller?.name ?? t("common.user")}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -136,13 +136,13 @@ export default function TradingCards() {
           <Card className="bg-card/50 border-border/50">
             <CardContent className="p-12 text-center">
               <Layers className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-              <h3 className="text-lg font-medium mb-2">No trading cards listed yet</h3>
+              <h3 className="text-lg font-medium mb-2">{t("tradingCards.emptyTitle")}</h3>
               <p className="text-sm text-muted-foreground mb-4">
-                {isAuthenticated ? "Be the first to sell trading cards!" : "Log in to start selling."}
+                {isAuthenticated ? t("tradingCards.emptyAuthShort") : t("tradingCards.loginToSell")}
               </p>
               {isAuthenticated && (
                 <Link to="/marketplace/create">
-                  <Button><Plus className="mr-1 h-4 w-4" /> List Cards</Button>
+                  <Button><Plus className="mr-1 h-4 w-4" /> {t("tradingCards.listCards")}</Button>
                 </Link>
               )}
             </CardContent>

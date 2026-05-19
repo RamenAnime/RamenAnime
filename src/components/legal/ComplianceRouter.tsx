@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getFrameworkForCountry } from "@/data/legal-frameworks";
 import type { LegalFramework } from "@/data/legal-frameworks";
 
@@ -39,6 +40,7 @@ export function useComplianceFramework() {
 
 // Cookie consent banner (GDPR/ePrivacy compliance)
 export function CookieConsent() {
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   const { framework } = useComplianceFramework();
 
@@ -75,19 +77,15 @@ export function CookieConsent() {
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border p-4 shadow-lg">
       <div className="container mx-auto max-w-4xl flex flex-col md:flex-row items-center gap-4">
         <div className="flex-1 text-sm text-muted-foreground">
-          <p className="font-medium text-foreground mb-1">Cookie Notice</p>
-          <p>
-            We use cookies and similar technologies to provide our services, analyze usage, and improve your experience.
-            Under {framework.privacyLaw}, we require your consent for non-essential cookies.
-            You can manage your preferences at any time.
-          </p>
+          <p className="font-medium text-foreground mb-1">{t("cookies.title")}</p>
+          <p>{t("cookies.body", { law: framework.privacyLaw })}</p>
         </div>
         <div className="flex gap-2 shrink-0">
           <button onClick={acceptEssential} className="px-4 py-2 text-sm border rounded-md hover:bg-muted transition-colors">
-            Essential Only
+            {t("cookies.essentialOnly")}
           </button>
           <button onClick={accept} className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors">
-            Accept All
+            {t("cookies.acceptAll")}
           </button>
         </div>
       </div>

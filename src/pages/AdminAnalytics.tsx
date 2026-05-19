@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
@@ -151,6 +152,7 @@ const CHART_COLORS = [
 ];
 
 export default function AdminAnalytics() {
+  const { t } = useTranslation();
   const { user: me, isAuthenticated } = useAuth();
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: SortDir }>({
@@ -217,7 +219,7 @@ export default function AdminAnalytics() {
       events: u.events,
       productViews: u.productViews,
       lastActive: u.lastActive ? new Date(u.lastActive).toISOString() : "",
-      hasAcceptedTos: u.hasAcceptedTos ? "Yes" : "No",
+      hasAcceptedTos: u.hasAcceptedTos ? t("common.yes") : t("common.no"),
     }));
     exportToCSV(exportData, "users-analytics.csv");
   };
@@ -227,7 +229,7 @@ export default function AdminAnalytics() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="p-6 text-center">
           <p className="text-destructive font-medium">
-            Access denied. Admin only.
+            {t("analytics.accessDenied")}
           </p>
         </Card>
       </div>
@@ -246,10 +248,10 @@ export default function AdminAnalytics() {
           <BarChart3 className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold text-foreground">
-              Analytics Dashboard
+              {t("analytics.title")}
             </h1>
             <p className="text-sm text-muted-foreground">
-              Real-time insights and user behavior
+              {t("analytics.subtitle")}
             </p>
           </div>
         </div>
@@ -257,37 +259,37 @@ export default function AdminAnalytics() {
         {/* Top Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <StatCard
-            label="Total Page Views"
+            label={t("analytics.totalPageViews")}
             value={overview?.totalPageViews ?? 0}
             icon={Eye}
             color="#3b82f6"
           />
           <StatCard
-            label="Today Page Views"
+            label={t("analytics.todayPageViews")}
             value={overview?.todayPageViews ?? 0}
             icon={Eye}
             color="#22c55e"
           />
           <StatCard
-            label="Total Searches"
+            label={t("analytics.totalSearches")}
             value={overview?.totalSearches ?? 0}
             icon={Search}
             color="#a855f7"
           />
           <StatCard
-            label="Total Events"
+            label={t("analytics.totalEvents")}
             value={overview?.totalEvents ?? 0}
             icon={MousePointer}
             color="#f59e0b"
           />
           <StatCard
-            label="Active Sessions (24h)"
+            label={t("analytics.activeSessions")}
             value={overview?.activeSessions ?? 0}
             icon={Clock}
             color="#06b6d4"
           />
           <StatCard
-            label="Unique Visitors (24h)"
+            label={t("analytics.uniqueSessionsToday")}
             value={overview?.uniqueVisitors ?? 0}
             icon={Users}
             color="#ec4899"
@@ -301,7 +303,7 @@ export default function AdminAnalytics() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
-                Hourly Page Views (Last 24h)
+                {t("analytics.hourlyChart")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -311,7 +313,7 @@ export default function AdminAnalytics() {
                 </div>
               ) : hourlyData.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-12">
-                  No hourly data available
+                  {t("analytics.noHourlyData")}
                 </p>
               ) : (
                 <div className="h-64">
@@ -350,7 +352,7 @@ export default function AdminAnalytics() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Eye className="h-5 w-5 text-primary" />
-                Top Pages Today
+                {t("analytics.topPagesToday")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -360,7 +362,7 @@ export default function AdminAnalytics() {
                 </div>
               ) : topPages.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-12">
-                  No page data available
+                  {t("analytics.noPageData")}
                 </p>
               ) : (
                 <div className="h-64">
@@ -410,7 +412,7 @@ export default function AdminAnalytics() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Search className="h-5 w-5 text-primary" />
-                Top Search Terms
+                {t("analytics.topSearchTerms")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -420,7 +422,7 @@ export default function AdminAnalytics() {
                 </div>
               ) : topSearches.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-12">
-                  No search data available
+                  {t("analytics.noSearchData")}
                 </p>
               ) : (
                 <div className="h-64">
@@ -471,7 +473,7 @@ export default function AdminAnalytics() {
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Users Analytics
+              {t("analytics.usersAnalytics")}
             </CardTitle>
             <Button
               size="sm"
@@ -480,7 +482,7 @@ export default function AdminAnalytics() {
               disabled={!usersAnalytics || usersAnalytics.length === 0}
             >
               <Download className="h-4 w-4 mr-1" />
-              Export CSV
+              {t("analytics.exportCsv")}
             </Button>
           </CardHeader>
           <CardContent>
@@ -490,7 +492,7 @@ export default function AdminAnalytics() {
               </div>
             ) : sortedUsers.length === 0 ? (
               <p className="text-muted-foreground text-sm text-center py-12">
-                No user analytics data available
+                {t("analytics.noPageData")}
               </p>
             ) : (
               <ScrollArea className="h-[60vh]">
@@ -498,49 +500,49 @@ export default function AdminAnalytics() {
                   <TableHeader>
                     <TableRow>
                       <SortableHeader
-                        label="Username"
+                        label={t("analytics.colUsername")}
                         sortKey="username"
                         currentSort={sort}
                         onSort={handleSort}
                       />
                       <SortableHeader
-                        label="Email"
+                        label={t("analytics.colEmail")}
                         sortKey="email"
                         currentSort={sort}
                         onSort={handleSort}
                       />
                       <SortableHeader
-                        label="Page Views"
+                        label={t("analytics.colPageViews")}
                         sortKey="pageViews"
                         currentSort={sort}
                         onSort={handleSort}
                       />
                       <SortableHeader
-                        label="Searches"
+                        label={t("analytics.colSearches")}
                         sortKey="searches"
                         currentSort={sort}
                         onSort={handleSort}
                       />
                       <SortableHeader
-                        label="Events"
+                        label={t("analytics.colEvents")}
                         sortKey="events"
                         currentSort={sort}
                         onSort={handleSort}
                       />
                       <SortableHeader
-                        label="Product Views"
+                        label={t("analytics.colProductViews")}
                         sortKey="productViews"
                         currentSort={sort}
                         onSort={handleSort}
                       />
                       <SortableHeader
-                        label="Last Active"
+                        label={t("analytics.colLastActive")}
                         sortKey="lastActive"
                         currentSort={sort}
                         onSort={handleSort}
                       />
                       <SortableHeader
-                        label="TOS"
+                        label={t("analytics.colTos")}
                         sortKey="hasAcceptedTos"
                         currentSort={sort}
                         onSort={handleSort}
@@ -596,21 +598,21 @@ export default function AdminAnalytics() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Target className="h-5 w-5 text-primary" />
-                Top Viewed Categories
+                {t("analytics.trendingPages")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!trends?.categoryViews || trends.categoryViews.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-8">
-                  No category data
+                  {t("analytics.noPageData")}
                 </p>
               ) : (
                 <div className="space-y-3">
                   {trends.categoryViews.map(
                     (cat: { category: string | null; count: number }, i: number) => (
                       <div key={i} className="flex items-center justify-between">
-                        <span className="text-sm font-medium">{cat.category ?? "Uncategorized"}</span>
-                        <Badge variant="secondary">{cat.count} views</Badge>
+                        <span className="text-sm font-medium">{cat.category ?? t("analytics.uncategorized")}</span>
+                        <Badge variant="secondary">{t("analytics.viewsCount", { count: cat.count })}</Badge>
                       </div>
                     )
                   )}
@@ -624,13 +626,13 @@ export default function AdminAnalytics() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <Flame className="h-5 w-5 text-orange-500" />
-                Hot Search Terms
+                {t("analytics.trendingSearches")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!trends?.searchTerms || trends.searchTerms.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-8">
-                  No search trend data
+                  {t("analytics.noSearchData")}
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -638,7 +640,7 @@ export default function AdminAnalytics() {
                     (term: { query: string; count: number }, i: number) => (
                       <div key={i} className="flex items-center justify-between">
                         <span className="text-sm font-medium">{term.query}</span>
-                        <Badge variant="secondary">{term.count} searches</Badge>
+                        <Badge variant="secondary">{t("analytics.searchesCount", { count: term.count })}</Badge>
                       </div>
                     )
                   )}
@@ -652,13 +654,13 @@ export default function AdminAnalytics() {
             <CardHeader className="pb-2">
               <CardTitle className="text-lg flex items-center gap-2">
                 <PackageOpen className="h-5 w-5 text-emerald-500" />
-                Hot Prospects
+                {t("analytics.usersAnalytics")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!trends?.hotProspects || trends.hotProspects.length === 0 ? (
                 <p className="text-muted-foreground text-sm text-center py-8">
-                  No prospect data
+                  {t("analytics.noProducts")}
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -678,9 +680,11 @@ export default function AdminAnalytics() {
                         }
                       >
                         <span className="text-sm font-medium">
-                          User #{prospect.userId ?? "Anonymous"}
+                          {prospect.userId
+                            ? t("analytics.userNumber", { id: prospect.userId })
+                            : t("common.anonymous")}
                         </span>
-                        <Badge variant="outline">{prospect.views} views</Badge>
+                        <Badge variant="outline">{t("analytics.viewsCount", { count: prospect.views })}</Badge>
                       </div>
                     )
                   )}
@@ -700,10 +704,11 @@ export default function AdminAnalytics() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              User Detail
+              {t("analytics.userDetail")}
             </DialogTitle>
             <DialogDescription>
-              {userDetail?.user?.username ?? (selectedUserId ? `User #${selectedUserId}` : "")}
+              {userDetail?.user?.username ??
+                (selectedUserId ? t("analytics.userNumber", { id: selectedUserId }) : "")}
             </DialogDescription>
           </DialogHeader>
 
@@ -713,26 +718,26 @@ export default function AdminAnalytics() {
               {userDetail?.user && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Username</p>
+                    <p className="text-xs text-muted-foreground">{t("analytics.colUsername")}</p>
                     <p className="font-medium">{userDetail.user.username ?? "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Email</p>
+                    <p className="text-xs text-muted-foreground">{t("analytics.colEmail")}</p>
                     <p className="font-medium">{userDetail.user.email ?? "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Role</p>
+                    <p className="text-xs text-muted-foreground">{t("common.user")}</p>
                     <p className="font-medium">{userDetail.user.role ?? "-"}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">TOS Accepted</p>
+                    <p className="text-xs text-muted-foreground">{t("analytics.colTos")}</p>
                     <p className="font-medium">
                       {"hasAcceptedTos" in userDetail.user && userDetail.user.hasAcceptedTos ? (
                         <span className="flex items-center gap-1 text-green-500">
-                          <Check className="h-4 w-4" /> Yes
+                          <Check className="h-4 w-4" /> {t("common.yes")}
                         </span>
                       ) : (
-                        <span className="text-muted-foreground">No</span>
+                        <span className="text-muted-foreground">{t("common.no")}</span>
                       )}
                     </p>
                   </div>
@@ -743,17 +748,17 @@ export default function AdminAnalytics() {
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <Eye className="h-4 w-4 text-blue-500" />
-                  Recent Page Views
+                  {t("analytics.recentPageViews")}
                 </h3>
                 {!userDetail?.views || userDetail.views.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No page views</p>
+                  <p className="text-muted-foreground text-sm">{t("analytics.noPageViews")}</p>
                 ) : (
                   <div className="border border-border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Path</TableHead>
-                          <TableHead>Time</TableHead>
+                          <TableHead>{t("analytics.colPath")}</TableHead>
+                          <TableHead>{t("analytics.colTime")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -782,17 +787,17 @@ export default function AdminAnalytics() {
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <Search className="h-4 w-4 text-purple-500" />
-                  Recent Searches
+                  {t("analytics.recentSearches")}
                 </h3>
                 {!userDetail?.searches || userDetail.searches.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No searches</p>
+                  <p className="text-muted-foreground text-sm">{t("analytics.noSearches")}</p>
                 ) : (
                   <div className="border border-border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Term</TableHead>
-                          <TableHead>Time</TableHead>
+                          <TableHead>{t("analytics.colTerm")}</TableHead>
+                          <TableHead>{t("analytics.colTime")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -821,18 +826,18 @@ export default function AdminAnalytics() {
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <MousePointer className="h-4 w-4 text-amber-500" />
-                  Recent Events
+                  {t("analytics.recentEvents")}
                 </h3>
                 {!userDetail?.events || userDetail.events.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No events</p>
+                  <p className="text-muted-foreground text-sm">{t("analytics.noEvents")}</p>
                 ) : (
                   <div className="border border-border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Event</TableHead>
-                          <TableHead>Details</TableHead>
-                          <TableHead>Time</TableHead>
+                          <TableHead>{t("analytics.colEvent")}</TableHead>
+                          <TableHead>{t("analytics.colDetails")}</TableHead>
+                          <TableHead>{t("analytics.colTime")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -868,20 +873,20 @@ export default function AdminAnalytics() {
               <div>
                 <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
                   <PackageOpen className="h-4 w-4 text-emerald-500" />
-                  Viewed Products
+                  {t("analytics.viewedProducts")}
                 </h3>
                 {!userDetail?.products || userDetail.products.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
-                    No viewed products
+                    {t("analytics.noProducts")}
                   </p>
                 ) : (
                   <div className="border border-border rounded-lg overflow-hidden">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Title</TableHead>
-                          <TableHead>Views</TableHead>
-                          <TableHead>Last Viewed</TableHead>
+                          <TableHead>{t("analytics.colTitle")}</TableHead>
+                          <TableHead>{t("analytics.colViews")}</TableHead>
+                          <TableHead>{t("analytics.colLastViewed")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -897,7 +902,7 @@ export default function AdminAnalytics() {
                           ) => (
                             <TableRow key={i}>
                               <TableCell className="font-medium text-sm">
-                                {p.listing?.title ?? `Product #${p.id}`}
+                                {p.listing?.title ?? t("analytics.productLabel", { id: p.id })}
                               </TableCell>
                               <TableCell>
                                 <Badge variant="secondary">

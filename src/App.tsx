@@ -10,8 +10,7 @@ import Footer from './components/Footer'
 import AIAssistant from './components/AIAssistant'
 import Home from './pages/Home'
 import NotFound from './pages/NotFound'
-import { useVisitTracker } from './hooks/useVisitTracker'
-import { useAnalytics } from './hooks/useAnalytics'
+import { useBehaviorTracking } from './hooks/useBehaviorTracking'
 
 const Prints3D = lazy(() => import('./pages/Prints3D'))
 const TradingCards = lazy(() => import('./pages/TradingCards'))
@@ -41,15 +40,13 @@ const Orders = lazy(() => import('./pages/Orders'))
 const OrderDetail = lazy(() => import('./pages/OrderDetail'))
 
 
-function PageTracker() { useVisitTracker(); return null; }
-
 function AnalyticsTracker() {
   const location = useLocation();
   return <AnalyticsTrackerInner key={location.pathname + location.search} />;
 }
 
 function AnalyticsTrackerInner() {
-  useAnalytics();
+  useBehaviorTracking();
   return null;
 }
 
@@ -69,7 +66,6 @@ export default function App() {
         <div className="min-h-screen flex flex-col bg-background">
           <Navbar />
           <main className="flex-1">
-            <PageTracker />
             <AnalyticsTracker />
             <Suspense fallback={<PageLoader />}>
               <Routes>

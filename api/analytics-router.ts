@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, publicQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
 import { pageViews, searchQueries, userEvents, productViews, userSessions, users, marketplaceListings } from "@db/schema";
-import { eq, desc, count, sql, and, gte, lte } from "drizzle-orm";
+import { eq, desc, count, sql, and, gte } from "drizzle-orm";
 
 function hashIp(ip: string): string {
   let hash = 0;
@@ -42,6 +42,27 @@ export const analyticsRouter = createRouter({
         sessionId,
         duration: input.duration || 0,
       });
+
+      const existingSession = await db.query.userSessions.findFirst({
+        where: eq(userSessions.sessionId, sessionId),
+      });
+      if (!existingSession) {
+        await db.insert(userSessions).values({
+          userId: ctx.user?.id || null,
+          sessionId,
+          ipHash: hashIp(ip),
+          userAgent: userAgent.slice(0, 255),
+          pageViews: 1,
+        });
+      } else {
+        await db
+          .update(userSessions)
+          .set({
+            pageViews: sql`${userSessions.pageViews} + 1`,
+            endedAt: new Date(),
+          })
+          .where(eq(userSessions.id, existingSession.id));
+      }
 
       return { sessionId };
     }),
@@ -91,19 +112,24 @@ export const analyticsRouter = createRouter({
     .input(z.object({ listingId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
+      if (!ctx.user?.id) {
+        await db.insert(productViews).values({
+          userId: null,
+          listingId: input.listingId,
+        });
+        return { success: true };
+      }
       const existing = await db.query.productViews.findFirst({
-        where: and(
-          eq(productViews.userId, ctx.user?.id || 0),
-          eq(productViews.listingId, input.listingId)
-        ),
+        where: and(eq(productViews.userId, ctx.user.id), eq(productViews.listingId, input.listingId)),
       });
       if (existing) {
-        await db.update(productViews)
+        await db
+          .update(productViews)
           .set({ viewCount: sql`${productViews.viewCount} + 1`, lastViewedAt: new Date() })
           .where(eq(productViews.id, existing.id));
       } else {
         await db.insert(productViews).values({
-          userId: ctx.user?.id || null,
+          userId: ctx.user.id,
           listingId: input.listingId,
         });
       }
@@ -121,7 +147,11 @@ export const analyticsRouter = createRouter({
     const [totalSearches] = await db.select({ count: count() }).from(searchQueries);
     const [totalEvents] = await db.select({ count: count() }).from(userEvents);
     const [activeSessions] = await db.select({ count: count() }).from(userSessions).where(gte(userSessions.startedAt, new Date(Date.now() - 24 * 60 * 60 * 1000)));
-    const [uniqueVisitors] = await db.select({ count: count() }).from(pageViews).where(gte(pageViews.createdAt, today));
+    const [uniqueVisitorsRow] = await db
+      .select({ count: sql<number>`count(distinct ${pageViews.sessionId})` })
+      .from(pageViews)
+      .where(and(gte(pageViews.createdAt, today), sql`${pageViews.sessionId} is not null`));
+    const uniqueVisitors = { count: Number(uniqueVisitorsRow?.count ?? 0) };
 
     // Top pages today
     const topPages = await db.select({

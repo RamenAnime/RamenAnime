@@ -1,11 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { trpc } from "@/providers/trpc";
 import { Button } from "@/components/ui/button";
 
 import { Bell, Check, X, MessageSquare, UserPlus, ShoppingBag, Info } from "lucide-react";
 
-const typeIcons: Record<string, any> = {
+const typeIcons: Record<string, typeof Info> = {
   comment: MessageSquare,
   friend_request: UserPlus,
   listing_sold: ShoppingBag,
@@ -13,6 +14,7 @@ const typeIcons: Record<string, any> = {
 };
 
 export function NotificationBell() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { data: notifications } = trpc.notification.list.useQuery();
   const { data: unreadCount } = trpc.notification.unreadCount.useQuery();
@@ -37,7 +39,7 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-md hover:bg-muted transition-colors"
-        aria-label="Notifications"
+        aria-label={t("notifications.ariaLabel")}
       >
         <Bell className="h-5 w-5 text-foreground" />
         {unreadCount ? (
@@ -52,21 +54,21 @@ export function NotificationBell() {
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div className="absolute right-0 mt-2 w-80 bg-card border border-border rounded-lg shadow-lg z-50 overflow-hidden">
             <div className="flex items-center justify-between p-3 border-b border-border">
-              <h3 className="font-semibold text-sm">Notifications</h3>
+              <h3 className="font-semibold text-sm">{t("notifications.title")}</h3>
               {unreadCount ? (
                 <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => markAllRead.mutate()}>
                   <Check className="h-3 w-3 mr-1" />
-                  Mark all read
+                  {t("notifications.markAllRead")}
                 </Button>
               ) : null}
             </div>
             <div className="max-h-80 overflow-y-auto">
               {!notifications?.length ? (
                 <div className="p-6 text-center text-sm text-muted-foreground">
-                  No notifications yet
+                  {t("notifications.empty")}
                 </div>
               ) : (
-                notifications.map((n: any) => {
+                notifications.map((n: { id: number; type: string; title: string; message: string; link?: string; isRead: boolean }) => {
                   const Icon = typeIcons[n.type] ?? Info;
                   return (
                     <div
@@ -85,7 +87,7 @@ export function NotificationBell() {
                             className="text-xs text-primary hover:underline mt-1 inline-block"
                             onClick={() => !n.isRead && markRead.mutate({ id: n.id })}
                           >
-                            View
+                            {t("notifications.view")}
                           </Link>
                         ) : null}
                       </div>
@@ -112,4 +114,3 @@ export function NotificationBell() {
     </div>
   );
 }
-

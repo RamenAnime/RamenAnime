@@ -8,6 +8,7 @@ import {
 } from "@db/schema";
 import { eq, and, desc, sql, count, avg } from "drizzle-orm";
 import { runCopyrightScan } from "./lib/copyright-bot";
+import { moderateListing } from "./lib/moderator";
 import { processBid, setAutoBidMax, getRequiredDeposit } from "./lib/auction-engine";
 import { createAuctionDepositCheckout } from "./lib/stripe-deposit";
 import { estimateShipping, PACKAGE_SIZES } from "./lib/shipping-calculator";
@@ -158,7 +159,16 @@ export const marketplaceRouter = createRouter({
       }
       const [{ id }] = await db.insert(marketplaceListings).values(values).$returningId();
       await ensureSellerProfile(ctx.user.id);
-      try { runCopyrightScan(id, input.title, input.description, input.images || []); } catch {}
+      try {
+        await runCopyrightScan(id, input.title, input.description, input.images || []);
+      } catch (err) {
+        console.error("[copyright-scan]", err);
+      }
+      try {
+        await moderateListing(ctx.user.id, id, input.title, input.description);
+      } catch (err) {
+        console.error("[moderate-listing]", err);
+      }
       return db.query.marketplaceListings.findFirst({
         where: eq(marketplaceListings.id, id), with: { seller: true },
       });

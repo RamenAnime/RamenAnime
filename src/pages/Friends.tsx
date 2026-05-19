@@ -33,15 +33,15 @@ function FriendsContent() {
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-2">
             <Users className="h-7 w-7 text-primary" />
-            Friends
+            {t("friends.title")}
           </h1>
-          <p className="text-sm text-muted-foreground">Manage your connections</p>
+          <p className="text-sm text-muted-foreground">{t("friends.subtitle")}</p>
         </div>
 
         {/* Friend Requests */}
         {!requestsLoading && requests && requests.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Friend Requests</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{t("friends.friendRequests")}</h2>
             <div className="space-y-3">
               {requests.map((req) => (
                 <Card key={req.id} className="bg-card/50 border-border/50">
@@ -60,11 +60,11 @@ function FriendsContent() {
                           to={`/profile/${req.requesterId}`}
                           className="font-medium text-foreground hover:text-primary transition-colors"
                         >
-                          {req.requester?.name ?? "User"}
+                          {req.requester?.name ?? t("common.user")}
                         </Link>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Wants to be friends
+                          {t("friends.wantsToBeFriends")}
                         </p>
                       </div>
                     </div>
@@ -76,7 +76,7 @@ function FriendsContent() {
                         disabled={respondRequest.isPending}
                       >
                         <Check className="h-4 w-4 mr-1" />
-                        Accept
+                        {t("friends.accept")}
                       </Button>
                       <Button
                         size="sm"
@@ -98,7 +98,7 @@ function FriendsContent() {
         {/* Friends List */}
         <div>
           <h2 className="text-lg font-semibold text-foreground mb-4">
-            My Friends {friends && <Badge variant="outline" className="ml-2 border-primary/30 text-primary">{friends.length}</Badge>}
+            {t("friends.myFriends")} {friends && <Badge variant="outline" className="ml-2 border-primary/30 text-primary">{friends.length}</Badge>}
           </h2>
           {friendsLoading ? (
             <div className="space-y-3">
@@ -127,19 +127,19 @@ function FriendsContent() {
                           to={`/profile/${friend.id}`}
                           className="font-medium text-foreground hover:text-primary transition-colors block truncate"
                         >
-                          {friend.name ?? "User"}
+                          {friend.name ?? t("common.user")}
                         </Link>
                         <div className="flex items-center gap-2 mt-1">
                           <Link to={`/profile/${friend.id}`}>
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground hover:text-primary">
                               <UserPlus className="h-3 w-3 mr-1" />
-                              Profile
+                              {t("friends.profile")}
                             </Button>
                           </Link>
                           <Link to="/social">
                             <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-muted-foreground hover:text-primary">
                               <MessageSquare className="h-3 w-3 mr-1" />
-                              Message
+                              {t("friends.message")}
                             </Button>
                           </Link>
                         </div>
@@ -162,13 +162,13 @@ function FriendsContent() {
             <Card className="bg-card/50 border-border/50">
               <CardContent className="p-8 text-center">
                 <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
-                <h3 className="text-lg font-medium text-foreground mb-2">No friends yet</h3>
+                <h3 className="text-lg font-medium text-foreground mb-2">{t("friends.noFriends")}</h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Visit other profiles and send friend requests to connect!
+                  {t("friends.noFriendsHint")}
                 </p>
                 <Link to="/social">
                   <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
-                    Browse Community
+                    {t("friends.browseCommunity")}
                   </Button>
                 </Link>
               </CardContent>

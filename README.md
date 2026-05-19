@@ -16,10 +16,15 @@
 
   <p align="center">
     <a href="https://ramenanime.com">Live Site</a> ·
+    <a href="https://github.com/RamenAnime/RamenAnime-Portfolio">Public Portfolio (for employers)</a> ·
     <a href="#getting-started">Getting Started</a> ·
     <a href="#architecture">Architecture</a> ·
     <a href="#environment-variables">Environment Variables</a> ·
     <a href="#deployment">Deployment</a>
+  </p>
+
+  <p align="center">
+    <sub>Recruiters: if this repository is private, use the <a href="https://github.com/RamenAnime/RamenAnime-Portfolio">RamenAnime-Portfolio</a> repo for architecture and feature documentation.</sub>
   </p>
 
   ---

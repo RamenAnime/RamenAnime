@@ -69,8 +69,8 @@ describe("Copyright Scanning", () => {
     expect(result.matchedTerms).toContain("replica");
   });
 
-  it("flags a listing referencing copyright holders", () => {
-    const result = scanListingText("Bandai card collection", "Full set sample preview not for sale");
+  it("flags a listing with promotional or rights language", () => {
+    const result = scanListingText("Card collection", "Full set sample preview not for sale");
     expect(["flagged", "rejected"]).toContain(result.status);
   });
 });

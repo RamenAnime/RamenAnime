@@ -2,7 +2,7 @@
 
 This tracks what was implemented in code vs what you must configure manually. Full setup steps: [MANUAL_SETUP.md](./MANUAL_SETUP.md).
 
-## Tier 1 - Auction core (Yahoo parity basics)
+## Tier 1 - Auction core
 
 | Item | Status | Notes |
 |------|--------|--------|
@@ -16,7 +16,7 @@ This tracks what was implemented in code vs what you must configure manually. Fu
 | Cron (in-process + HTTP) | Done | 60s interval + `GET /api/cron/auctions` |
 | Shipping estimate matrix | Done | `estimateShipping` on create listing |
 | Stripe checkout | Existing | Configure dashboard (manual) |
-| PayPay / Konbini | Stub | UI shows “coming soon”; integrate via Stripe JP or PayPay API (manual) |
+| Japan local payments | Stub | UI shows “coming soon”; integrate via Stripe JP or a licensed JP PSP (manual) |
 
 ## Tier 2 - Trust and Japan UX
 
@@ -28,7 +28,7 @@ This tracks what was implemented in code vs what you must configure manually. Fu
 | Watchlist ending alerts | Done | On auction close job |
 | Email for outbid/won | Manual | Wire SMTP/Resend in `api/lib/notify.ts` |
 | Live carrier tracking | Partial | Links + estimates; replace `shipping-router` refresh (manual) |
-| Image copyright / bootleg scan | Partial | Text scan only; Vision/TinEye (manual) |
+| Image copyright / bootleg scan | Partial | Text scan only; optional vision/reverse-image APIs (manual) |
 | Real-time messaging | Not done | `message-router` still separate SQL layer; UI stub |
 
 ## Tier 3 - Seller tools and PWA
@@ -51,7 +51,7 @@ This tracks what was implemented in code vs what you must configure manually. Fu
 7. **Private main repo** + public portfolio pin (see `GITHUB_PROFILE_SETUP.md`).
 8. **Japan legal page** when targeting JP buyers (`/legal/tokushoho`).
 9. **Email provider** for transactional mail.
-10. **PayPay/konbini** when you have a PSP contract.
+10. **Japan local payments** when you have a PSP contract.
 
 ## Known limitations
 

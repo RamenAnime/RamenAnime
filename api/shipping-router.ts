@@ -5,14 +5,14 @@ import { packageTracking, orders } from "@db/schema";
 import { eq, desc } from "drizzle-orm";
 
 const CARRIERS = [
-  { code: "japan_post", name: "Japan Post / EMS", region: "JP", trackingUrl: "https://trackings.post.japanpost.jp/services/srv/search/" },
-  { code: "yamato", name: "Kuroneko Yamato", region: "JP", trackingUrl: "https://toi.kuronekoyamato.co.jp/bs/bs" },
-  { code: "sagawa", name: "Sagawa Express", region: "JP", trackingUrl: "https://k2.sagawa-exp.co.jp/p/sagawa/web/okurijosearcheng.jsp" },
-  { code: "dhl", name: "DHL Express", region: "global", trackingUrl: "https://www.dhl.com/en/express/tracking.html" },
-  { code: "fedex", name: "FedEx", region: "global", trackingUrl: "https://www.fedex.com/apps/fedextrack/" },
-  { code: "ups", name: "UPS", region: "global", trackingUrl: "https://www.ups.com/track" },
-  { code: "usps", name: "USPS", region: "US", trackingUrl: "https://tools.usps.com/go/TrackConfirmAction" },
-  { code: "sf_express", name: "SF Express", region: "CN", trackingUrl: "https://www.sf-express.com/us/en/dynamic_function/waybill/" },
+  { code: "japan_post", name: "Domestic post (Japan, EMS)", region: "JP", trackingUrl: "https://trackings.post.japanpost.jp/services/srv/search/" },
+  { code: "yamato", name: "Parcel courier (Japan)", region: "JP", trackingUrl: "https://toi.kuronekoyamato.co.jp/bs/bs" },
+  { code: "sagawa", name: "Express courier (Japan)", region: "JP", trackingUrl: "https://k2.sagawa-exp.co.jp/p/sagawa/web/okurijosearcheng.jsp" },
+  { code: "dhl", name: "International express", region: "global", trackingUrl: "https://www.dhl.com/en/express/tracking.html" },
+  { code: "fedex", name: "International express (alt A)", region: "global", trackingUrl: "https://www.fedex.com/apps/fedextrack/" },
+  { code: "ups", name: "International parcel", region: "global", trackingUrl: "https://www.ups.com/track" },
+  { code: "usps", name: "Domestic post (US)", region: "US", trackingUrl: "https://tools.usps.com/go/TrackConfirmAction" },
+  { code: "sf_express", name: "Express courier (China)", region: "CN", trackingUrl: "https://www.sf-express.com/us/en/dynamic_function/waybill/" },
 ];
 
 export const shippingRouter = createRouter({

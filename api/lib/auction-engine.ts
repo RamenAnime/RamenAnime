@@ -55,7 +55,7 @@ export async function getProxyCeilings(listingId: number): Promise<ProxyBidder[]
   return [...map.entries()].map(([bidderId, maxAmount]) => ({ bidderId, maxAmount }));
 }
 
-/** Yahoo-style second-price proxy resolution among ceilings. */
+/** Second-price proxy resolution among bidder ceilings. */
 export function resolveProxyPrice(
   ceilings: ProxyBidder[],
   startPrice: number
@@ -303,7 +303,7 @@ export async function processBid(input: {
   };
 }
 
-/** Set auto-bid max only (Yahoo 自動入札 style). */
+/** Set auto-bid max only (proxy bidding ceiling). */
 export async function setAutoBidMax(input: {
   listingId: number;
   bidderId: number;

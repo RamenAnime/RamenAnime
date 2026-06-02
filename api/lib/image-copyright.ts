@@ -1,5 +1,5 @@
 /**
- * Optional image copyright checks via Google Cloud Vision and TinEye.
+ * Optional image copyright checks via cloud vision and reverse-image APIs.
  * Set GOOGLE_VISION_API_KEY and/or TINEYE_API_KEY + TINEYE_API_SECRET in env.
  */
 
@@ -67,7 +67,7 @@ async function scanWithVision(imageUrl: string): Promise<ImageScanResult | null>
         status: "clear",
         confidence: 0.9,
         matchedTerms: [],
-        reason: "Vision: no risky labels or stock-photo text detected",
+        reason: "Image scan: no risky labels or stock-photo text detected",
         provider: "google_vision",
       };
     }
@@ -76,7 +76,7 @@ async function scanWithVision(imageUrl: string): Promise<ImageScanResult | null>
       status: rejected ? "rejected" : "flagged",
       confidence: Math.min(0.99, 0.65 + matched.length * 0.08),
       matchedTerms: matched,
-      reason: `Vision: ${matched.slice(0, 5).join("; ")}`,
+      reason: `Image scan: ${matched.slice(0, 5).join("; ")}`,
       provider: "google_vision",
     };
   } catch {
@@ -105,7 +105,7 @@ async function scanWithTinEye(imageUrl: string): Promise<ImageScanResult | null>
         status: "flagged",
         confidence: 0.75,
         matchedTerms: [`tineye_matches:${matches}`],
-        reason: `TinEye found ${matches} similar images online (possible stock/bootleg photo)`,
+        reason: `Reverse image search found ${matches} similar images online (possible stock/bootleg photo)`,
         provider: "tineye",
       };
     }
@@ -113,7 +113,7 @@ async function scanWithTinEye(imageUrl: string): Promise<ImageScanResult | null>
       status: "clear",
       confidence: 0.85,
       matchedTerms: [],
-      reason: `TinEye: ${matches} matches (below threshold)`,
+      reason: `Reverse image search: ${matches} matches (below threshold)`,
       provider: "tineye",
     };
   } catch {

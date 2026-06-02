@@ -5,8 +5,8 @@
  * listing title and description. Image copyright enforcement is NOT implemented.
  * The `imageUrls` parameter is accepted and logged for future expansion but the
  * images themselves are not analyzed (no reverse-image-search, OCR, or stock-photo
- * detection). To add image scanning, integrate a service like Google Vision API
- * or TinEye and call it here.
+ * detection). To add image scanning, integrate a cloud vision or reverse-image API
+ * and call it here.
  */
 
 const PROHIBITED_TERMS = [
@@ -22,10 +22,7 @@ const PROHIBITED_TERMS = [
 ];
 
 const COPYRIGHT_FLAGS = [
-  "Toei Animation", "Sunrise", "Studio Ghibli", "Aniplex", "Crunchyroll",
-  "Funimation", "Viz Media", "Kodansha", "Shueisha", "Shogakukan",
-  "Bandai Namco", "Good Smile Company", "Max Factory", "Kotobukiya",
-  "Square Enix", "Nintendo", "Pokemon Company", "Disney",
+  "unlicensed merchandise", "unauthorized copy", "unofficial merchandise",
   "sample", "preview", "not for sale", "promotional use only", "proof copy",
   "copyright", "trademark", "TM", "(C)", "All Rights Reserved",
 ];

@@ -1,6 +1,6 @@
 # Manual setup guide (things you must do outside the codebase)
 
-This document lists integrations and operations that **cannot** be fully automated in GitHub Actions or by the AI agent. Complete these to reach production quality comparable to Yahoo! Auctions Japan.
+This document lists integrations and operations that **cannot** be fully automated in GitHub Actions or by the AI agent. Complete these to reach production-quality auctions and trust for anime collectibles.
 
 ---
 
@@ -15,13 +15,12 @@ This document lists integrations and operations that **cannot** be fully automat
 | 3 | Webhook endpoint: `https://ramenanime.com/api/stripe/webhook` |
 | 4 | Events: `checkout.session.completed`, `account.updated`, `payment_intent.succeeded`, `payment_intent.payment_failed` |
 
-### PayPay / Konbini (not implemented - UI shows “coming soon”)
+### Japan local payments (not implemented - UI shows “coming soon”)
 
-To match Yahoo! Auctions in Japan you need one of:
+For convenience-store and mobile-wallet checkout in Japan, integrate one of:
 
 - **Stripe Japan** with local payment methods, or  
-- **PayPay for Business** API: https://developer.paypay.ne.jp/  
-- **Komoju** or **GMO Payment Gateway** for konbini payments  
+- A licensed **Japan payment service provider** that supports konbini and mobile wallet rails  
 
 Until integrated, Japanese buyers should use **Stripe card checkout** (works globally).
 
@@ -55,15 +54,9 @@ Implemented at `GET /api/auctions/:listingId/stream`.
 
 ## 4. Shipping carriers (live tracking)
 
-Code includes **Yamato, Sagawa, Japan Post, DHL** links and **estimate matrix** only.
+Code includes **domestic and international carrier** tracking links and an **estimate matrix** only.
 
-For live tracking APIs:
-
-| Carrier | Integration |
-|---------|-------------|
-| Japan Post | [Yu-Pack API](https://www.post.japanpost.jp/) business tools |
-| Yamato | Kuroneko Web API (contract required) |
-| Sagawa | e-コレクト API |
+For live tracking APIs, contract with your chosen carriers and wire their official APIs in `api/shipping-router.ts` (replace simulated `refreshTracking`).
 
 Replace simulated `refreshTracking` in `api/shipping-router.ts` when you have credentials.
 
@@ -85,10 +78,10 @@ For email (recommended):
 
 Current scanner is **text-only** (`api/lib/copyright-bot.ts`).
 
-For Yahoo-level trust on anime goods:
+For stronger trust on anime goods:
 
-- **Google Cloud Vision** safe search + label detection  
-- **TinEye** or custom model for duplicate listing images  
+- A **cloud vision API** for safe search, labels, and OCR on listing photos  
+- A **reverse-image search API** or custom model for duplicate listing images  
 - Manual admin review queue (use Admin dashboard)
 
 ---

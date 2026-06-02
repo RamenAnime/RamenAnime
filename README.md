@@ -31,9 +31,9 @@
 
   ## What is Ramen Anime?
 
-  Ramen Anime is a production-grade marketplace for anime collectors. It provides a dedicated space for fans to buy, sell, and auction trading cards, action figures, 3D prints, apparel, and accessories - with built-in protections that general-purpose platforms like eBay or Mercari do not offer.
+  Ramen Anime is a production-grade marketplace for anime collectors. It provides a dedicated space for fans to buy, sell, and auction trading cards, action figures, 3D prints, apparel, and accessories, with built-in fraud checks, escrow-style protection, and community tools in one place.
 
-  **The problem it solves:** Anime collectibles trading is fragmented across dozens of platforms with no consistent fraud protection, language support, or community standards. Ramen Anime centralizes everything into a single trusted platform with:
+  **The problem it solves:** Anime collectibles trading is often scattered across many sites with inconsistent fraud protection, language support, and community standards. Ramen Anime centralizes buying, selling, auctions, and community features on one trusted platform with:
 
   - Automated counterfeit and copyright scanning on every listing
   - Escrow-style protection for high-value transactions

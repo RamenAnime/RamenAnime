@@ -29,7 +29,7 @@ export const paymentRouter = createRouter({
 
   getPaymentMethods: publicQuery.query(async () => [
     { id: "stripe", name: "Credit Card (Visa/Mastercard/Amex)", icon: "credit-card", regions: ["global"], feePercent: 2.9, feeFixed: 0.30, available: true },
-    { id: "paypay", name: "PayPay (coming soon)", icon: "paypay", regions: ["JP"], feePercent: 1.5, feeFixed: 0, available: false },
+    { id: "paypay", name: "Japan mobile wallet (coming soon)", icon: "paypay", regions: ["JP"], feePercent: 1.5, feeFixed: 0, available: false },
     { id: "konbini", name: "Konbini (coming soon)", icon: "store", regions: ["JP"], feePercent: 2.0, feeFixed: 0, available: false },
     { id: "bank_transfer", name: "Bank transfer (coming soon)", icon: "landmark", regions: ["JP"], feePercent: 0, feeFixed: 0, available: false },
     { id: "escrow", name: "Escrow (held until delivery)", icon: "shield", regions: ["global"], feePercent: 0, feeFixed: 0, available: true },
@@ -38,7 +38,7 @@ export const paymentRouter = createRouter({
   getAvailableMethods: publicQuery.input(z.object({ countryCode: z.string().default("US") })).query(async ({ input }) => {
     const all = [
       { id: "stripe", name: "Credit Card", icon: "credit-card", regions: ["global"], feePercent: 2.9, feeFixed: 0.30 },
-      { id: "paypay", name: "PayPay", icon: "paypay", regions: ["JP"], feePercent: 1.5, feeFixed: 0 },
+      { id: "paypay", name: "Japan mobile wallet", icon: "paypay", regions: ["JP"], feePercent: 1.5, feeFixed: 0 },
       { id: "konbini", name: "Konbini", icon: "store", regions: ["JP"], feePercent: 2.0, feeFixed: 0 },
       { id: "bank_transfer", name: "Bank Transfer", icon: "landmark", regions: ["JP"], feePercent: 0, feeFixed: 0 },
       { id: "escrow", name: "Escrow", icon: "shield", regions: ["global"], feePercent: 3.5, feeFixed: 0 },

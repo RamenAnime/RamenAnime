@@ -26,19 +26,19 @@ const html = `
 
 <h2>3. Image copyright APIs (optional but recommended)</h2>
 <ul>
-<li><code>GOOGLE_VISION_API_KEY</code> - Cloud Vision API for listing photos</li>
-<li><code>TINEYE_API_KEY</code> + <code>TINEYE_API_SECRET</code> - reverse image search</li>
+<li><code>GOOGLE_VISION_API_KEY</code> - cloud vision API for listing photos</li>
+<li><code>TINEYE_API_KEY</code> + <code>TINEYE_API_SECRET</code> - reverse image search API</li>
 <li>Review flagged listings in Admin → Copyright queue</li>
 </ul>
 
 <h2>4. Auction cron backup</h2>
 <p>Every 1-5 min: <code>GET https://ramenanime.com/api/cron/auctions</code> with header <code>X-Admin-Key</code>.</p>
 
-<h2>5. PayPay / Konbini</h2>
-<p>Still “coming soon” in UI until you contract Stripe Japan, PayPay for Business, or Komoju/GMO.</p>
+<h2>5. Japan local payments</h2>
+<p>Still “coming soon” in UI until you contract Stripe Japan or another licensed Japan payment provider.</p>
 
 <h2>6. Carrier live tracking</h2>
-<p>Replace simulated tracking in shipping-router when you have Yamato/Japan Post API credentials.</p>
+<p>Replace simulated tracking in shipping-router when you have domestic carrier API credentials.</p>
 
 <h2>7. Private repo + portfolio</h2>
 <p>Make RamenAnime/RamenAnime private; keep RamenAnime-Portfolio public and pinned on your GitHub profile.</p>

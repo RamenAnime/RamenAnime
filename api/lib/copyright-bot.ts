@@ -16,10 +16,7 @@ const PROHIBITED_TERMS = [
 ];
 
 const COPYRIGHT_FLAGS = [
-  "Toei Animation", "Sunrise", "Studio Ghibli", "Aniplex", "Crunchyroll",
-  "Funimation", "Viz Media", "Kodansha", "Shueisha", "Shogakukan",
-  "Bandai Namco", "Good Smile Company", "Max Factory", "Kotobukiya",
-  "Square Enix", "Nintendo", "Pokemon Company", "Disney",
+  "unlicensed merchandise", "unauthorized copy", "unofficial merchandise",
   "sample", "preview", "not for sale", "promotional use only", "proof copy",
   "copyright", "trademark", "TM", "(C)", "All Rights Reserved",
 ];

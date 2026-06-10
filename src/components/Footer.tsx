@@ -12,9 +12,13 @@ export default function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-xs">
-                ラ
-              </div>
+              <img
+                src="/icon-192.png"
+                alt=""
+                className="w-8 h-8 rounded-full object-cover ring-1 ring-primary/30"
+                width={32}
+                height={32}
+              />
               <span className="font-semibold text-foreground">ラーメンアニメ</span>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed">

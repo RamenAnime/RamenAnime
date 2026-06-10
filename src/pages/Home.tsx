@@ -69,45 +69,50 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0" aria-hidden="true">
-          <img
-            src="/hero-bg.png"
-            alt=""
-            className="w-full h-full object-cover object-center opacity-50"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/55 to-background" />
+      <section className="relative overflow-hidden border-b border-border/40">
+        <div className="absolute inset-0 bg-gradient-dark" aria-hidden="true" />
+        <div className="absolute inset-0 opacity-25" aria-hidden="true">
+          <img src="/hero-bg.png" alt="" className="w-full h-full object-cover object-center" />
         </div>
-        <div className="relative container px-4 py-24 md:py-36 md:px-6 text-center">
-          <div className="mx-auto max-w-3xl space-y-6">
-            <Badge variant="secondary" className="text-xs px-4 py-1.5">
-              <Globe className="w-3 h-3 mr-1" /> {t("home.badge")}
-            </Badge>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-gradient-gold">
-              {t("hero.title")}
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-              {t("hero.subtitle")}
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Link to="/marketplace">
-                <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 px-8">
-                  <Store className="mr-2 h-4 w-4" />
-                  {t("home.browseMarketplace")}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
-              <Link to="/marketplace/new">
-                <Button size="lg" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 px-8">
-                  <Gavel className="mr-2 h-4 w-4" />
-                  {t("home.startSelling")}
-                </Button>
-              </Link>
+        <div className="relative container px-4 py-10 md:py-16 md:px-6">
+          <div className="mx-auto max-w-5xl space-y-8">
+            <div className="rounded-2xl overflow-hidden border border-primary/20 card-glow shadow-2xl shadow-primary/10">
+              <img
+                src="/og-image.png"
+                alt={t("hero.title")}
+                className="w-full h-auto object-cover"
+                width={1200}
+                height={630}
+              />
             </div>
-            <div className="flex items-center justify-center gap-6 pt-4 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-green-500" /> {t("home.authenticityVerified")}</span>
-              <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-primary" /> {t("home.liveAuctionsBadge")}</span>
-              <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-blue-500" /> {t("home.globalShipping")}</span>
+
+            <div className="text-center space-y-6">
+              <Badge variant="secondary" className="text-xs px-4 py-1.5">
+                <Globe className="w-3 h-3 mr-1" /> {t("home.badge")}
+              </Badge>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                {t("hero.subtitle")}
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <Link to="/marketplace">
+                  <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 px-8">
+                    <Store className="mr-2 h-4 w-4" />
+                    {t("home.browseMarketplace")}
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to="/marketplace/new">
+                  <Button size="lg" variant="outline" className="border-primary/30 text-primary hover:bg-primary/10 px-8">
+                    <Gavel className="mr-2 h-4 w-4" />
+                    {t("home.startSelling")}
+                  </Button>
+                </Link>
+              </div>
+              <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3 text-green-500" /> {t("home.authenticityVerified")}</span>
+                <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-primary" /> {t("home.liveAuctionsBadge")}</span>
+                <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-blue-500" /> {t("home.globalShipping")}</span>
+              </div>
             </div>
           </div>
         </div>

@@ -60,9 +60,13 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16">
           {/* Brand */}
           <Link to="/" className="flex items-center gap-2 shrink-0">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-black font-bold text-sm">
-              ラ
-            </div>
+            <img
+              src="/icon-192.png"
+              alt=""
+              className="w-9 h-9 rounded-full object-cover ring-1 ring-primary/30"
+              width={36}
+              height={36}
+            />
             <span className="font-bold text-lg hidden sm:block text-foreground">
               Ramen Anime
             </span>

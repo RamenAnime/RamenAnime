@@ -13,6 +13,7 @@ export default tseslint.config(
       "node_modules",
       "public/**",
       "**/sw.js",
+      ".github/**",
     ],
   },
   js.configs.recommended,

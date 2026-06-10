@@ -42,6 +42,9 @@ const COUNTRY_TO_CURRENCY: Record<string, CurrencyCode> = {
   BR: "BRL",
 };
 
+/** Currencies that are never written with decimal places (yen, won, dong). */
+const ZERO_DECIMAL_CURRENCIES = new Set<CurrencyCode>(["JPY", "KRW", "VND", "IDR", "HUF"]);
+
 const STATIC_RATES: Record<string, number> = {
   USD: 1, EUR: 0.92, JPY: 150.5, GBP: 0.79, CAD: 1.35, AUD: 1.52,
   NZD: 1.62, MXN: 17.1, BRL: 4.95, KRW: 1330, CNY: 7.2, HKD: 7.82,
@@ -98,13 +101,14 @@ export function useCurrency() {
   const format = useCallback((usdAmount: number, targetCode: CurrencyCode = currencyCode): string => {
     const converted = convert(usdAmount, targetCode);
     const locale = getLocaleForCurrency(targetCode);
+    const maxDigits = ZERO_DECIMAL_CURRENCIES.has(targetCode) ? 0 : 2;
     try {
       return new Intl.NumberFormat(locale, {
         style: "currency", currency: targetCode,
-        minimumFractionDigits: 0, maximumFractionDigits: 2,
+        minimumFractionDigits: 0, maximumFractionDigits: maxDigits,
       }).format(converted);
     } catch {
-      return `${targetCode} ${converted.toFixed(2)}`;
+      return `${targetCode} ${converted.toFixed(maxDigits)}`;
     }
   }, [currencyCode, convert]);
 

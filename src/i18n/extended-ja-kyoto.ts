@@ -37,9 +37,25 @@ export const extendedJaKyoto = {
   errors: {
     generic: "問題が起きたみたい。もう一回試してな。",
   },
+  trust: {
+    title: "安心してお買い物してな",
+    subtitle: "日本でも世界でも、すべての注文に買い手と売り手の保護があるんよ",
+    escrowTitle: "エスクロー保護",
+    escrowDesc: "高額注文は、お届け確認まで代金をお預かりするんやで。",
+    authenticityTitle: "真贋スキャン",
+    authenticityDesc: "出品は公開前に偽物チェックを通してるんよ。",
+    bilingualTitle: "日本語 + English",
+    bilingualDesc: "日本語と英語に完全対応、合わせて35言語使えるで。",
+    legalTitle: "法令遵守",
+    legalDesc: "利用規約、プライバシーポリシー、特定商取引法の表記もちゃんとあるさかい。",
+    statLanguages: "対応言語",
+    statScanning: "出品スキャン",
+    tokushohoLink: "特定商取引法に基づく表記",
+  },
   footer: {
     donate: "寄付",
     privacy: "プライバシーポリシー",
+    tokushoho: "特定商取引法に基づく表記",
     verifiedSeller: "認証済み出品者",
   },
   notFound: {

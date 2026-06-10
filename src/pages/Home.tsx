@@ -74,9 +74,13 @@ export default function Home() {
       <BetaBanner />
 
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0">
-          <img src="/hero-bg.jpg" alt="" className="w-full h-full object-cover opacity-60" />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background" />
+        <div className="absolute inset-0" aria-hidden="true">
+          {/* Pure-CSS hero backdrop: /hero-bg.jpg did not exist, so the image was a broken request */}
+          <div className="absolute inset-0 bg-gradient-dark" />
+          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[48rem] h-[48rem] rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute top-1/3 -left-40 w-96 h-96 rounded-full bg-amber-500/5 blur-3xl" />
+          <div className="absolute top-1/4 -right-40 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" />
         </div>
         <div className="relative container px-4 py-24 md:py-36 md:px-6 text-center">
           <div className="mx-auto max-w-3xl space-y-6">
@@ -308,11 +312,40 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-12 border-t border-border/40 bg-muted/30">
+      <section className="py-12 md:py-16 border-t border-border/40 bg-muted/30">
         <div className="container px-4 md:px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div><p className="text-3xl md:text-4xl font-black text-primary">35</p><p className="text-sm text-muted-foreground mt-1">{t("home.stats.languages")}</p></div>
-            <div><p className="text-3xl md:text-4xl font-black text-primary">24/7</p><p className="text-sm text-muted-foreground mt-1">{t("home.stats.copyrightBot")}</p></div>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold">{t("trust.title")}</h2>
+            <p className="text-muted-foreground mt-2">{t("trust.subtitle")}</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="p-5 rounded-xl border border-border/50 bg-card/50 text-center">
+              <ShieldCheck className="w-8 h-8 text-primary mx-auto mb-3" />
+              <h3 className="font-semibold mb-1">{t("trust.escrowTitle")}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{t("trust.escrowDesc")}</p>
+            </div>
+            <div className="p-5 rounded-xl border border-border/50 bg-card/50 text-center">
+              <Zap className="w-8 h-8 text-primary mx-auto mb-3" />
+              <h3 className="font-semibold mb-1">{t("trust.authenticityTitle")}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{t("trust.authenticityDesc")}</p>
+            </div>
+            <div className="p-5 rounded-xl border border-border/50 bg-card/50 text-center">
+              <Globe className="w-8 h-8 text-primary mx-auto mb-3" />
+              <h3 className="font-semibold mb-1">{t("trust.bilingualTitle")}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{t("trust.bilingualDesc")}</p>
+            </div>
+            <div className="p-5 rounded-xl border border-border/50 bg-card/50 text-center">
+              <Star className="w-8 h-8 text-primary mx-auto mb-3" />
+              <h3 className="font-semibold mb-1">{t("trust.legalTitle")}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{t("trust.legalDesc")}</p>
+            </div>
+          </div>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-x-10 gap-y-3 text-center">
+            <p><span className="text-2xl font-black text-primary">35</span> <span className="text-sm text-muted-foreground">{t("trust.statLanguages")}</span></p>
+            <p><span className="text-2xl font-black text-primary">24/7</span> <span className="text-sm text-muted-foreground">{t("trust.statScanning")}</span></p>
+            <Link to="/legal/tokushoho" className="text-sm text-primary hover:underline">
+              {t("trust.tokushohoLink")}
+            </Link>
           </div>
         </div>
       </section>

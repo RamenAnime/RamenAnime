@@ -85,6 +85,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link to="/legal/tokushoho" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  {t("footer.tokushoho")}
+                </Link>
+              </li>
+              <li>
                 <Link to="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   {t("nav.contact")}
                 </Link>
@@ -112,12 +117,15 @@ export default function Footer() {
           <p className="text-xs text-muted-foreground">
             © 2026 {t("hero.title")}. {t("footer.rights")}
           </p>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <Link to="/terms" className="text-xs text-muted-foreground hover:text-primary transition-colors">
               {t("nav.terms")}
             </Link>
             <Link to="/privacy" className="text-xs text-muted-foreground hover:text-primary transition-colors">
-              Privacy Policy
+              {t("footer.privacy")}
+            </Link>
+            <Link to="/legal/tokushoho" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+              {t("footer.tokushoho")}
             </Link>
           </div>
         </div>

@@ -31,8 +31,8 @@ export default function Tokushoho() {
               <h2 className="font-semibold mb-2">{t("tokushoho.contact")}</h2>
               <p>
                 {t("tokushoho.email")}:{" "}
-                <a href="mailto:support@ramenanime.com" className="text-primary underline">
-                  support@ramenanime.com
+                <a href="mailto:ramenanime@protonmail.com" className="text-primary underline">
+                  ramenanime@protonmail.com
                 </a>
               </p>
               <p className="text-muted-foreground">{t("tokushoho.contactNote")}</p>

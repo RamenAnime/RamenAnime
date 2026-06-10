@@ -11,8 +11,6 @@ import {
   Layers, Box, Store, Gavel, Flame, TrendingUp, ArrowRight,
   MessageCircle, Star, Clock, ShieldCheck, Zap, Globe, Heart,
 } from "lucide-react";
-import BetaBanner from "@/components/BetaBanner";
-
 function formatTimeLeft(
   endDate: string | null,
   t: (key: string, opts?: Record<string, unknown>) => string
@@ -71,16 +69,14 @@ export default function Home() {
 
   return (
     <div className="min-h-screen">
-      <BetaBanner />
-
       <section className="relative overflow-hidden">
         <div className="absolute inset-0" aria-hidden="true">
-          {/* Pure-CSS hero backdrop: /hero-bg.jpg did not exist, so the image was a broken request */}
-          <div className="absolute inset-0 bg-gradient-dark" />
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[48rem] h-[48rem] rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute top-1/3 -left-40 w-96 h-96 rounded-full bg-amber-500/5 blur-3xl" />
-          <div className="absolute top-1/4 -right-40 w-96 h-96 rounded-full bg-orange-500/5 blur-3xl" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/40 to-background" />
+          <img
+            src="/hero-bg.png"
+            alt=""
+            className="w-full h-full object-cover object-center opacity-50"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/55 to-background" />
         </div>
         <div className="relative container px-4 py-24 md:py-36 md:px-6 text-center">
           <div className="mx-auto max-w-3xl space-y-6">

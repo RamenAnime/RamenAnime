@@ -109,31 +109,34 @@ export default function Marketplace() {
           />
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-          {categorySlugs.map((cat) => (
-            <Button key={cat} variant={activeCategory === cat ? "default" : "outline"} size="sm" onClick={() => setActiveCategory(cat)} className={activeCategory === cat ? "" : "border-border/50 text-muted-foreground hover:text-foreground"}>
-              {filterCategoryLabel(cat)}
-            </Button>
-          ))}
-        </div>
-
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="flex gap-1 p-1 bg-muted rounded-lg">
-            {(["all", "fixed", "auction"] as const).map((type) => (
-              <button key={type} onClick={() => setListingType(type)} className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${listingType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
-                {type === "all" ? <Filter className="w-3 h-3 inline mr-1" /> : type === "fixed" ? <Tag className="w-3 h-3 inline mr-1" /> : <Gavel className="w-3 h-3 inline mr-1" />}
-                {type === "all" ? t("marketplace.filterAll") : type === "fixed" ? t("marketplace.buyNow") : t("marketplace.auctions")}
-              </button>
+        {/* Sticky below the 64px navbar so filters stay reachable while browsing */}
+        <div className="sticky top-16 z-40 -mx-4 px-4 py-3 mb-6 bg-background/95 backdrop-blur-md border-b border-border/40 space-y-3 md:-mx-6 md:px-6">
+          <div className="flex flex-wrap items-center justify-center gap-2 overflow-x-auto">
+            {categorySlugs.map((cat) => (
+              <Button key={cat} variant={activeCategory === cat ? "default" : "outline"} size="sm" onClick={() => setActiveCategory(cat)} className={activeCategory === cat ? "" : "border-border/50 text-muted-foreground hover:text-foreground"}>
+                {filterCategoryLabel(cat)}
+              </Button>
             ))}
           </div>
-          {isAuthenticated && (
-            <Link to="/marketplace/new">
-              <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <Plus className="mr-1 h-4 w-4" />
-                {t("marketplace.sellItem")}
-              </Button>
-            </Link>
-          )}
+
+          <div className="flex items-center justify-center gap-3">
+            <div className="flex gap-1 p-1 bg-muted rounded-lg">
+              {(["all", "fixed", "auction"] as const).map((type) => (
+                <button key={type} onClick={() => setListingType(type)} className={`px-3 py-1.5 rounded-md text-xs font-medium transition ${listingType === type ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                  {type === "all" ? <Filter className="w-3 h-3 inline mr-1" /> : type === "fixed" ? <Tag className="w-3 h-3 inline mr-1" /> : <Gavel className="w-3 h-3 inline mr-1" />}
+                  {type === "all" ? t("marketplace.filterAll") : type === "fixed" ? t("marketplace.buyNow") : t("marketplace.auctions")}
+                </button>
+              ))}
+            </div>
+            {isAuthenticated && (
+              <Link to="/marketplace/new">
+                <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90">
+                  <Plus className="mr-1 h-4 w-4" />
+                  {t("marketplace.sellItem")}
+                </Button>
+              </Link>
+            )}
+          </div>
         </div>
 
         {!isAuthenticated && (
